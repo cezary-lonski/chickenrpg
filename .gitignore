@@ -1,0 +1,22 @@
+# Godot 4
+.godot/
+/android/
+*.translation
+
+# Eksport
+/build/
+/export/
+*.pck
+*.exe
+*.apk
+*.aab
+*.zip
+
+# Systemowe / edytora
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.tmp
+
+# Niezwiązane z grą
+RestartScheduler.ps1
