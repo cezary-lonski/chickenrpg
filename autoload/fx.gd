@@ -48,20 +48,11 @@ func clear_world() -> void:
 # ---------------------------------------------------------------- hitstop ---
 
 func hitstop(duration: float) -> void:
-	if duration <= 0.0:
-		return
-	_hitstop_left = maxf(_hitstop_left, duration)
-	if Engine.time_scale > 0.9:
-		Engine.time_scale = 0.03
+	# Wyłączone: spowolnienie czasu podczas trafień/zabić dawało efekt "lag".
+	# Zachowujemy funkcję jako no-op, żeby istniejące wywołania nie psuły gry.
+	pass
 
 func _process(delta: float) -> void:
-	# hitstop działa w czasie rzeczywistym, więc używamy własnego zegara
-	if _hitstop_left > 0.0:
-		_hitstop_left -= delta
-		if _hitstop_left <= 0.0:
-			Engine.time_scale = 1.0
-		else:
-			return
 	if _shake_time > 0.0 and camera and enabled_shake:
 		_shake_time -= delta
 		var k := clampf(_shake_time / _shake_decay, 0.0, 1.0)

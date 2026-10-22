@@ -12,7 +12,7 @@ var _rows: Dictionary = {}
 const ACTION_NAMES := {
 	"move_left": "Ruch w lewo", "move_right": "Ruch w prawo",
 	"move_up": "W górę (drabina)", "move_down": "W dół (zjazd)",
-	"jump": "Skok / podwójny", "light_attack": "Atak lekki", "heavy_attack": "Atak ciężki",
+	"jump": "Skok / podwójny", "light_attack": "Atak 1 (lekki)", "heavy_attack": "Atak 2 (ciężki)",
 	"dash": "Unik", "block": "Blok", "throw_item": "Rzut przedmiotem",
 	"special": "Furia", "sprint": "Sprint (stamina)", "pause": "Pauza", "equipment": "Ekwipunek",
 	"quest_log": "Dziennik zadań",
@@ -70,7 +70,7 @@ func _ready() -> void:
 	body.add_child(right)
 	var rv := UiKit.vbox(6)
 	right.add_child(rv)
-	rv.add_child(UiKit.label("STEROWANIE — kliknij „Zmień”, potem wciśnij klawisz", 17, UiKit.ACCENT))
+	rv.add_child(UiKit.label("STEROWANIE — kliknij „Zmień”, a potem wciśnij klawisz, który ma pełnić tę akcję", 17, UiKit.ACCENT))
 	var g := GridContainer.new()
 	g.columns = 3
 	g.add_theme_constant_override("h_separation", 10)
