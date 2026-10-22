@@ -71,7 +71,7 @@ func _ready() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	root.add_child(row)
 	var back := UiKit.button("Wstecz", 20)
-	back.pressed.connect(func(): Audio.play("back"); Flow.goto("menu"))
+	back.pressed.connect(func(): Audio.play("back"); Flow.goto("slots"))
 	row.add_child(back)
 	var start := UiKit.button("Rozpocznij RPG", 24)
 	start.custom_minimum_size = Vector2(320, 50)

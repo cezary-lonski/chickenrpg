@@ -31,7 +31,7 @@ func _ready() -> void:
 	center.add_child(_wrap(b2))
 	center.add_child(UiKit.sep(6))
 	var brpg := UiKit.button("Nowa gra RPG", 26)
-	brpg.pressed.connect(func(): Audio.play("confirm"); Flow.goto("rpg_select"))
+	brpg.pressed.connect(func(): Audio.play("confirm"); Flow.goto("slots"))
 	center.add_child(_wrap(brpg))
 	center.add_child(UiKit.sep(6))
 	var blan := UiKit.button("Gra LAN", 26)
@@ -123,7 +123,7 @@ func _toggle_options() -> void:
 	_options.visible = not _options.visible
 
 func _refresh() -> void:
-	var has: bool = GameState.has_save() and not GameState.profile.get("characters", {}).is_empty()
+	var has: bool = GameState.slot_exists_any()
 	_continue_btn.disabled = not has
 	var s: Dictionary = GameState.profile.get("stats", {})
 	stats_row.text = "Ukończone etapy: %d / %d   ·   Złoto: %d   ·   Pióra: %d   ·   Pokonani bossowie: %d   ·   Zabici: %d" % [
@@ -135,14 +135,7 @@ func _refresh() -> void:
 
 func _on_continue() -> void:
 	Audio.play("confirm")
-	var idx := clampi(GameState.stage_unlocked() - 1, 0, StageDB.count() - 1)
-	# kontynuujemy ostatnią postacią, którą graliśmy
-	var last := "kurczak"
-	for id in GameState.all_characters():
-		if GameState.char_profile(id).get("level", 1) > 1 or int(GameState.char_profile(id).get("best", {}).size()) > 0:
-			last = id
-	GameState.start_run(last, idx)
-	Flow.goto("loadout", {"from": "select"})
+	Flow.goto("slots")
 
 func _on_quit() -> void:
 	Audio.play("back")

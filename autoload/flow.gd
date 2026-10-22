@@ -118,6 +118,9 @@ func _build(screen: String, args: Dictionary) -> void:
 		"rpg_select":
 			current = UiRpgSelect.new()
 			(current as UiRpgSelect).on_start.connect(_on_rpg_start)
+		"slots":
+			current = UiSlotSelect.new()
+			(current as UiSlotSelect).on_start.connect(_on_slot_start)
 		"lan":
 			current = UiLanLobby.new()
 			(current as UiLanLobby).on_close.connect(func(): goto("menu"))
@@ -156,12 +159,21 @@ func _on_character_chosen(id: String) -> void:
 	goto("loadout", {"from": "select"})
 
 func _on_rpg_start(mode: String, p1: String, p2: String, cls: String) -> void:
-	GameState.start_rpg_run(mode, p1, p2)
+	GameState.start_rpg_run(mode, p1, p2, _slot_is_new)
 	GameState.set_class(cls)
+	_slot_is_new = true
 	goto("loadout", {"from": "select"})
 
+var _slot_is_new := true
+
+## Start z ekranu wyboru slotu: wybierz slot, potem ekran trybu/klasy (rpg_select).
+func _on_slot_start(slot: int, create_new: bool) -> void:
+	GameState.select_slot(slot, create_new)
+	_slot_is_new = create_new
+	goto("rpg_select")
+
 func _on_lan_start(p1: String, p2: String, cls: String) -> void:
-	GameState.start_rpg_run("lan", p1, p2)
+	GameState.start_rpg_run("lan", p1, p2, true)
 	GameState.set_class(cls)
 	goto("loadout", {"from": "select"})
 

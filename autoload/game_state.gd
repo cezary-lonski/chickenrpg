@@ -13,9 +13,25 @@ signal stats_changed(stats: Dictionary)
 
 const SAVE_PATH := "user://chicken_brawl_save.json"
 const SAVE_VERSION := 1
+const SLOT_COUNT := 3
 
 var profile: Dictionary = {}
 var run: Dictionary = {}
+
+# aktywny slot zapisu (1..SLOT_COUNT); 0 = jeszcze nie wybrano
+var active_slot: int = 0
+
+func slot_path(slot: int) -> String:
+	return "user://chicken_brawl_save_%d.json" % slot
+
+func slot_exists(slot: int) -> bool:
+	return FileAccess.file_exists(slot_path(slot))
+
+func slot_exists_any() -> bool:
+	for i in range(1, SLOT_COUNT + 1):
+		if slot_exists(i):
+			return true
+	return false
 
 var game_paused: bool = false
 var run_committed := false
@@ -23,10 +39,52 @@ var run_committed := false
 # ---------------------------------------------------------------- wejście ---
 
 func _ready() -> void:
+	_migrate_legacy_save()
 	profile = _blank_profile()
+	# wczytaj ostatnio używany slot (albo pierwszy istniejący, albo slot 1)
+	var last := _read_last_slot()
+	if last > 0 and slot_exists(last):
+		active_slot = last
+	elif slot_exists(1):
+		active_slot = 1
+	else:
+		active_slot = 1
 	load_game()
 	_setup_input()
 	apply_binds()
+
+func _migrate_legacy_save() -> void:
+	# stary pojedynczy zapis przenieś do slotu 1 (raz)
+	if FileAccess.file_exists(SAVE_PATH) and not slot_exists(1):
+		var src := FileAccess.open(SAVE_PATH, FileAccess.READ)
+		if src:
+			var txt := src.get_as_text()
+			src.close()
+			var dst := FileAccess.open(slot_path(1), FileAccess.WRITE)
+			if dst:
+				dst.store_string(txt)
+				dst.close()
+		if FileAccess.file_exists(SAVE_PATH):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+
+func _last_slot_file() -> String:
+	return "user://chicken_brawl_last.json"
+
+func _read_last_slot() -> int:
+	if not FileAccess.file_exists(_last_slot_file()):
+		return 0
+	var f := FileAccess.open(_last_slot_file(), FileAccess.READ)
+	if f == null:
+		return 0
+	var txt := f.get_as_text()
+	f.close()
+	return int(txt.strip_edges())
+
+func _write_last_slot(slot: int) -> void:
+	var f := FileAccess.open(_last_slot_file(), FileAccess.WRITE)
+	if f:
+		f.store_string(str(slot))
+		f.close()
 
 const BIND_ACTIONS := [
 	"move_left", "move_right", "move_up", "move_down", "jump",
@@ -149,7 +207,7 @@ func key_label(action: String) -> String:
 
 # --------------------------------------------------------------- RPG run ---
 
-func start_rpg_run(mode: String, p1: String, p2: String = "") -> void:
+func start_rpg_run(mode: String, p1: String, p2: String = "", fresh: bool = true) -> void:
 	if mode != "lan":
 		mode = "solo"
 	run_committed = false
@@ -182,7 +240,14 @@ func start_rpg_run(mode: String, p1: String, p2: String = "") -> void:
 	if mode == "lan" and p2 != "" and p2 != p1:
 		players.append({"id": p2, "index": 1})
 	run["players"] = players
-	start_story()
+	if fresh:
+		start_story()
+	else:
+		# kontynuacja: rozdział z zapisanej fabuły; jeśli brak, zacznij od nowa
+		var s := story()
+		if String(s.get("quest", "")) == "":
+			start_story()
+		run["stage_index"] = story_chapter()
 	refresh_stats()
 	run["health"] = stat("max_health")
 	run["energy"] = stat("max_energy")
@@ -719,10 +784,12 @@ func last_results() -> Dictionary:
 # ------------------------------------------------------------- zapis/odczyt ---
 
 func has_save() -> bool:
-	return FileAccess.file_exists(SAVE_PATH)
+	return active_slot > 0 and slot_exists(active_slot)
 
 func save_game() -> void:
-	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if active_slot <= 0:
+		active_slot = 1
+	var f := FileAccess.open(slot_path(active_slot), FileAccess.WRITE)
 	if f == null:
 		push_warning("Nie udało się zapisać gry: %s" % error_string(FileAccess.get_open_error()))
 		return
@@ -730,13 +797,14 @@ func save_game() -> void:
 	profile["version"] = SAVE_VERSION
 	f.store_string(JSON.stringify(profile, "\t"))
 	f.close()
+	_write_last_slot(active_slot)
 
 func load_game() -> void:
-	if not has_save():
+	if not (active_slot > 0 and slot_exists(active_slot)):
 		profile = _blank_profile()
 		profile_changed.emit()
 		return
-	var f := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	var f := FileAccess.open(slot_path(active_slot), FileAccess.READ)
 	if f == null:
 		profile = _blank_profile()
 		return
@@ -752,6 +820,54 @@ func load_game() -> void:
 	gold_changed.emit(gold())
 	cod_changed.emit(cod())
 
+## Przełącz na slot: wczytuje jego zawartość (albo tworzy nowy, czysty profil).
+func select_slot(slot: int, create_new: bool = false) -> void:
+	slot = clampi(slot, 1, SLOT_COUNT)
+	active_slot = slot
+	run = {}
+	run_committed = false
+	if create_new:
+		profile = _blank_profile()
+		profile_changed.emit()
+		save_game()
+		return
+	load_game()
+
+## Kasuje zawartość slotu (jeśli istnieje).
+func delete_slot(slot: int) -> void:
+	if slot_exists(slot):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(slot_path(slot)))
+	if active_slot == slot:
+		profile = _blank_profile()
+		run = {}
+		profile_changed.emit()
+
+## Krótki opis slotu do ekranu wyboru.
+func slot_info(slot: int) -> Dictionary:
+	var path := slot_path(slot)
+	if not FileAccess.file_exists(path):
+		return {"exists": false}
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return {"exists": false}
+	var txt := f.get_as_text()
+	f.close()
+	var parsed = JSON.parse_string(txt)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {"exists": true, "broken": true}
+	var p := parsed as Dictionary
+	var chars: Dictionary = p.get("characters", {})
+	var story: Dictionary = p.get("story", {})
+	var cp: Dictionary = chars.get("lord", {})
+	var chap := int(story.get("chapter", 0))
+	return {
+		"exists": true,
+		"gold": int(p.get("gold", 0)),
+		"level": int(cp.get("level", 1)),
+		"chapter": chap,
+		"done": (story.get("done", []) as Array).size(),
+	}
+
 func _merge_defaults(src: Dictionary, def: Dictionary) -> Dictionary:
 	var out := def.duplicate(true)
 	for k in src:
@@ -766,8 +882,8 @@ func _merge_defaults(src: Dictionary, def: Dictionary) -> Dictionary:
 func reset_save() -> void:
 	profile = _blank_profile()
 	run = {}
-	if FileAccess.file_exists(SAVE_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(SAVE_PATH))
+	if active_slot > 0 and FileAccess.file_exists(slot_path(active_slot)):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(slot_path(active_slot)))
 	save_game()
 	profile_changed.emit()
 	gold_changed.emit(0)
