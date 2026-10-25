@@ -1,0 +1,33 @@
+# Godot 4
+.godot/
+/android/
+*.translation
+
+# Eksport
+/build/
+/export/
+*.pck
+*.exe
+*.apk
+*.aab
+*.zip
+
+# Systemowe / edytora
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.tmp
+
+# Niezwiązane z grą
+RestartScheduler.ps1
+
+# Pliki robocze / logi testów
+*.log
+errors.txt
+out.txt
+gs.txt
+flow.broken
+fix_menu.py
+fix_patch.py
+_tmp*
+_shot_*

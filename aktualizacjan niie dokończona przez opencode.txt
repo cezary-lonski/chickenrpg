@@ -1,0 +1,527 @@
+ eee robisz : # CHICKEN RPG — WIELKA AKTUALIZACJA GRY
+
+Pracujesz nad istniejącym projektem Chicken RPG (Chicken Brawl) w Godot 4.7. Repozytorium: https://github.com/cezary-lonski/chickenrpg
+
+Masz WDROŻYĆ poniższe ulepszenia w istniejącym projekcie. Nie ograniczaj się do napisania planu ani opisu. Analizuj pliki, edytuj skrypty, sceny, interfejsy i zasoby, a następnie sprawdzaj, czy gra działa.
+
+## ZASADY PRACY
+
+1. Najpierw przeanalizuj całą strukturę projektu, istniejące skrypty, sceny, system klas, walki, animacji, ekwipunku, zadań i zapisu gry.
+2. Zachowaj wszystkie działające funkcje, które nie są objęte zmianami.
+3. Nie przepisuj gry od zera. Rozwijaj istniejące systemy i dostosuj je do nowych wymagań.
+4. Nie twórz pustych przycisków, atrap funkcji ani elementów interfejsu, które nic nie robią.
+5. Korzystaj z istniejących grafik, jeżeli są dostępne. Gdy brakuje grafiki, stwórz odpowiednie zasoby w stylu gry, korzystając z dostępnych narzędzi projektu.
+6. Zachowaj zgodność z Godot 4.7, istniejącymi nazwami węzłów, ścieżkami scen i systemem zapisu.
+7. Wdrażaj funkcje etapami. Po każdym etapie sprawdzaj błędy składni, brakujące zasoby, połączenia sygnałów i poprawność działania.
+8. Nie usuwaj istniejącej kampanii, platformówki ani trybu LAN.
+9. Jeśli całość jest zbyt duża na jedno podejście, pracuj dalej nad kolejnymi etapami, zamiast zastępować resztę atrapami.
+10. Na koniec przedstaw listę wykonanych funkcji, zmienionych plików i rzeczy, które rzeczywiście pozostały do zrobienia.
+
+# 1. POPRAWKI ISTNIEJĄCYCH UMIEJĘTNOŚCI
+
+## Szał
+
+Przerób istniejącą umiejętność Szał:
+- Prędkość postaci podczas Szału ma być dokładnie taka sama jak jej normalna prędkość poruszania się.
+- Czas trwania: dokładnie 10 sekund.
+- Nie zwiększaj prędkości ruchu.
+- Efekty wizualne i animacja muszą odpowiadać aktywnemu stanowi Szału.
+- Po 10 sekundach efekty muszą się wyłączyć, a postać ma wrócić do normalnego stanu.
+- Zadbaj o poprawne działanie po ponownym użyciu, śmierci postaci, zmianie sceny i wczytaniu zapisu.
+
+## Klasa Lady
+
+Przebuduj klasę Lady tak, aby była prawdziwą klasą wspierającą drużynę.
+
+Dodaj:
+- Leczenie obszarowe sojuszników.
+- Ochronę obszarową, która czasowo ogranicza otrzymywane obrażenia.
+- Czytelny zasięg obu umiejętności.
+- Efekty wizualne leczenia i ochrony.
+- Osobne animacje rozpoczęcia, działania i zakończenia umiejętności.
+- Animacje bezczynności, chodzenia, ataku, otrzymywania obrażeń i śmierci.
+- Interfejs pokazujący czas odnowienia i aktywne efekty.
+
+Leczenie ma działać na sojuszników znajdujących się w zasięgu, a ochrona ma obejmować wszystkich uprawnionych sojuszników w obszarze. Nie pozwalaj na wielokrotne nakładanie tego samego efektu w sposób powodujący błędy.
+
+# 2. KREATOR POSTACI NA POCZĄTKU GRY
+
+Przed rozpoczęciem nowej kampanii dodaj pełny kreator postaci.
+
+Gracz powinien móc:
+- Wybrać dostępny wygląd kurczaka.
+- Wybrać ubrania i elementy wyposażenia kosmetycznego.
+- Zmieniać kolory poszczególnych elementów.
+- Obejrzeć postać w podglądzie.
+- Obracać podgląd, jeśli model lub grafika na to pozwala.
+- Wybrać nazwę postaci.
+- Zatwierdzić wygląd i rozpocząć grę.
+
+Wygląd musi być zapisywany i odtwarzany po ponownym uruchomieniu gry. Zmiany kosmetyczne nie mogą nieumyślnie zmieniać statystyk postaci.
+
+Przygotuj system warstw ubrań i kolorowania, który da się rozszerzać o nowe zestawy.
+
+# 3. TRYB PAINT — EDYTOR WYGLĄDU I ANIMACJI
+
+Dodaj osobny tryb Paint, dostępny z kreatora postaci lub odpowiedniego edytora.
+
+## Malowanie
+
+- Wybieranie części postaci lub elementu wyposażenia.
+- Zmiana koloru zaznaczonego elementu.
+- Malowanie dostępnych powierzchni lub pikseli, zależnie od rodzaju zasobów.
+- Gumka, wybór koloru i cofanie ostatnich zmian, jeśli pozwala na to zastosowana metoda.
+- Podgląd postaci podczas edycji.
+- Zapisywanie i wczytywanie wyglądu.
+
+## Edytor animacji
+
+Dodaj możliwość zaznaczenia obiektu lub części postaci i tworzenia animacji przez obracanie zaznaczonego elementu.
+
+Wymagania:
+- Wybór obiektu lub części ciała.
+- Dodawanie klatek animacji.
+- Obracanie elementu i zapisywanie jego pozycji oraz obrotu w kolejnych klatkach.
+- Odtwarzanie animacji w podglądzie.
+- Regulacja czasu trwania, szybkości i płynności przejść.
+- Zapisywanie animacji w zasobach projektu.
+
+Przygotuj animacje:
+- Bezczynność.
+- Chodzenie.
+- Bieg, jeśli występuje w systemie ruchu.
+- Atak.
+- Użycie umiejętności.
+- Otrzymywanie obrażeń.
+- Śmierć.
+
+Jeżeli gra używa sprite'ów 2D, wykorzystaj obrót części, zmianę pozycji, klatki sprite'ów i warstwy graficzne odpowiednie dla 2D. Nie dodawaj wymogu modelowania 3D do istniejącej gry 2D.
+
+Tryb Paint ma być funkcjonalnym narzędziem, a nie tylko ekranem z przyciskami.
+
+# 4. NAPRAWA I PRZEBUDOWA MENU
+
+Przejrzyj wszystkie menu gry.
+
+Napraw:
+- Stare teksty i nieaktualne nazwy.
+- Elementy nachodzące na siebie.
+- Rozjechane przyciski i panele.
+- Nieczytelne opisy.
+- Błędne skalowanie okien.
+- Niespójne fonty, marginesy i odstępy.
+- Przyciski bez działania.
+- Brak informacji zwrotnych po wykonaniu akcji.
+
+Menu ma poprawnie działać przy różnych rozdzielczościach. Zachowaj istniejące wejścia do platformówki, kampanii RPG i gry LAN.
+
+Dodaj czytelne przejścia pomiędzy:
+- Menu głównym.
+- Nową grą.
+- Kreatorem postaci.
+- Ekwipunkiem.
+- Drzewkiem umiejętności.
+- Dziennikiem zadań.
+- Edytorem Paint.
+- Kowalem i kuźnią.
+- Ustawieniami.
+- Pauzą.
+
+Wszystkie teksty muszą być aktualne i spójne językowo.
+
+# 5. ROZBUDOWA KAMPANII I ROZDZIAŁÓW
+
+Obecna kampania ma siedem rozdziałów. Zachowaj je, ale znacznie je rozbuduj.
+
+Każdy rozdział powinien zawierać:
+- Dłuższą eksplorację lokacji.
+- Więcej rozmów z NPC.
+- Dialogi z wyborami, gdy mają sens.
+- Zadania główne i poboczne.
+- Eksplorację ukrytych obszarów.
+- Skrzynie, przedmioty i sekrety.
+- Zwykłych przeciwników, elitarne jednostki i prawdziwych bossów.
+- Cele niezwiązane wyłącznie z walką.
+- Przerywniki fabularne lub ich odpowiedniki.
+- Nagrody powiązane z postępem.
+- Zapisywanie ukończonych celów i stanów zadań.
+
+Dodaj czynności takie jak:
+- Rozmowy z mieszkańcami i świadkami wydarzeń.
+- Zbieranie informacji o nieprzyjacielu.
+- Otwieranie przejść.
+- Uwalnianie więźniów.
+- Ratowanie króla lub królowej.
+- Odnajdywanie kluczy i dokumentów.
+- Pomaganie mieszkańcom.
+- Odblokowywanie sekretów.
+- Przygotowanie do walk z bossami.
+
+Nie wydłużaj rozdziałów przez bezsensowne powtarzanie tych samych fal przeciwników. Rozbuduj je o nowe lokacje, zadania, rozmowy i wydarzenia.
+
+Każdy rozdział powinien mieć wyraźny początek, rozwinięcie, kulminację i zakończenie.
+
+# 6. PRAWDZIWI BOSSOWIE
+
+Obecni przeciwnicy nazwani bossami są zbyt podobni do mini-bossów. Przebuduj ich zachowanie, fazy walki i oprawę.
+
+Prawdziwy boss powinien mieć:
+- Własną arenę.
+- Osobną animację wejścia.
+- Duży, czytelny pasek zdrowia.
+- Własny zestaw animacji.
+- Kilka różnych ataków specjalnych.
+- Czytelne zapowiedzi niebezpiecznych ataków.
+- Różne fazy walki.
+- Zmiany zachowania zależne od poziomu zdrowia.
+- Efekty wizualne i dźwiękowe.
+- Unikalną nagrodę.
+- Animację porażki.
+- Zapisywanie stanu ukończenia walki.
+
+## Finał aktu pierwszego — Czarny Kruk
+
+Przygotuj ostatecznego bossa pierwszego aktu.
+
+Parametry i wymagania:
+- 5000 HP.
+- Unikalna, duża arena finałowa.
+- Osobna animacja wejścia.
+- Kilka faz walki.
+- Specjalne umiejętności bossa.
+- Osobne animacje dla każdego specjalnego ataku.
+- Efekty obszarowe, przed którymi gracz może się bronić przez odpowiedni ruch lub użycie umiejętności.
+- Zmiana taktyki w kolejnych fazach.
+- Finałowa sekwencja po zwycięstwie.
+- Nagrody i przejście do kolejnego aktu.
+
+Nie wystarczy ustawić bossowi 5000 HP. Ma to być wyjątkowa walka wymagająca poznania jego ataków i właściwego reagowania.
+
+Dostosuj obrażenia i czas walki do systemu poziomów gry. Upewnij się, że walka jest możliwa do ukończenia.
+
+# 7. AKT II — ZEMSTA NA CZARNYM KRUKU
+
+Po ukończeniu pierwszego aktu odblokuj drugi akt, w którym sytuacja się odwraca: teraz gracz prowadzi ataki na wioski kontrolowane przez Czarniego Kruka.
+
+Dodaj:
+- Nową mapę świata.
+- Nowe wioski.
+- Nowe postacie i przeciwników.
+- Nowe dialogi i zadania.
+- Cele ataku i wyzwalania lokacji.
+- Posterunki wroga.
+- Magazyny i ukryte skarby.
+- Nowe typy przeciwników.
+- Nowe elitarne jednostki.
+- Nowych bossów.
+- Nowe nagrody.
+- Dalszy rozwój fabuły.
+
+Atakowanie wiosek ma być systemem misji, a nie tylko zmianą wyglądu przeciwników. Gracz powinien móc wykonywać różne cele, odkrywać alternatywne przejścia i zdobywać zasoby.
+
+Niech decyzje w misjach wpływają na dostępne nagrody, stan lokacji lub późniejsze zadania, jeśli jest to możliwe w istniejącej architekturze.
+
+# 8. NOWE UMIEJĘTNOŚCI I DRZEWKO ROZWOJU
+
+Stwórz pełny system drzewka umiejętności.
+
+Zasady:
+- Maksymalny poziom postaci: 100.
+- Gracz otrzymuje 1 punkt umiejętności za każdy zdobyty poziom.
+- Punkty można wydawać na odblokowanie nowych umiejętności.
+- Umiejętność może wymagać określonego poziomu i odblokowania poprzedniej umiejętności.
+- Wymagania muszą być widoczne przed zakupem.
+- Odblokowane umiejętności zapisują się w stanie postaci.
+- Umiejętności mają opisy, ikony, koszty, czas odnowienia i działające efekty.
+- Nie pozwalaj kupować tej samej umiejętności wielokrotnie, jeśli nie została zaprojektowana jako ulepszana.
+- Dodaj możliwość ulepszania wybranych zdolności, jeśli nie psuje to balansu.
+
+Przykład:
+- Chmurowy Wzlot wymaga poziomu 10 i odblokowania poprzedniej umiejętności w drzewku.
+- Nie można odblokować go wcześniej, nawet jeśli gracz ma wystarczająco dużo punktów.
+
+Dodaj nowe zdolności dla różnych klas, na przykład:
+- Mobilność i uniki.
+- Ataki obszarowe.
+- Umiejętności defensywne.
+- Leczenie i wsparcie.
+- Kontrolę przeciwników.
+- Umiejętności powiązane z towarzyszem.
+- Rozwinięte zdolności specjalne.
+
+Wszystkie zdolności muszą rzeczywiście działać w walce.
+
+## Poziomy
+
+- Dodaj maksymalny poziom 100.
+- Zablokuj dalsze zdobywanie poziomów po osiągnięciu maksimum.
+- Zaprojektuj krzywą doświadczenia dla kolejnych poziomów.
+- Dodaj czytelny pasek doświadczenia.
+- Pokaż komunikat po zdobyciu poziomu.
+- Przyznawaj punkt umiejętności dokładnie raz za każdy nowo osiągnięty poziom.
+- Zapisuj poziom, doświadczenie i wydane punkty.
+
+# 9. EKWIPUNEK — 40 SLOTÓW
+
+Przebuduj ekwipunek na wzór czytelnego ekwipunku z Minecrafta.
+
+Dodaj:
+- Dokładnie 40 podstawowych slotów ekwipunku.
+- Oddzielne miejsce na broń.
+- Oddzielne miejsce na elementy zbroi.
+- Widoczne sloty zbroi, hełmu lub innych części, zgodnie z przyjętym systemem.
+- Slot na amulet lub amulety, zależnie od balansu.
+- Podgląd aktualnie wyposażonego przedmiotu.
+- Ikony i nazwy przedmiotów.
+- Opisy statystyk.
+- Rzadkość przedmiotów.
+- Możliwość przenoszenia przedmiotów pomiędzy slotami.
+- Możliwość zakładania i zdejmowania wyposażenia.
+- Wyraźne oznaczenie pustych slotów.
+- Informację o braku miejsca.
+- Obsługę przedmiotów nakładanych na stosy, jeśli ma to zastosowanie.
+
+Przedmioty muszą mieć stabilne identyfikatory i prawidłowo zapisywać się w grze.
+
+## Amulety
+
+Amulety mają zapewniać opisane korzyści już wtedy, gdy znajdują się w odpowiednim slocie wyposażenia.
+
+Jeżeli projekt zakłada, że amulety działają również z podstawowych slotów ekwipunku, zaimplementuj to świadomie i zapisz jako zasadę systemu.
+
+Nie przyznawaj efektu dwukrotnie po przeniesieniu amuletu. Efekty muszą być zdejmowane po usunięciu przedmiotu z miejsca, w którym działa.
+
+## Grafiki wyposażenia
+
+Przygotuj grafiki lub kompozycje sprite'ów przedstawiające:
+- Kurczaka z założonym mieczem.
+- Kurczaka w założonej zbroi.
+- Kurczaka z mieczem i zbroją jednocześnie.
+- Kurczaka z amuletem, jeśli jest widoczny na postaci.
+
+Grafiki muszą pasować do stylu projektu i poprawnie pokazywać wyposażenie podczas gry. Nie twórz tylko osobnych ikon, jeżeli wymagany jest również wygląd postaci z założonym przedmiotem.
+
+Jeżeli istniejący system renderowania korzysta z warstw sprite'ów, zintegruj wyposażenie z tym systemem. Zachowaj prawidłowe kierunki ruchu, kolejność warstw i animacje.
+
+# 10. LEGENDARNE PRZEDMIOTY I SEKRETNE JASKINIE
+
+Dodaj sekretną zawartość, która nagradza eksplorację.
+
+## Sekretne jaskinie
+
+- Ukryte wejścia.
+- Zagadki lub mechanizmy otwierające przejścia.
+- Dodatkowe pomieszczenia.
+- Skrzynie z nagrodami.
+- Elitarni przeciwnicy.
+- Opcjonalne wyzwania.
+- Unikalne nagrody.
+- Towarzysze do odblokowania.
+- Powiązanie sekretów z dziennikiem, jeżeli pasuje do projektu.
+
+Dodaj przedmioty o różnych poziomach rzadkości, w tym przedmioty legendarne.
+
+Legendarne przedmioty powinny mieć wyjątkowe, ale zbalansowane właściwości. Nie mogą być wyłącznie zwykłymi przedmiotami z innym kolorem nazwy.
+
+Dodaj unikalne amulety, elementy zbroi, bronie i inne nagrody pasujące do świata gry.
+
+Każda nagroda musi mieć poprawnie działające statystyki, ikonę, opis, identyfikator i zapis.
+
+# 11. PETY — TOWARZYSZE
+
+Dodaj system zwierzęcych towarzyszy, których można zdobywać przede wszystkim jako nagrody na końcu sekretnych jaskiń.
+
+## Obowiązkowy pierwszy pet: Kurczaczek
+
+Kurczaczek:
+- Podąża za graczem.
+- Nie blokuje ruchu gracza.
+- Ma własną animację bezczynności.
+- Ma animację chodzenia.
+- Ma animację ataku.
+- Atakuje wrogie moby jajkami przepiórczymi.
+- Wybiera prawidłowe cele.
+- Nie atakuje sojuszników.
+- Ma własne zdrowie i statystyki, jeśli wymaga tego system.
+- Reaguje na śmierć lub zniknięcie celu.
+- Jest zapisywany jako odblokowany towarzysz.
+
+Dodaj możliwość wyposażenia petów w specjalne przedmioty przeznaczone wyłącznie dla nich.
+
+Przykładowe wyposażenie:
+- Łuk przepiórczy.
+- Inne specjalne akcesoria dla towarzyszy.
+- Ulepszenia zwiększające skuteczność ataków lub inne jasno opisane parametry.
+
+Pet nie może korzystać z wyposażenia zwykłej postaci, jeśli przedmiot jest przeznaczony wyłącznie dla towarzysza.
+
+Zaprojektuj również kilka kolejnych petów według własnego pomysłu. Każdy powinien mieć inną rolę, zachowanie lub sposób wspierania gracza.
+
+# 12. WIOSKI, NPC I KOWAL
+
+Rozbuduj wioski tak, aby były ważnymi miejscami eksploracji, rozwoju i przygotowania do walk.
+
+Dodaj:
+- Kowala.
+- Sklepikarzy.
+- Postacie dające zadania.
+- Mieszkańców z dialogami.
+- Skrzynie.
+- Ukryte pomieszczenia.
+- Kuźnię i kowadło.
+- Miejsca powiązane z fabułą.
+
+Kowal powinien mieć interfejs umożliwiający wybór receptury i rozpoczęcie kucia.
+
+Nie każda wioska musi mieć wszystkich NPC. Rozmieść ich zgodnie z fabułą i znaczeniem lokacji.
+
+## Skrzynie i nowe metale
+
+Dodaj nowe materiały:
+- Kurczal.
+- Kurczalium.
+
+Materiały powinny występować w skrzyniach, sekretach, nagrodach i innych odpowiednich miejscach.
+
+Każdy materiał musi mieć:
+- Ikonę.
+- Nazwę.
+- Opis.
+- Identyfikator.
+- Możliwość przechowywania w ekwipunku.
+- Prawidłową obsługę zapisu.
+- Zastosowanie w recepturach.
+
+Nie dodawaj materiałów wyłącznie dekoracyjnie. Muszą być faktycznie wykorzystywane w systemie rzemiosła.
+
+# 13. KUŹNIA I MINIGRA KUCIA
+
+Kucie odbywa się u kowala przy kowadle.
+
+Gracz wybiera:
+1. Co chce wykuć: miecz, zbroję lub amulet.
+2. Z jakiego materiału chce to zrobić.
+3. Czy posiada wystarczającą ilość materiałów.
+4. Następnie rozpoczyna minigrę kucia.
+
+## Podstawowe koszty
+
+- Zbroja: 5 sztabek wybranego materiału.
+- Miecz: 1 sztabka wybranego materiału.
+- Amulet: zaprojektuj osobną, zbalansowaną recepturę z wykorzystaniem materiałów i ewentualnych dodatkowych składników.
+
+Nie pozwalaj rozpocząć kucia, jeśli gracz nie ma potrzebnych materiałów.
+
+## Minigra
+
+Zrób prawdziwą minigrę, w której gracz uczestniczy w procesie kucia.
+
+Uwzględnij:
+- Animację pracy przy kowadle.
+- Wizualny proces nagrzewania lub obróbki materiału.
+- Kilka etapów kucia.
+- Reakcję na działania gracza.
+- Czytelny wskaźnik postępu.
+- Wynik zależny od wykonania minigry.
+- Sukces i porażkę.
+- Nagrodę tylko wtedy, gdy proces rzeczywiście został zakończony.
+
+Wynik może wpływać na jakość przedmiotu w określonych granicach, ale nie może pozwalać na przypadkowe niszczenie wszystkich rzadkich materiałów bez wyraźnej informacji dla gracza.
+
+Po udanym zakończeniu przedmiot powinien zostać dodany do ekwipunku. Jeśli ekwipunek jest pełny, zapewnij bezpieczne odebranie nagrody.
+
+## Hiperlegendarna zbroja z Kurczalium
+
+Dodaj wyjątkową kategorię rzadkości: HIPERLEGENDARNA.
+
+Zbroja wykuta z Kurczalium ma należeć do tej kategorii.
+
+Po założeniu:
+- Postać otrzymuje wyraźną fioletową aurę przypominającą płomienie.
+- Efekt jest widoczny podczas ruchu i walki.
+- Efekt nie zasłania całej postaci ani interfejsu.
+- Efekt znika po zdjęciu zbroi.
+- Statystyki i wygląd są prawidłowo zapisywane.
+- Zbroja ma własną grafikę, ikonę i opis.
+
+Jeżeli gracz zdejmie zbroję, aura ma natychmiast przestać być aktywna. Nie pozwalaj na wielokrotne nakładanie efektu podczas zmiany wyposażenia.
+
+# 14. POSTĘP GRY I ZAPIS
+
+Zintegruj nowe funkcje z istniejącym systemem zapisu.
+
+Zapisuj:
+- Wygląd postaci.
+- Kolory i ubrania.
+- Poziom oraz doświadczenie.
+- Punkty umiejętności.
+- Odblokowane umiejętności.
+- Ekwipunek i wyposażenie.
+- Amulety i ich aktywne efekty.
+- Materiały do kucia.
+- Odblokowane receptury.
+- Postęp minigier i nagrody.
+- Odblokowane pety.
+- Wyposażenie petów.
+- Ukończone zadania.
+- Postęp kampanii.
+- Stan aktu drugiego.
+- Odkryte sekrety.
+- Pokonanych bossów.
+
+Po wczytaniu zapisu gra nie może podwajać nagród, resetować umiejętności ani gubić wyposażenia.
+
+Jeżeli format zapisu wymaga migracji, zachowaj zgodność ze starszymi zapisami w miarę możliwości.
+
+# 15. TESTY I KONTROLA JAKOŚCI
+
+Po wdrożeniu funkcji:
+
+1. Sprawdź składnię skryptów.
+2. Uruchom projekt w trybie bez interfejsu, jeśli dostępne jest odpowiednie polecenie Godot.
+3. Napraw błędy związane z brakującymi zasobami i scenami.
+4. Sprawdź uruchomienie menu głównego.
+5. Sprawdź rozpoczęcie nowej gry.
+6. Sprawdź kreator postaci.
+7. Sprawdź animacje i ruch.
+8. Sprawdź Szał — prędkość bez zmian, czas 10 sekund.
+9. Sprawdź leczenie i ochronę Lady.
+10. Sprawdź 40 slotów ekwipunku.
+11. Sprawdź działanie amuletów.
+12. Sprawdź drzewko umiejętności i warunki odblokowania.
+13. Sprawdź zdobywanie poziomów i limit 100.
+14. Sprawdź pety i ich ataki.
+15. Sprawdź skrzynie, sekrety i legendarne nagrody.
+16. Sprawdź kucie przy kowadle.
+17. Sprawdź efekty hiperlegendarnej zbroi.
+18. Sprawdź bossów i przejście z aktu pierwszego do drugiego.
+19. Sprawdź zapis i wczytywanie.
+20. Sprawdź, czy platformówka i LAN nadal się uruchamiają.
+
+Nie deklaruj, że test został zaliczony, jeśli go faktycznie nie uruchomiono.
+
+# KOLEJNOŚĆ WDRAŻANIA
+
+Wdrażaj zmiany w następującej kolejności:
+
+ETAP 1 — Audyt projektu, naprawa menu, Szału i klasy Lady.
+
+ETAP 2 — Kreator postaci, ubrania, malowanie i edytor animacji.
+
+ETAP 3 — Ekwipunek 40-slotowy, wyposażenie, amulety i grafiki.
+
+ETAP 4 — Poziomy, drzewko umiejętności i nowe zdolności.
+
+ETAP 5 — Kowal, materiały, receptury i minigra kucia.
+
+ETAP 6 — Sekretne jaskinie, przedmioty legendarne, pety i skrzynie.
+
+ETAP 7 — Rozbudowa siedmiu rozdziałów, prawdziwi bossowie i finał z Czarnym Krukiem o 5000 HP.
+
+ETAP 8 — Akt II: Zemsta na Czarnym Kruku.
+
+ETAP 9 — Integracja zapisu, testy, naprawa błędów i końcowe dopracowanie.
+
+Zacznij od audytu istniejącego kodu, a następnie od razu wdrażaj ETAP 1. Po jego sprawdzeniu przechodź do następnych etapów. Nie zastępuj implementacji samymi komentarzami, atrapami ani listą przyszłych zadań.
+
+Celem jest rozbudowanie istniejącego Chicken RPG do pełniejszej gry z rozbudowaną kampanią, animacjami, rozwojem postaci, rzemiosłem, sekretami, petami i nowym aktem fabularnym, przy zachowaniu dotychczasowych trybów gry.
