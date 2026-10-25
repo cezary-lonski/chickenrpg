@@ -5,27 +5,33 @@ Kurczak kontra ptasia armia Czarniego Kruka. Gra akcyjna 2D w Godot 4.7 z trybem
 
 ## Tryby gry
 
-- **Wybierz kurczaka** — klasyczna gra platformowa (etapy z boku).
-- **Nowa gra RPG** — kampania fabularna w widoku z góry: 12 rozdziałów + Akt II (6 misji wiosek).
-- **Gra online** — host udostępnia publiczne IP i **KOD**, drugi gracz wpisuje IP hosta oraz kod.
-- **Gra LAN** — host tworzy pokój i dostaje **KOD**, drugi gracz wpisuje kod lub adres IP i wybiera klasę.
+- **Kontynuuj / Nowa gra RPG** — kampania fabularna z widokiem z góry (3 sloty zapisu, klasa blokuje się po wczytaniu zapisu).
+- **Własne fale** — wybierasz potwory, ich liczbę i liczbę fal; pod tym trybem jest też **Arena graczy** (PvP tylko w LAN i online).
+- **Gra online / Gra LAN** — hostujesz z poziomu gry zapisaną postacią, a dołączając wybierasz własną (KOD, a online dodatkowo IP hosta).
+- **Kreator postaci i Tryb Paint** — własny wygląd kurczaka.
+- Klasyczna gra platformowa (etapy z boku) nadal jest dostępna.
 
-## Kampania RPG (12 rozdziałów)
+Grafika to ręcznie generowany **pixel art** (stworzenia, rekwizyty, teren, ikony przedmiotów).
 
-| # | Rozdział | Strefa | Wróg |
-|---|----------|--------|------|
-| I | Nocny najazd | wioska | Hrabia Sroka |
-| II | Trakt do stolicy | trakt | Herold Kruka |
-| III | Płonąca stolica | miasto | Kapitan zdrajców |
-| IV | Królowa w kajdanach | wieża | Dowódca straży |
-| V | Trzy próby | las | Leśny Strażnik |
-| VI | Czarny marsz | trakt | Kruk |
-| VII | Serce kruka | forteca | Czarny Kruk |
-| VIII | Cień w popiele | forteca | Cień Kruka |
-| IX | Zdrada w koronie | miasto | Kanclerz Sępik |
-| X | Pustynny trakt | trakt | Sęp Zwiadowca |
-| XI | Gniazdo nad burzą | las | Wieszczka Sowa |
-| XII | Ostatni świt | forteca | Cesarz Sępów |
+## Kampania RPG
+
+Akt I (rozdziały I–VII), Akt II (mapa świata z wioskami) i finał w twierdzy Kruka, a w środku wyprawa przez stolicę:
+
+| Część | Co się dzieje |
+|-------|---------------|
+| Rozdziały I–VII | Nocny najazd, trakt, płonąca stolica, wieża królowej, trzy próby, czarny marsz, serce Kruka |
+| Akt II | Sześć wiosek pod władzą Kruka, wybory i wdzięczność mieszkańców |
+| Rozdziały VIII–XII | Cień w popiele, zdrada w koronie, pustynny trakt, gniazdo nad burzą, ostatni świt |
+| **Pałac** | 5 pięter z krukami-arystokratami, schody bez ekranu statystyk i sekretne komnaty z animowanymi historyjkami |
+| **Narada wojenna** | animowana historyjka na 6. piętrze, wybór strategii, potem zamach |
+| **Uwolnienie króla** | loch z klawiszami i więźniami, naczelnik więzienia |
+| **Miasto i Zamek Kruka** | generałowie zamiast arystokratów, sala tronowa i obowiązkowy pojedynek z rycerzem |
+
+**Mapa świata**: osady rozmieszczone jak na prawdziwej mapie. Klikasz miejsce, gra wytycza trasę i maszerujesz przez wszystkie etapy; po bitwie wybierasz: idź dalej, zmień cel albo anuluj. **Zwój teleportacji** przenosi tylko do zbadanych miejsc.
+
+**Poziomy trudności**, **powtórki rozdziałów**, **skrytka** w stylu Diablo 2 Resurrected, **pojedynki** z rycerzem (idealnie paruje, może nosić hiperlegendarną zbroję) oraz **legendarne przedmioty wyłącznie z bossów jaskiń**.
+
+**Strażnicy i pety** mają własne życie, nie regenerują go, po śmierci przyjeżdża karetka, a wracają co 5 poziomów. Są też **sierżant Cezary**, **kowal z węglem** do kucia i **kryształy/diamenty** do kupienia.
 
 Każdy rozdział: prolog → rozmowa z dawcą zadania → 3–4 fale wrogów (z przerywnikiem
 z bossem) → rozmowa po bitwie → nagroda i przejście do kolejnego rozdziału.
