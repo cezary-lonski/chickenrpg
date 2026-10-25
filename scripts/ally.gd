@@ -100,7 +100,7 @@ func _damage() -> float:
 	var lv := 1
 	if GameState.has_run():
 		lv = int(GameState.char_profile(String(GameState.run.get("character", "lord"))).get("level", 1))
-	return (10.0 + 1.6 * float(lv)) * (0.7 + 0.3 * GameState.stat("strength"))
+	return (10.0 + 1.6 * float(lv)) * (0.7 + 0.3 * GameState.stat("strength")) * 0.5
 
 func _physics_process(delta: float) -> void:
 	if dying:
@@ -154,7 +154,7 @@ func _find_target() -> Node2D:
 	return best
 
 func _swing(t: Node2D) -> void:
-	_cd = 0.9
+	_cd = 1.4
 	_attack_t = 0.25
 	var hb: Hurtbox = t.get_node_or_null("Hurtbox")
 	if hb == null:

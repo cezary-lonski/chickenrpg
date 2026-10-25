@@ -197,3 +197,9 @@ Przy podniesieniu rzadkości statystyki przedmiotu rosną proporcjonalnie. Kurcz
 
 * **Dużo historyjek**: oprócz pałacu sekretne komnaty ze scenkami są też w sali narad (mapa-obrus Marszałka, długi Kanclerza, Mistrz Szpiegów za kotarą, próba przemówienia królowej), w wieży królowej, lochu, Mieście i Zamku Kruka oraz we wcześniejszych etapach (chata Kasi, wóz Bronka, piekarnia Zosi).
 * **Uzbrojeni wrogowie**: każdy żołnierz wroga ma pasujące do gatunku zbroję, hełm i broń (miecz, włócznia, łuk, buzdygan, laska maga, zbroja królewska). Podczas pojedynku z rycerzem strażnicy i pety nie atakują jego celu.
+
+## Narada, laboratorium, strażnicy
+- **Narada wojenna** to teraz animowana historyjka (16 kwestii: kłótnia Marszałka, Kanclerza i Mistrza Szpiegów, ostatnie ciastko…), po której wybierasz strategię, a w sali pojawiają się zamachowcy.
+- **Laboratorium** jest budynkiem (z kominem i zielonymi oknami) — wejście przez drzwi.
+- **Strażnicy** zadają o połowę mniejsze obrażenia i biją wolniej.
+- Tablica zleceń i skrytka stawiane są w miejscu najdalej od NPC, żeby łatwo rozmawiać (np. ze Strażnikiem Michałem).

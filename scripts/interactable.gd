@@ -180,15 +180,10 @@ func _draw_sign() -> void:
 	_pp(PackedVector2Array([Vector2(-30, -38), Vector2(26, -38), Vector2(32, -48), Vector2(-30, -48)]), Color(0.55, 0.38, 0.2))
 
 func _draw_lab() -> void:
-	_pr(Rect2(-46, -50, 92, 50), Color(0.2, 0.26, 0.3))
-	_pr(Rect2(-46, -50, 92, 8), Color(0.12, 0.16, 0.2))
-	_pr(Rect2(-34, -34, 24, 22), Color(0.08, 0.1, 0.14))
+	# wejście do budynku laboratorium: świecące zielone drzwi i strzałka
 	var pulse := 0.5 + 0.5 * sin(_t * 3.0)
-	# kolby
-	_pp(PackedVector2Array([Vector2(8, -44), Vector2(22, -44), Vector2(30, -24), Vector2(0, -24)]), Color(0.3, 0.9, 1.0, 0.35 + 0.35 * pulse))
-	_pr(Rect2(13, -56, 4, 14), Color(0.7, 0.85, 0.9))
-	_pc(Vector2(-22, -24), 7.0, Color(0.8, 0.4, 1.0, 0.5 + 0.3 * pulse))
-	_pc(Vector2(15, -62 - 6 * pulse), 3.0, Color(0.5, 1.0, 1.0, 0.5))
+	_pc(Vector2(0, -22), 34.0 + 3.0 * pulse, Color(0.3, 1.0, 0.7, 0.12))
+	_pp(PackedVector2Array([Vector2(-8, -64 - 3.0 * pulse), Vector2(8, -64 - 3.0 * pulse), Vector2(0, -76 - 3.0 * pulse)]), Color(0.4, 1.0, 0.8))
 
 func _draw_board() -> void:
 	var wood := Color(0.5, 0.34, 0.2)

@@ -195,6 +195,7 @@ static func _zones() -> Dictionary:
 		], {"who": "Dowódca zbrojowni", "after_wave": 2, "lines": ["Dzwony biją na alarm!", "Zbrojownia, do broni — dosłownie!"]}),
 		"narada_wojenna": {
 			"terrain": "palace", "spawn": Vector2(1100, 1300), "npcs": ["krolowa", "marszalek", "kanclerz_korony", "mistrz_szpiegow", "kowal"], "giver": "krolowa",
+			"council": true,
 			"waves": [{"enemies": [["kruk", 4], ["jastrzab", 3]], "name": "Zamachowcy w sali narad", "elite": true}],
 			"villain": {}, "intro_banner": ["NARADA", "Sala narad królowej"],
 			"intro": [
@@ -480,7 +481,6 @@ static func _extras() -> Dictionary:
 				},
 			},
 			"objectives": [
-				{"id": "narada", "phase": "pre", "type": "talk", "npcs": ["krolowa", "marszalek", "kanclerz_korony", "mistrz_szpiegow"], "text": "Naradź się z królową i jej doradcami", "required": true},
 			],
 		},
 		"uwolnij_krola": {

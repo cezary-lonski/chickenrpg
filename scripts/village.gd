@@ -172,6 +172,9 @@ func _begin_story() -> void:
 	if cave_mode:
 		_begin_cave()
 		return
+	if zone.get("council", false):
+		_begin_council()
+		return
 	await get_tree().create_timer(0.9).timeout
 	if not is_instance_valid(self) or finished:
 		return
@@ -197,6 +200,29 @@ func _with_title(lines: Array, title: String) -> Array:
 			pair[1] = txt
 		out.append(pair)
 	return out
+
+## Narada wojenna to animowana historyjka (zamiast rozmów z NPC), a po niej wybór strategii i zamach.
+func _begin_council() -> void:
+	await get_tree().create_timer(0.9).timeout
+	if not is_instance_valid(self) or finished:
+		return
+	var banner: Array = zone.get("intro_banner", ["", ""])
+	_banner(String(banner[0]), String(banner[1]))
+	await get_tree().create_timer(1.7).timeout
+	if not is_instance_valid(self) or finished:
+		return
+	_dialog_open = true
+	var ui := UiVignette.new()
+	ui.setup("council")
+	ui.on_close.connect(func():
+		_dialog_open = false
+		var qd: Dictionary = ChapterExtras.EXTRAS.get(quest_id, {}).get("dialogs", {}).get("krolowa", {})
+		_open_choice(qd.get("choice", {}), UiKit.ACCENT2, func():
+			_banner("ZAMACH!", "Zamachowcy wpadają do sali narad")
+			Audio.play("gate", 0.8, -4.0)
+			await get_tree().create_timer(1.6).timeout
+			_begin_defense()))
+	Flow.open_dialog(ui)
 
 func _hero_title() -> String:
 	return NpcDB.hero_title(String(GameState.run.get("character", "kurczak")))
@@ -1806,7 +1832,7 @@ func _open_choice_deferred(choice: Dictionary, accent: Color) -> void:
 	await get_tree().process_frame
 	_open_choice(choice, accent)
 
-func _open_choice(choice: Dictionary, accent: Color) -> void:
+func _open_choice(choice: Dictionary, accent: Color, after: Callable = Callable()) -> void:
 	if _dialog_open:
 		return
 	var opts: Array = []
@@ -1840,7 +1866,9 @@ func _open_choice(choice: Dictionary, accent: Color) -> void:
 			var r := _pending_reply
 			_pending_reply = ""
 			await get_tree().process_frame
-			_open_dialog([["", r]], accent))
+			_open_dialog([["", r]], accent, after)
+		elif after.is_valid():
+			after.call())
 	Flow.open_dialog(ui)
 
 var _pending_reply := ""
@@ -1895,10 +1923,24 @@ func _build_lab() -> void:
 	var pos: Variant = SecretDB.lab_for(quest_id)
 	if pos == null:
 		return
+	var bld := Node2D.new()
+	bld.position = pos
+	entities.add_child(bld)
+	bld.add_child(PixelProps.lab_building())
+	var sbody := StaticBody2D.new()
+	sbody.collision_layer = 1
+	sbody.collision_mask = 0
+	var scs := CollisionShape2D.new()
+	var ssh := RectangleShape2D.new()
+	ssh.size = Vector2(210, 80)
+	scs.shape = ssh
+	scs.position = Vector2(0, -50)
+	sbody.add_child(scs)
+	bld.add_child(sbody)
 	var lab := Interactable.new()
 	lab.setup("lab", "Wejdź do laboratorium")
 	lab.radius = 90.0
-	_spot(lab, pos)
+	_spot(lab, pos + Vector2(0, 38))
 	lab.activated.connect(func(_w): Flow.open_lab_overlay())
 
 # ------------------------------------------------------------- LAN: świat wspólny ---
@@ -1993,7 +2035,7 @@ func _build_side() -> void:
 		return
 	_board = Interactable.new()
 	_board.setup("board", "Tablica zleceń")
-	_spot(_board, Vector2(clampf(spawn.x + 230.0, 150.0, VILLAGE.x - 150.0), clampf(spawn.y - 60.0, 160.0, VILLAGE.y - 150.0)))
+	_spot(_board, _free_spot([Vector2(300, -100), Vector2(-300, -100), Vector2(440, -60), Vector2(-440, -60), Vector2(260, -240), Vector2(-260, -240), Vector2(0, -300), Vector2(560, -180), Vector2(-560, -180)], []))
 	_board.activated.connect(func(_w): _open_board())
 	for q in SideDB.active():
 		if String(q["zone"]) == quest_id and not SideDB.is_complete(q):
@@ -2206,7 +2248,8 @@ func _build_stash() -> void:
 	var it := Interactable.new()
 	it.setup("stash", "Otwórz skrytkę")
 	it.accent = Color(1.0, 0.85, 0.4)
-	_spot(it, Vector2(clampf(spawn.x - 240.0, 150.0, VILLAGE.x - 150.0), clampf(spawn.y - 70.0, 160.0, VILLAGE.y - 150.0)))
+	var taken: Array = [_board.position] if _board != null else []
+	_spot(it, _free_spot([Vector2(-300, -100), Vector2(300, -100), Vector2(-440, -60), Vector2(440, -60), Vector2(-260, -240), Vector2(260, -240), Vector2(0, -300), Vector2(-560, -180), Vector2(560, -180)], taken))
 	it.activated.connect(func(_w): Flow.open_stash())
 
 # ------------------------------------------------------------ pojedynek z rycerzem ---
@@ -2274,3 +2317,21 @@ func _end_duel(kd: Dictionary) -> void:
 	await get_tree().create_timer(2.2).timeout
 	if not finished and is_instance_valid(self):
 		_next_wave_after_clear()
+
+## Wybiera miejsce wokół startu najdalej od NPC i innych obiektów (żeby nie zasłaniały rozmów).
+func _free_spot(offsets: Array, taken: Array) -> Vector2:
+	var best: Vector2 = spawn + (offsets[0] as Vector2)
+	var best_d := -1.0
+	for o in offsets:
+		var p := Vector2(clampf(spawn.x + (o as Vector2).x, 150.0, VILLAGE.x - 150.0), clampf(spawn.y + o.y, 160.0, VILLAGE.y - 150.0))
+		var dmin := 1.0e9
+		for e in npcs:
+			var nd: Node2D = e["node"]
+			if is_instance_valid(nd):
+				dmin = minf(dmin, nd.global_position.distance_to(p))
+		for t in taken:
+			dmin = minf(dmin, (t as Vector2).distance_to(p))
+		if dmin > best_d:
+			best_d = dmin
+			best = p
+	return best

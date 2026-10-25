@@ -344,3 +344,29 @@ static func _desk() -> Sprite2D:
 	cv.circle(Vector2(23, -66), 4.0, Color(1.0, 0.8, 0.3), false)
 	cv.finish()
 	return cv.to_sprite()
+
+## Budynek laboratorium: murowany, z zielonymi oknami, kominem z oparami i szyldem z kolbą.
+static func lab_building() -> Sprite2D:
+	var cv := PixelCanvas.new(60, 56, Vector2(-120, -216), CELL)
+	var wall := Color(0.58, 0.6, 0.66)
+	var roof := Color(0.2, 0.38, 0.4)
+	cv.rect(Rect2(-100, -92, 200, 92), wall, true)
+	for i in 10:
+		cv.rect(Rect2(-100 + i * 20, -92, 2, 92), wall.darkened(0.2), false)
+	cv.rect(Rect2(-100, -16, 200, 16), Color(0.4, 0.4, 0.46), false)
+	cv.poly(PackedVector2Array([Vector2(-114, -92), Vector2(114, -92), Vector2(86, -158), Vector2(-86, -158)]), roof, true)
+	for r in 4:
+		cv.line(Vector2(-108 + r * 6, -98 - r * 16), Vector2(108 - r * 6, -98 - r * 16), roof.darkened(0.3), 1.0)
+	cv.rect(Rect2(50, -192, 26, 50), Color(0.45, 0.4, 0.4), true)
+	cv.rect(Rect2(44, -198, 38, 10), Color(0.3, 0.28, 0.3), false)
+	cv.rect(Rect2(-18, -64, 36, 64), Color(0.12, 0.14, 0.18), true)
+	cv.rect(Rect2(-22, -68, 44, 6), Color(0.45, 0.45, 0.52), false)
+	for x in [-72.0, 52.0]:
+		cv.rect(Rect2(x - 4, -78, 38, 38), Color(0.4, 0.4, 0.46), false)
+		cv.rect(Rect2(x, -74, 30, 30), Color(0.45, 0.95, 0.7), false)
+		cv.line(Vector2(x + 15, -74), Vector2(x + 15, -44), Color(0.4, 0.4, 0.46), 1.0)
+	cv.rect(Rect2(-3, -196, 6, 38), Color(0.4, 0.3, 0.2), false)
+	cv.poly(PackedVector2Array([Vector2(-10, -176), Vector2(10, -176), Vector2(20, -148), Vector2(-20, -148)]), Color(0.45, 0.95, 0.7), false)
+	cv.rect(Rect2(-6, -192, 12, 18), Color(0.7, 0.9, 0.85), false)
+	cv.finish()
+	return cv.to_sprite()

@@ -62,6 +62,10 @@ const SCENES := {
 
 ## Scenki sterowane danymi: rekwizyty ("props"), animacja aktora ("anim") i dodatkowe postacie ("extras").
 const SCENES2 := {
+	"council": {"title": "Narada wojenna", "npc": "krolowa", "bg": Color(0.42, 0.32, 0.46), "anim": "preach", "ax": 0.0,
+		"props": [["map_table", 0, 0]], "extras": [["kogut", -300, 0, "marszalek"], ["kogut", 230, 0, "kanclerz_korony"], ["kogut", 370, 0, "mistrz_szpiegow"]],
+		"context": "",
+		"lines": [["", "Okrągły stół pod kopułą wieży. Mapa królestwa, świece, miska ciastek i czworo ptaków, które nie zgadzają się w żadnej sprawie."], ["Królowa Aurelia", "Zebraliśmy się, bo Kruk zagraża królestwu. Proszę o rzeczowe propozycje. Rzeczowe, Marszałku."], ["Marszałek Dziobacz", "Rzeczowo: mam trzy regimenty! Jeden na prawo, jeden na lewo i jeden... gdzieś w kuchni."], ["Kanclerz Piórko", "Regiment w kuchni kosztuje nas pięćset zł miesięcznie. Za zupę."], ["Marszałek Dziobacz", "To bardzo waleczna zupa."], ["Mistrz Szpiegów Cichopiór", "Wiem coś ściśle tajnego. Bardzo tajnego. Tak tajnego, że sam nie wiem co."], ["Królowa Aurelia", "Czyli nic."], ["Mistrz Szpiegów Cichopiór", "Czyli wszystko, Wasza Wysokość, tylko niewidoczne."], ["", "Kanclerz uderza pieczęcią w mapę. Na całym królestwie powstaje atramentowa kleks."], ["Kanclerz Piórko", "Ups. Właśnie zatwierdziłem rzeczkę tam, gdzie była stolica."], ["Marszałek Dziobacz", "To nawet lepiej. Wróg się zgubi."], ["Królowa Aurelia", "Panowie. Kruk ma generałów, fortecę i wielką armię. My mamy obrus, kleksa i jedno ciastko."], ["", "Wszyscy jednocześnie spoglądają na miskę. Ciastko jest jedno. Cztery dzioby sięgają po nie naraz."], ["Mistrz Szpiegów Cichopiór", "Nie wziąłem go. Skąd mam wiedzieć, że ciastka już nie ma?"], ["Królowa Aurelia", "Dość! Ktoś musi się wreszcie potknąć o plan. Niech to będzie ktoś, kto go ma. Bohaterze — słuchamy."], ["", "Cztery pary oczu zwracają się ku tobie. Ciastko, korzystając z okazji, znika. Nikt nie wie jak."]]},
 	"map_cloth": {"title": "Mapa Marszałka", "npc": "marszalek", "bg": Color(0.5, 0.35, 0.3), "anim": "pace", "ax": -140.0,
 		"props": [["map_table", 120, 0], ["soup", 120, -120]],
 		"context": "Przy okrągłym stole Marszałek Dziobacz planuje kampanię na wielkiej mapie. Obok stoi miseczka zupy.",
@@ -204,6 +208,7 @@ func _show_line(i: int) -> void:
 	_speaker.text = String(lines[i][0])
 	_caption.text = String(lines[i][1])
 	_stage.beat = i
+	_stage.speaker = String(lines[i][0])
 
 func _process(delta: float) -> void:
 	_t += delta
@@ -235,6 +240,7 @@ class _Stage extends Node2D:
 	var beat := 0
 	var actor: CreatureVisual
 	var extra: Array = []
+	var speaker := ""
 	const C := 6.0
 
 	func _ready() -> void:
@@ -253,7 +259,10 @@ class _Stage extends Node2D:
 			actor.position = Vector2(float(d.get("ax", 0.0)), 0.0)
 			for e in d.get("extras", []):
 				var w := CreatureVisual.new()
-				w.configure(String(e[0]), {}, 1.5)
+				if e.size() > 3:
+					w.configure(String(NpcDB.get_data(String(e[3])).get("species", e[0])), NpcDB.pal_for(String(e[3])), 1.9)
+				else:
+					w.configure(String(e[0]), {}, 1.5)
 				w.position = Vector2(float(e[1]), float(e[2]))
 				w.z_index = 5
 				add_child(w)
@@ -311,6 +320,17 @@ class _Stage extends Node2D:
 					(w as CreatureVisual).crouch = 0.8
 			"owl":
 				actor.crouch = 0.9
+			"council":
+				var names := ["Marszałek Dziobacz", "Kanclerz Piórko", "Mistrz Szpiegów Cichopiór"]
+				actor.set_facing(1.0)
+				actor.arm = (0.5 + 0.5 * sin(t * 6.0)) if speaker == "Królowa Aurelia" else 0.0
+				actor.lean = 0.0
+				for i in extra.size():
+					var w := extra[i] as CreatureVisual
+					w.set_facing(1.0 if w.position.x < 0.0 else -1.0)
+					var talks: bool = speaker == names[i]
+					w.arm = (0.5 + 0.5 * sin(t * 7.0)) if talks else 0.0
+					w.position.y = -absf(sin(t * 8.0)) * 10.0 if talks else 0.0
 		queue_redraw()
 
 	## Kotara rysowana przed aktorem (Mistrz Szpiegów chowa się za nią).
