@@ -67,6 +67,7 @@ func _show() -> void:
 	_text.text = text
 	_text.modulate = UiKit.TEXT if who != "" else UiKit.DIM
 	_progress.text = "%d / %d" % [_index + 1, _lines.size()]
+	Audio.speak(who, text)
 
 func _advance() -> void:
 	if _closed:
@@ -82,6 +83,7 @@ func _finish() -> void:
 	if _closed:
 		return
 	_closed = true
+	Audio.stop_speaking()
 	on_close.emit()
 
 func _input(event: InputEvent) -> void:

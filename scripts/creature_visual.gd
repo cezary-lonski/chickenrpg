@@ -262,7 +262,7 @@ func _draw() -> void:
 
 	# --- aura wyposażenia (np. fioletowe płomienie hiperlegendarnej zbroi)
 	if String(gear.get("aura", "")) != "":
-		_draw_flame_aura(body_c, body_r, s, String(gear["aura"]) == "gold_flame", float(gear.get("aura_radius", 0.0)))
+		_draw_flame_aura(body_c, body_r, s, String(gear["aura"]) == "gold_flame", float(gear.get("aura_radius", body_r.x * 3.6 if bool(gear.get("aura_big", false)) else 0.0)))
 
 	# --- peleryna / plecak (za postacią)
 	var back_cl: Dictionary = look.get("clothes", {}).get("back", {})

@@ -15,6 +15,8 @@ var _next_voice: int = 0
 var _current_track := ""
 var _rng := RandomNumberGenerator.new()
 var _warm_thread: Thread
+var _voice: Array = []
+var _voice_token := 0
 
 # ------------------------------------------------------------------ tablice ---
 
@@ -90,6 +92,35 @@ func _store_music(track: String, st: AudioStreamWAV) -> void:
 func _exit_tree() -> void:
 	if _warm_thread != null and _warm_thread.is_started():
 		_warm_thread.wait_to_finish()
+
+## Głos postaci w dialogach: seria gdakań z nagrania, wysokość zależy od mówiącego.
+func speak(who: String, text: String) -> void:
+	_voice_token += 1
+	if who == "" or not GameState.setting("sfx"):
+		return
+	if _voice.is_empty():
+		for i in range(1, 13):
+			var st = load("res://audio/voice/gdak_%02d.wav" % i)
+			if st != null:
+				_voice.append(st)
+	if _voice.is_empty():
+		return
+	var token := _voice_token
+	var pitch := 0.75 + float(absi(hash(who)) % 100) / 100.0 * 0.8
+	var n := clampi(int(float(text.length()) / 7.0), 2, 9)
+	for i in n:
+		if token != _voice_token:
+			return
+		var p: AudioStreamPlayer = _pool[_next_voice % _pool.size()]
+		_next_voice += 1
+		p.stream = _voice[_rng.randi_range(0, _voice.size() - 1)]
+		p.pitch_scale = pitch * _rng.randf_range(0.92, 1.1)
+		p.volume_db = -3.0
+		p.play()
+		await get_tree().create_timer(_rng.randf_range(0.16, 0.24), true, false, true).timeout
+
+func stop_speaking() -> void:
+	_voice_token += 1
 
 func play_music(track: String) -> void:
 	if _current_track == track and _music_player.playing:

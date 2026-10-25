@@ -181,11 +181,18 @@ static func gear_visual(equip: Dictionary, meta: Dictionary = {}) -> Dictionary:
 			var aura := String((out[slot] as Dictionary).get("aura", ""))
 			if aura != "":
 				out["aura"] = aura
-	var aid := String(equip.get("armor", ""))
-	if aid != "":
-		var rar := ItemDB.meta_rarity(aid, meta.get("armor", {}))
+	# płomień dużej wielkości: złoty od hiperekstralegendarnego przedmiotu, fioletowy od hiperlegendarnego (dowolny slot)
+	var best := ""
+	for slot in ["weapon", "armor", "helmet", "boots", "amulet", "accessory"]:
+		var iid := String(equip.get(slot, ""))
+		if iid == "" or not ItemDB.has(iid):
+			continue
+		var rar := ItemDB.meta_rarity(iid, meta.get(slot, {}))
 		if rar == "hiperextralegendarny":
-			out["aura"] = "gold_flame"
-		elif rar == "hiperlegendarny":
-			out["aura"] = "purple_flame"
+			best = "gold_flame"
+		elif rar == "hiperlegendarny" and best == "":
+			best = "purple_flame"
+	if best != "":
+		out["aura"] = best
+		out["aura_big"] = true
 	return out

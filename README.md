@@ -209,3 +209,6 @@ Przy podniesieniu rzadkości statystyki przedmiotu rosną proporcjonalnie. Kurcz
 - **Laboratorium** jest budynkiem (z kominem i zielonymi oknami) — wejście przez drzwi.
 - **Strażnicy** zadają o połowę mniejsze obrażenia i biją wolniej.
 - Tablica zleceń i skrytka stawiane są w miejscu najdalej od NPC, żeby łatwo rozmawiać (np. ze Strażnikiem Michałem).
+
+## Płomienie na postaci
+Założony **hiperekstralegendarny** przedmiot (dowolny slot) otacza gracza dużym **złotym płomieniem** (ok. 2 kurczaków), a **hiperlegendarny** — fioletowym. Złoty ma pierwszeństwo.
