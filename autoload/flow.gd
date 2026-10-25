@@ -4,7 +4,6 @@ extends Node
 
 signal screen_changed(name: String)
 
-const STAGE_SCENE := "res://scenes/stage.tscn"
 const VILLAGE_SCENE := "res://scenes/village.tscn"
 
 var current: Node = null
@@ -136,9 +135,6 @@ func _build(screen: String, args: Dictionary) -> void:
 		"menu":
 			current = UiMainMenu.new()
 			Audio.play_music("menu")
-		"select":
-			current = UiSelect.new()
-			(current as UiSelect).on_chosen.connect(_on_character_chosen)
 		"loadout":
 			current = UiLoadout.new()
 			(current as UiLoadout).setup(String(args.get("from", "select")))
@@ -222,11 +218,7 @@ func _back_to(from: String) -> void:
 		"pause":
 			_show_pause()
 		_:
-			goto("select")
-
-func _on_character_chosen(id: String) -> void:
-	GameState.start_run(id, 0)
-	goto("loadout", {"from": "select"})
+			goto("menu")
 
 var pending_replay := -1
 
@@ -367,10 +359,9 @@ func _shop_done() -> void:
 # ------------------------------------------------------------------- scena ---
 
 func _build_stage(index: int) -> void:
-	var scene_path := VILLAGE_SCENE if GameState.is_topdown() else STAGE_SCENE
-	var packed: PackedScene = load(scene_path)
+	var packed: PackedScene = load(VILLAGE_SCENE)
 	if packed == null:
-		push_error("Flow: nie znaleziono %s" % scene_path)
+		push_error("Flow: nie znaleziono %s" % VILLAGE_SCENE)
 		current = UiMainMenu.new()
 		add_to_tree(current)
 		return
@@ -449,9 +440,6 @@ func _on_results_continue() -> void:
 			return
 		# kolejny rozdział tej samej kampanii (bez kończenia runu)
 		goto("game", {"stage": int(GameState.run.get("stage_index", 0))})
-		return
-	if bool(_pending_results.get("last_stage", false)):
-		goto("select")
 		return
 	goto("shop")
 

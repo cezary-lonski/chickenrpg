@@ -79,7 +79,23 @@ func _on_continue() -> void:
 	var last := GameState.last_slot()
 	GameState.set_slot(last)
 	Flow._slot_is_new = false
-	Flow.goto("rpg_select")
+	# kontynuacja: od razu do gry, z zapisaną postacią, jej klasą i poziomem trudności
+	var hero := "lord"
+	var best := -1
+	for cid in ["lord", "lady"]:
+		var cp := GameState.char_profile(cid)
+		var score := int(cp.get("level", 1)) + (1000 if String(cp.get("class", "")) != "" else 0)
+		if score > best:
+			best = score
+			hero = cid
+	var cls := String(GameState.char_profile(hero).get("class", ""))
+	if cls == "" or not ClassDatabase.for_character(hero).has(cls):
+		var avail := ClassDatabase.for_character(hero)
+		cls = String(avail[0]) if avail.size() > 0 else "wojownik"
+	Flow.pending_replay = -1
+	GameState.start_rpg_run("solo", hero, "", false)
+	GameState.set_class(cls)
+	Flow.goto("game", {"stage": int(GameState.run.get("stage_index", 0))})
 
 func _on_waves() -> void:
 	Audio.play("confirm")
