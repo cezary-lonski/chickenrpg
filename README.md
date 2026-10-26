@@ -221,3 +221,8 @@ Założony **hiperekstralegendarny** przedmiot (dowolny slot) otacza gracza duż
 - Przedmioty leżące na ziemi mają własne ikony (wcześniej wszystkie wyglądały jak jajka).
 - Komunikaty na ekranie pojawiają się po kolei, trwają ok. 5 s i gasną powoli; można je wyłączyć w ustawieniach („Komunikaty na ekranie”, domyślnie włączone).
 - **Szpital**: poległy strażnik/pet leży w szpitalu (życie rośnie, wraca po 5 minutach gry). Podgląd: Esc → „Szpital”. W wioskach stoi **budynek szpitala** — za złoto leczy rannych i od razu wypisuje poległych.
+
+## Nowy interfejs (HUD)
+- Życie i energia to **puste w środku kurczaki** przy rzędzie jajek: widać kontur i oko, a wnętrze wypełnia się od dołu.
+- **Dziewięć umiejętności** (klawisze 1–9) jako jajka w równym rzędzie z odstępami, nazwa na jajku, numer pod nim, cooldown zaciemnia jajko.
+- Drewniane panele (statystyki, zadanie, złoto) i komunikaty; pasek szybkich przedmiotów zniknął z ekranu (rzut przedmiotem nadal na klawisz I).

@@ -42,6 +42,22 @@ static func panel(bg: Color = BG, radius: int = 12) -> PanelContainer:
 	p.add_theme_stylebox_override("panel", sb(bg, radius))
 	return p
 
+## Drewniany panel kurnika (ramka z desek) dla HUD.
+static func wood(radius: int = 6) -> PanelContainer:
+	var p := PanelContainer.new()
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.42, 0.29, 0.17, 0.94)
+	s.border_color = Color(0.23, 0.15, 0.08)
+	s.set_border_width_all(3)
+	s.set_corner_radius_all(radius)
+	s.anti_aliasing = false
+	s.content_margin_left = 10
+	s.content_margin_right = 10
+	s.content_margin_top = 7
+	s.content_margin_bottom = 7
+	p.add_theme_stylebox_override("panel", s)
+	return p
+
 static func label(text: String, size: int = 18, color: Color = TEXT, align: int = HORIZONTAL_ALIGNMENT_LEFT) -> Label:
 	var l := Label.new()
 	l.text = text

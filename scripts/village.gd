@@ -1074,7 +1074,7 @@ func _net_send_snapshot() -> void:
 	})
 
 func _net_client_input(delta: float) -> void:
-	for a in ["light_attack", "heavy_attack", "dash", "jump", "special", "throw_item", "block", "skill_1", "skill_2", "skill_3", "skill_4", "skill_5", "skill_6"]:
+	for a in ["light_attack", "heavy_attack", "dash", "jump", "special", "throw_item", "block", "skill_1", "skill_2", "skill_3", "skill_4", "skill_5", "skill_6", "skill_7", "skill_8", "skill_9"]:
 		if Input.is_action_just_pressed(a):
 			_net_pending_actions.append(a)
 	_net_input_acc += delta

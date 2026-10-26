@@ -66,7 +66,7 @@ func _ready() -> void:
 	_btn(g, "Ustawienia", func(): settings_pressed.emit())
 	_btn(g, "Wyjdź do menu", func(): menu_pressed.emit(), UiKit.BAD)
 	v.add_child(UiKit.sep(6))
-	var t := UiKit.label("WASD ruch · Shift sprint · J lekki · K ciężki · L unik · U blok · I rzut · O furia\n1-6 skile · E rozmowa/użycie · Q dziennik · T umiejętności", 13, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	var t := UiKit.label("WASD ruch · Shift sprint · J lekki · K ciężki · L unik · U blok · I rzut · O furia\n1-9 skile · E rozmowa/użycie · Q dziennik · T umiejętności", 13, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER)
 	v.add_child(t)
 	_opts = UiKit.vbox(4)
 	_opts.visible = false

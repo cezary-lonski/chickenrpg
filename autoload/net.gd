@@ -23,7 +23,7 @@ const LAN_PORT_BASE := 26000
 const LAN_PORT_COUNT := 999
 const DISCOVERY_PORT := 25999
 const MAX_PLAYERS := 1  # liczba gości (host + 1 gość)
-const ALLOWED_ACTIONS := ["light_attack", "heavy_attack", "dash", "jump", "special", "throw_item", "block", "skill_1", "skill_2", "skill_3", "skill_4", "skill_5", "skill_6"]
+const ALLOWED_ACTIONS := ["light_attack", "heavy_attack", "dash", "jump", "special", "throw_item", "block", "skill_1", "skill_2", "skill_3", "skill_4", "skill_5", "skill_6", "skill_7", "skill_8", "skill_9"]
 const MAX_QUEUED_ACTIONS := 32
 const ALPHABET := "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"  # bez 0,O,1,I
 

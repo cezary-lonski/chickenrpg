@@ -243,7 +243,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	for a in map:
 		if event.is_action_pressed(a):
 			_input_buf[map[a]] = 0.16
-	for i in range(6):
+	for i in range(GameState.SKILL_SLOTS):
 		if event.is_action_pressed("skill_%d" % (i + 1)):
 			_try_skill(i)
 			return

@@ -534,10 +534,12 @@ func set_class_for(char_id: String, cls: String) -> void:
 		cp["skills"] = ClassDatabase.default_slots(cls)
 	save_game()
 
+const SKILL_SLOTS := 9
+
 func skill_slots_for(char_id: String) -> Array:
 	var cp := char_profile(char_id)
 	var sl: Array = cp.get("skills", [])
-	while sl.size() < 6: sl.append("")
+	while sl.size() < SKILL_SLOTS: sl.append("")
 	cp["skills"] = sl
 	return sl
 
@@ -1048,7 +1050,7 @@ func reset_save() -> void:
 const BIND_ACTIONS := [
 	"move_left", "move_right", "move_up", "move_down", "jump", "light_attack", "heavy_attack",
 	"dash", "block", "throw_item", "special", "sprint", "pause", "equipment", "quest_log", "skill_tree",
-	"skill_1", "skill_2", "skill_3", "skill_4", "skill_5", "skill_6",
+	"skill_1", "skill_2", "skill_3", "skill_4", "skill_5", "skill_6", "skill_7", "skill_8", "skill_9",
 ]
 
 const DEFAULT_KEYS := {
@@ -1059,6 +1061,7 @@ const DEFAULT_KEYS := {
 	"equipment": [KEY_E], "quest_log": [KEY_Q], "skill_tree": [KEY_T],
 	"skill_1": [KEY_1], "skill_2": [KEY_2], "skill_3": [KEY_3],
 	"skill_4": [KEY_4], "skill_5": [KEY_5], "skill_6": [KEY_6],
+	"skill_7": [KEY_7], "skill_8": [KEY_8], "skill_9": [KEY_9],
 }
 
 func _register_default_actions() -> void:

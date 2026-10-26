@@ -100,12 +100,12 @@ func _ready() -> void:
 		var lab := UiKit.label(String(ItemDB.SLOT_NAMES[slot]), 12, UiKit.DIM)
 		lab.custom_minimum_size = Vector2(70, 0)
 		row.add_child(lab)
-	lv.add_child(UiKit.label("SKILE (klawisze 1–6)", 13, UiKit.DIM))
+	lv.add_child(UiKit.label("SKILE (klawisze 1–9)", 13, UiKit.DIM))
 	var srow := UiKit.hbox(4)
 	lv.add_child(srow)
-	for i in range(6):
+	for i in range(GameState.SKILL_SLOTS):
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(CELL, CELL)
+		b.custom_minimum_size = Vector2(CELL - 12, CELL)
 		b.clip_text = true
 		b.add_theme_font_size_override("font_size", 11)
 		b.add_theme_stylebox_override("normal", UiKit.sb(UiKit.BG2, 8))

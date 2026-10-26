@@ -18,6 +18,7 @@ const ACTION_NAMES := {
 	"quest_log": "Dziennik zadań", "skill_tree": "Drzewko umiejętności",
 	"skill_1": "Skill 1", "skill_2": "Skill 2", "skill_3": "Skill 3",
 	"skill_4": "Skill 4", "skill_5": "Skill 5", "skill_6": "Skill 6",
+	"skill_7": "Skill 7", "skill_8": "Skill 8", "skill_9": "Skill 9",
 }
 
 func setup(source: String) -> void:

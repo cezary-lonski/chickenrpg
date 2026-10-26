@@ -6,8 +6,8 @@ extends CanvasLayer
 var stage: Node = null
 var player: Player = null
 
-var hp_bar: UiBar
-var en_bar: UiBar
+var hp_bar            # UiChickenGauge
+var en_bar             # UiChickenGauge
 var stamina_bar: UiBar
 var fury_bar: UiBar
 var xp_bar: UiBar
@@ -29,6 +29,7 @@ var quest_panel: PanelContainer
 var quest_title: Label
 var quest_obj: Label
 var item_row: HBoxContainer
+var _skill_fan: UiSkillFan
 var toast_box: VBoxContainer
 var _boss: Node = null
 var _toasts: Array = []
@@ -40,6 +41,7 @@ func _ready() -> void:
 	player = stage.get("player")
 	if player:
 		_connect_player()
+		_skill_fan.player = player
 	_setup_party()
 	GameState.gold_changed.connect(func(v): gold_label.text = str(v))
 	GameState.cod_changed.connect(func(v): cod_label.text = str(v))
@@ -55,14 +57,15 @@ func _ready() -> void:
 	_rebuild_items()
 
 func _connect_player() -> void:
-	player.health_changed.connect(func(h, m): hp_bar.set_value(h / maxf(1.0, m)); hp_bar.text = "%d / %d" % [int(h), int(m)])
-	player.energy_changed.connect(func(e, m): en_bar.set_value(e / maxf(1.0, m)))
+	player.health_changed.connect(func(h, m): hp_bar.set_value(h / maxf(1.0, m)); hp_bar.text = "%d" % int(h))
+	player.energy_changed.connect(func(e, m): en_bar.set_value(e / maxf(1.0, m)); en_bar.text = "%d" % int(e))
 	player.stamina_changed.connect(func(s, m): stamina_bar.set_value(s / maxf(1.0, m)))
 	player.fury_changed.connect(func(v): fury_bar.set_value(v); fury_bar.text = "FURIA" if v >= 1.0 else "")
 	player.combo_changed.connect(_on_combo)
 	hp_bar.set_value(player.hp / maxf(1.0, player.max_hp))
-	hp_bar.text = "%d / %d" % [int(player.hp), int(player.max_hp)]
+	hp_bar.text = "%d" % int(player.hp)
 	en_bar.set_value(player.energy / maxf(1.0, player.max_energy))
+	en_bar.text = "%d" % int(player.energy)
 	stamina_bar.set_value(player.stamina / maxf(1.0, player.max_stamina))
 	_refresh_char_name()
 
@@ -95,7 +98,7 @@ func _build() -> void:
 	add_child(root)
 
 	# --- lewy górny panel
-	var left := UiKit.panel(Color(0.06, 0.07, 0.1, 0.72), 10)
+	var left := UiKit.wood()
 	left.position = Vector2(14, 12)
 	left.custom_minimum_size = Vector2(340, 0)
 	root.add_child(left)
@@ -112,10 +115,6 @@ func _build() -> void:
 	names.add_child(char_name)
 	names.add_child(UiKit.label("Poziom 1", 12, UiKit.DIM))
 	level_label = names.get_child(1)
-	hp_bar = _bar(250, 16, UiKit.HP)
-	lv.add_child(hp_bar)
-	en_bar = _bar(250, 16, UiKit.EN)
-	lv.add_child(en_bar)
 	var frow := UiKit.hbox(6)
 	lv.add_child(frow)
 	var fl := UiKit.icon(Art.hud_icon("fury", 14, UiKit.FURY), 14)
@@ -123,14 +122,13 @@ func _build() -> void:
 	fury_bar = _bar(120, 12, UiKit.FURY)
 	fury_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	frow.add_child(fury_bar)
-	stamina_bar = _bar(250, 10, UiKit.STAM)
+	stamina_bar = _bar(250, 10, Color(0.93, 0.78, 0.3))
 	lv.add_child(stamina_bar)
 	xp_bar = _bar(250, 8, UiKit.XP)
 	lv.add_child(xp_bar)
-	_build_skills(lv)
 	_effects_label = UiKit.label("", 12, UiKit.ACCENT2)
 	lv.add_child(_effects_label)
-	party_panel = UiKit.panel(UiKit.BG3, 6)
+	party_panel = UiKit.wood(4)
 	party_panel.custom_minimum_size = Vector2(316, 0)
 	party_panel.visible = false
 	lv.add_child(party_panel)
@@ -144,7 +142,7 @@ func _build() -> void:
 	pv.add_child(partner_en)
 
 	# --- prawy górny panel
-	var right := UiKit.panel(Color(0.06, 0.07, 0.1, 0.72), 10)
+	var right := UiKit.wood()
 	right.position = Vector2(1126, 12)
 	right.custom_minimum_size = Vector2(140, 0)
 	root.add_child(right)
@@ -182,13 +180,30 @@ func _build() -> void:
 	combo_label.modulate.a = 0.0
 	root.add_child(combo_label)
 
+	# --- umiejętności: wachlarz jajek na dole
+	_skill_fan = UiSkillFan.new()
+	_skill_fan.position = Vector2(640.0 - _skill_fan.size.x * 0.5, 636)
+	root.add_child(_skill_fan)
+	# kurczaki-mierniki życia i energii tuż przy rzędzie jajek, puste w środku
+	hp_bar = UiChickenGauge.new()
+	hp_bar.set_fill(Color(0.85, 0.28, 0.25))
+	hp_bar.hi_col = Color(0.95, 0.5, 0.45)
+	hp_bar.position = Vector2(_skill_fan.position.x - 116.0, 598)
+	root.add_child(hp_bar)
+	en_bar = UiChickenGauge.new()
+	en_bar.flipped = true
+	en_bar.set_fill(Color(0.29, 0.56, 0.88))
+	en_bar.hi_col = Color(0.56, 0.76, 0.94)
+	en_bar.position = Vector2(_skill_fan.position.x + _skill_fan.size.x + 4.0, 598)
+	root.add_child(en_bar)
+
 	# --- przedmioty
 	item_row = UiKit.hbox(6)
-	item_row.position = Vector2(20, 660)
+	item_row.visible = false   # szybkie przedmioty znikają z ekranu (rzut klawiszem I nadal działa)
 	root.add_child(item_row)
 
 	# --- tracker zadania
-	quest_panel = UiKit.panel(Color(0.06, 0.07, 0.1, 0.72), 10)
+	quest_panel = UiKit.wood()
 	quest_panel.position = Vector2(1000, 100)
 	quest_panel.custom_minimum_size = Vector2(266, 0)
 	quest_panel.visible = false
@@ -205,15 +220,15 @@ func _build() -> void:
 
 	# --- toasty
 	toast_box = UiKit.vbox(4)
-	toast_box.position = Vector2(400, 600)
-	toast_box.custom_minimum_size = Vector2(480, 0)
+	toast_box.position = Vector2(400, 460)
+	toast_box.custom_minimum_size = Vector2(480, 130)
 	toast_box.alignment = BoxContainer.ALIGNMENT_END
 	root.add_child(toast_box)
 
 	# --- podpowiedź o sterowaniu (na starcie etapu)
-	var hint_text := "WSAD ruch · Shift sprint · J/K atak · L unik · U blok · I rzut · O furia · 1-6 skile · E rozmowa · Q dziennik" if GameState.is_topdown() else "A/D ruch · Shift sprint · spacja skok (2x = stamina) · J/K atak · L unik · U blok · I rzut · O furia · 1-6 skile"
+	var hint_text := "WSAD ruch · Shift sprint · J/K atak · L unik · U blok · I rzut · O furia · 1-9 skile · E rozmowa · Q dziennik" if GameState.is_topdown() else "A/D ruch · Shift sprint · spacja skok (2x = stamina) · J/K atak · L unik · U blok · I rzut · O furia · 1-9 skile"
 	var hint := UiKit.label(hint_text, 14, Color(0.85, 0.87, 0.92, 0.8), HORIZONTAL_ALIGNMENT_CENTER)
-	hint.position = Vector2(190, 692)
+	hint.position = Vector2(190, 570)
 	hint.custom_minimum_size = Vector2(900, 0)
 	root.add_child(hint)
 	var ht := create_tween()
@@ -319,7 +334,7 @@ func _update_quest() -> void:
 func _process(delta: float) -> void:
 	if player and is_instance_valid(player):
 		hp_bar.set_value(player.hp / maxf(1.0, player.max_hp))
-		hp_bar.text = "%d / %d" % [int(player.hp), int(player.max_hp)]
+		hp_bar.text = "%d" % int(player.hp)
 		stamina_bar.set_value(player.stamina / maxf(1.0, player.max_stamina))
 	_update_skills()
 	_update_effects()
@@ -353,7 +368,7 @@ func add_toast(text: String, color: Color = UiKit.TEXT) -> void:
 	_toast_queue.append([text, color])
 
 func _show_toast(text: String, color: Color) -> void:
-	var p := UiKit.panel(Color(0.06, 0.07, 0.1, 0.85), 8)
+	var p := UiKit.wood()
 	p.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var l := UiKit.label(text, 17, color, HORIZONTAL_ALIGNMENT_CENTER)
 	p.add_child(l)
