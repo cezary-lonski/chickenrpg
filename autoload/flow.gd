@@ -150,8 +150,6 @@ func _build(screen: String, args: Dictionary) -> void:
 			current = we
 			we.on_close.connect(func(): goto("menu"))
 			we.on_start.connect(_on_waves_start)
-		"achievements":
-			current = UiAchievements.new()
 		"slots":
 			current = UiSlotSelect.new()
 			(current as UiSlotSelect).on_start.connect(_on_slot_start)
@@ -566,6 +564,7 @@ func _show_pause() -> void:
 	pause_ui.restart_pressed.connect(_restart_current)
 	pause_ui.map_pressed.connect(open_travel_map)
 	pause_ui.stash_pressed.connect(open_stash)
+	pause_ui.achievements_pressed.connect(func(): _open_overlay(UiAchievements.new(), false))
 	pause_ui.arena_pressed.connect(func():
 		_hide_pause()
 		GameState.finish_run(false)

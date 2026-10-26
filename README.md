@@ -8,7 +8,7 @@ Kurczak kontra ptasia armia Czarniego Kruka. Gra akcyjna 2D w Godot 4.7 z trybem
 - **Kontynuuj** — od razu wchodzisz do gry zapisaną postacią (bez wyboru klasy i trudności). **Nowa gra RPG** — wybór slotu, bohatera, klasy i poziomu trudności (tylko przy tworzeniu).
 - **Własne fale** — wybierasz potwory, ich liczbę i liczbę fal; pod tym trybem jest też **Arena graczy** (PvP tylko w LAN i online).
 - **Gra online / Gra LAN** — hostujesz z poziomu gry zapisaną postacią, a dołączając wybierasz własną (KOD, a online dodatkowo IP hosta).
-- **Kreator postaci i Tryb Paint** — własny wygląd kurczaka.
+- **Kreator postaci** — własny wygląd kurczaka, a w nim **Kreator animacji**.
 
 Grafika to ręcznie generowany **pixel art** (stworzenia, rekwizyty, teren, ikony przedmiotów).
 
@@ -72,13 +72,11 @@ Maksymalny poziom to **100**. Za każdy poziom dostajesz **1 punkt umiejętnośc
 atrybutów). W drzewku (klawisz **T** lub pauza → *Umiejętności*) umiejętności mają wymagania
 poziomu i poprzednich węzłów, widoczne przed zakupem; kolejne rangi zwiększają skuteczność.
 
-## Kreator postaci i tryb Paint
+## Kreator postaci i kreator animacji
 
 * **Kreator postaci** (menu główne i początek nowej gry): bazowy wygląd, kolory części, ubrania
   (nakrycie głowy, szyja, plecy), nazwa, podgląd. Wygląd jest tylko kosmetyczny i zapisuje się.
-* **Tryb Paint**: malowanie emblematu pikselami (pędzel, gumka, pipeta, wypełnianie, cofanie),
-  kolory części oraz **edytor animacji** (wybór części ciała, klatki, obrót/przesunięcie, odtwarzanie,
-  czas i płynność). Animacje: bezczynność, chodzenie, bieg, atak, umiejętność, obrażenia, śmierć.
+* **Kreator animacji** (przycisk w kreatorze postaci): wybór części ciała, klatki, obrót/przesunięcie, odtwarzanie, czas i płynność. Animacje: bezczynność, chodzenie, bieg, atak, umiejętność, obrażenia, śmierć.
 
 ## Kowal, materiały i kucie
 
@@ -214,6 +212,6 @@ Założony **hiperekstralegendarny** przedmiot (dowolny slot) otacza gracza duż
 
 ## Historyjki zakończeń, osiągnięcia i wyzwania
 - Po bossach i kluczowych rozdziałach grają **animowane historyjki epilogowe**, każda z własną **muzyką generowaną w grze**. Rozdział „Ostatni świt” kończy **finałowa sekwencja** (wieś, koronacja, ostatni zachód słońca).
-- **Osiągnięcia** (menu → „Osiągnięcia”) z dziennikiem odkryć: sekretne komnaty, jaskinie, legendarki, pojedynki, rekord wyzwań.
+- **Osiągnięcia** (Esc → „Osiągnięcia” w grze RPG) z dziennikiem odkryć: sekretne komnaty, jaskinie, legendarki, pojedynki, rekord wyzwań.
 - **Wyzwania — pojedynki**: kolejni rycerze z rosnącą siłą, ranking 5 najlepszych wyników.
 - Raport balansu: [docs/balance_report.md](docs/balance_report.md).

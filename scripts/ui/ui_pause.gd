@@ -15,6 +15,7 @@ signal waves_pressed
 signal arena_pressed
 signal map_pressed
 signal stash_pressed
+signal achievements_pressed
 
 var _panel: PanelContainer
 var _root: Control
@@ -33,29 +34,35 @@ func _ready() -> void:
 	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_root.add_child(_panel)
-	var v := UiKit.vbox(5)
+	var v := UiKit.vbox(3)
 	_panel.add_child(v)
 	v.add_child(UiKit.title("PAUZA", 40))
 	v.add_child(UiKit.sep(6))
 	var first := UiKit.button("Wracaj do walki", 20)
-	first.custom_minimum_size = Vector2(360, 34)
+	first.custom_minimum_size = Vector2(606, 36)
 	first.pressed.connect(func():
 		Audio.play("confirm")
 		resume_pressed.emit())
 	v.add_child(first)
-	_btn(v, "Ekwipunek", func(): loadout_pressed.emit())
-	_attr_button = _btn(v, "Atrybuty", func(): attributes_pressed.emit(), UiKit.ACCENT2)
-	_skills_button = _btn(v, "Umiejętności", func(): skills_pressed.emit(), UiKit.ACCENT2)
-	_btn(v, "Towarzysze", func(): pets_pressed.emit(), UiKit.ACCENT2)
-	_btn(v, "Skrytka", func(): stash_pressed.emit(), UiKit.ACCENT)
-	_btn(v, "Mapa świata (M)", func(): map_pressed.emit(), UiKit.ACCENT2)
-	_btn(v, "Własne fale", func(): waves_pressed.emit(), Color(0.9, 0.5, 1.0))
-	_btn(v, "Arena graczy (LAN / online)", func(): arena_pressed.emit(), Color(1.0, 0.45, 0.4))
-	_btn(v, "Hostuj grę LAN", func(): host_pressed.emit(false), UiKit.GOOD)
-	_btn(v, "Hostuj grę online", func(): host_pressed.emit(true), UiKit.GOOD)
-	_btn(v, "Od nowa", func(): restart_pressed.emit())
-	_btn(v, "Ustawienia", func(): settings_pressed.emit())
-	_btn(v, "Wyjdź do menu", func(): menu_pressed.emit(), UiKit.BAD)
+	var g := GridContainer.new()
+	g.columns = 2
+	g.add_theme_constant_override("h_separation", 6)
+	g.add_theme_constant_override("v_separation", 4)
+	v.add_child(g)
+	_btn(g, "Ekwipunek", func(): loadout_pressed.emit())
+	_attr_button = _btn(g, "Atrybuty", func(): attributes_pressed.emit(), UiKit.ACCENT2)
+	_skills_button = _btn(g, "Umiejętności", func(): skills_pressed.emit(), UiKit.ACCENT2)
+	_btn(g, "Towarzysze", func(): pets_pressed.emit(), UiKit.ACCENT2)
+	_btn(g, "Skrytka", func(): stash_pressed.emit(), UiKit.ACCENT)
+	_btn(g, "Mapa świata (M)", func(): map_pressed.emit(), UiKit.ACCENT2)
+	_btn(g, "Osiągnięcia", func(): achievements_pressed.emit(), UiKit.ACCENT)
+	_btn(g, "Własne fale", func(): waves_pressed.emit(), Color(0.9, 0.5, 1.0))
+	_btn(g, "Arena graczy (LAN / online)", func(): arena_pressed.emit(), Color(1.0, 0.45, 0.4))
+	_btn(g, "Hostuj grę LAN", func(): host_pressed.emit(false), UiKit.GOOD)
+	_btn(g, "Hostuj grę online", func(): host_pressed.emit(true), UiKit.GOOD)
+	_btn(g, "Od nowa", func(): restart_pressed.emit())
+	_btn(g, "Ustawienia", func(): settings_pressed.emit())
+	_btn(g, "Wyjdź do menu", func(): menu_pressed.emit(), UiKit.BAD)
 	v.add_child(UiKit.sep(6))
 	var t := UiKit.label("WASD ruch · Shift sprint · J lekki · K ciężki · L unik · U blok · I rzut · O furia\n1-6 skile · E rozmowa/użycie · Q dziennik · T umiejętności", 13, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER)
 	v.add_child(t)
@@ -100,8 +107,8 @@ func _refresh_attr_button() -> void:
 	_attr_button.disabled = points <= 0
 
 func _btn(parent: Control, text: String, cb: Callable, col: Color = UiKit.ACCENT) -> Button:
-	var b := UiKit.button(text, 20, col)
-	b.custom_minimum_size = Vector2(360, 34)
+	var b := UiKit.button(text, 17, col)
+	b.custom_minimum_size = Vector2(300, 34)
 	b.pressed.connect(func():
 		Audio.play("confirm")
 		cb.call())

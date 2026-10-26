@@ -109,7 +109,7 @@ func _ready() -> void:
 	var undo := UiKit.button("Cofnij", 20, UiKit.ACCENT2)
 	undo.pressed.connect(_undo_last)
 	row.add_child(undo)
-	var paint := UiKit.button("Tryb Paint…", 20, UiKit.ACCENT2)
+	var paint := UiKit.button("Kreator animacji…", 20, UiKit.ACCENT2)
 	paint.pressed.connect(_open_paint)
 	row.add_child(paint)
 	var ok := UiKit.button("Zatwierdź" if then == "menu" else "Zatwierdź i rozpocznij grę", 22)

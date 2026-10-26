@@ -99,7 +99,7 @@ class EmblemCanvas extends Control:
 
 var _app: Dictionary = {}
 var _visual: CreatureVisual
-var _tab := "emblem"
+var _tab := "anim"
 var _box: VBoxContainer
 var _status: Label
 var _canvas: EmblemCanvas
@@ -136,7 +136,7 @@ func _ready() -> void:
 	root.offset_top = 12.0
 	root.offset_bottom = -12.0
 	add_child(root)
-	root.add_child(UiKit.title("TRYB PAINT", 40))
+	root.add_child(UiKit.title("KREATOR ANIMACJI", 40))
 	var body := UiKit.hbox(14)
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(body)
@@ -164,13 +164,6 @@ func _ready() -> void:
 	body.add_child(right)
 	var rv := UiKit.vbox(8)
 	right.add_child(rv)
-	var tabs := UiKit.hbox(6)
-	rv.add_child(tabs)
-	for entry in [["emblem", "Malowanie (piksele)"], ["colors", "Kolory części"], ["anim", "Edytor animacji"]]:
-		var key := String(entry[0])
-		var tb := UiKit.button(String(entry[1]), 17)
-		tb.pressed.connect(func(): _switch_tab(key))
-		tabs.add_child(tb)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -187,14 +180,8 @@ func _ready() -> void:
 	var back := UiKit.button("Wróć", 20)
 	back.pressed.connect(_close)
 	row.add_child(back)
-	var save := UiKit.button("Zapisz wygląd", 20)
-	save.pressed.connect(_save_look)
-	row.add_child(save)
-	var load := UiKit.button("Wczytaj zapis", 20, UiKit.ACCENT2)
-	load.pressed.connect(_reload_look)
-	row.add_child(load)
 	_refresh_preview()
-	_switch_tab("emblem")
+	_switch_tab("anim")
 
 func _process(_delta: float) -> void:
 	if _tab == "anim" and _visual:

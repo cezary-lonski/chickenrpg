@@ -1,5 +1,6 @@
 class_name UiAchievements
 extends Control
+signal on_close
 ## Ekran osiągnięć i dziennika odkryć.
 
 func _ready() -> void:
@@ -28,7 +29,7 @@ func _ready() -> void:
 		list.add_child(_row(d))
 	var back := UiKit.button("Wstecz", 22)
 	back.custom_minimum_size = Vector2(240, 40)
-	back.pressed.connect(func(): Audio.play("back"); Flow.goto("menu"))
+	back.pressed.connect(func(): Audio.play("back"); on_close.emit())
 	var wrap := UiKit.hbox(0)
 	wrap.alignment = BoxContainer.ALIGNMENT_CENTER
 	wrap.add_child(back)
