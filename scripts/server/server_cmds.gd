@@ -31,7 +31,7 @@ const INFO := {
 	"mapa": "/mapa — mapa świata Aktu II",
 	"tp": "/tp <gracz> | <x> <y> (~ = obecna pozycja) | <gracz> <cel> — teleport [admin]",
 	"tphere": "/tphere <gracz> — przenieś gracza do siebie [admin]",
-	"give": "/give <przedmiot|all> [ile] [gracz] — daj przedmiot [admin]",
+	"give": "/give <gracz> <przedmiot|all> [ile] — daj przedmiot [admin]",
 	"heal": "/heal [gracz] — ulecz [admin]",
 	"god": "/god [gracz] — nieśmiertelność [admin]",
 	"kill": "/kill <gracz> — zabij gracza [admin]",
@@ -59,7 +59,7 @@ const INFO := {
 
 ## Rodzaje argumentów komend (podpowiedzi jak w Minecrafcie): player = nick online, item = przedmiot z gry itd.
 const ARGS := {
-	"give": ["item", "num", "player"], "tp": ["player", "player"], "tphere": ["player"], "heal": ["player"], "god": ["player"],
+	"give": ["player", "item", "num"], "tp": ["player", "player"], "tphere": ["player"], "heal": ["player"], "god": ["player"],
 	"kill": ["player"], "kick": ["player"], "ban": ["player"], "w": ["player"], "msg": ["player"], "tell": ["player"], "arena": ["player"], "op": ["player"], "deop": ["player"],
 	"xp": ["player", "num"], "gold": ["player", "num"], "setlevel": ["player", "num"], "class": ["player", "class"],
 	"spawn": ["species", "num"], "boss": ["boss"], "items": ["item"], "rozdzial": ["chapter"], "skill": ["slot", "skill"], "attr": ["attr", "num"], "event": ["ev"], "kia": ["kia"],
@@ -542,27 +542,48 @@ static func _coord(tok: String, cur: float) -> float:
 		return cur + (float(tok.substr(1)) if tok.length() > 1 else 0.0)
 	return float(tok)
 
+## /give <gracz> <przedmiot|all> [ile] — jak w Minecrafcie; kolejność argumentów jest dowolna
+## (liczba = ilość, nazwa przedmiotu albo "all" = towar, reszta = gracz; bez gracza dostaje wywołujący).
 func _give(srv: MmoServer, id: int, args: Array) -> void:
-	if args.is_empty():
-		srv.reply(id, "Użycie: /give <przedmiot|all> [ile] [gracz]  (lista: /items)", "error")
+	var item := ""
+	var count := 1
+	var who := ""
+	for a in args:
+		var s := String(a)
+		if s.is_valid_int() and item != "":
+			count = clampi(int(s), 1, 999)
+		elif item == "" and (s == "all" or ItemDB.has(s)):
+			item = s
+		elif who == "":
+			who = s
+		else:
+			srv.reply(id, "Nie znam przedmiotu „%s” (lista: /items). Użycie: /give <gracz> <przedmiot|all> [ile]" % s, "error")
+			return
+	if item == "":
+		srv.reply(id, "Użycie: /give <gracz> <przedmiot|all> [ile]  (lista: /items) — nie znam przedmiotu%s." % ((" „%s”" % who) if who != "" else ""), "error")
 		return
-	var n := clampi(int(args[1]) if args.size() > 1 and args[1].is_valid_int() else 1, 1, 999)
-	var tgt := _target(srv, id, args, 2)
-	if tgt < 0:
+	var tgt := id
+	if who != "":
+		tgt = srv.find_peer(who)
+		if tgt < 0:
+			srv.reply(id, "Nie ma gracza „%s” online." % who, "error")
+			return
+	elif id == 0:
+		srv.reply(id, "Z konsoli podaj gracza: /give <gracz> <przedmiot|all> [ile]", "error")
 		return
 	var rec: Dictionary = srv.peers[tgt]["rec"]
-	if args[0] == "all":
+	if item == "all":
 		var added := 0
 		for iid in ItemDB.LIST:
 			if ServerChars.inv_add(rec, String(iid), 1) > 0:
 				added += 1
 		srv.reply(id, "Dodano %d rodzajów przedmiotów (plecak ma 40 miejsc)." % added)
 	else:
-		var got := ServerChars.inv_add(rec, args[0], n)
+		var got := ServerChars.inv_add(rec, item, count)
 		if got < 1:
-			srv.reply(id, "Nieznany przedmiot albo plecak pełny.", "error")
+			srv.reply(id, "Plecak pełny.", "error")
 			return
-		srv.reply(id, "Dano %s x%d dla %s." % [args[0], got, srv.peers[tgt]["name"]])
+		srv.reply(id, "Dano %s x%d dla %s." % [item, got, srv.peers[tgt]["name"]])
 	srv.chars.mark_dirty()
 	srv.refresh_loadout(tgt)
 
