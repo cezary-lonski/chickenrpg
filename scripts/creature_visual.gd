@@ -137,9 +137,10 @@ func _process(delta: float) -> void:
 		_walk += delta * rate
 	else:
 		_walk = lerpf(_walk, roundf(_walk / PI) * PI, 0.2)
-	if grounded and not dead:
+	var lively := GameState.setting("animations")
+	if grounded and not dead and lively:
 		_bob += delta * 2.0
-	# mruganie
+	# mruganie (wyłączone razem z animacjami)
 	_blink_t -= delta
 	if _blink_t <= 0.0:
 		_blink = 0.09
@@ -147,7 +148,7 @@ func _process(delta: float) -> void:
 	if _blink > 0.0:
 		_blink -= delta
 	# spojrzenie: lekki zygzak głowy
-	_look = sin(_bob * 0.7 + idle_seed) * 0.6 + sin(_bob * 1.9) * 0.25
+	_look = (sin(_bob * 0.7 + idle_seed) * 0.6 + sin(_bob * 1.9) * 0.25) if lively else 0.0
 	flash_t = maxf(0.0, flash_t - delta)
 	hurt_t = maxf(0.0, hurt_t - delta)
 	_rb_t -= delta
@@ -254,14 +255,15 @@ func _draw() -> void:
 		return
 
 	# --- aura szału bojowego
-	if berserk > 0.01:
+	var auras_on := GameState.setting("auras")
+	if berserk > 0.01 and auras_on:
 		_draw_rage(body_c, body_r, s, berserk)
 
-	if support > 0.02:
+	if support > 0.02 and auras_on:
 		_draw_support(body_c, body_r, s)
 
 	# --- aura wyposażenia (np. fioletowe płomienie hiperlegendarnej zbroi)
-	if String(gear.get("aura", "")) != "":
+	if auras_on and String(gear.get("aura", "")) != "":
 		_draw_flame_aura(body_c, body_r, s, String(gear["aura"]) == "gold_flame", float(gear.get("aura_radius", body_r.x * 3.6 if bool(gear.get("aura_big", false)) else 0.0)))
 
 	# --- peleryna / plecak (za postacią)

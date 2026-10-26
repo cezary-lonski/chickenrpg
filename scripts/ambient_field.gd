@@ -86,6 +86,9 @@ func _new_part(initial: bool = false) -> Dictionary:
 	}
 
 func _process(delta: float) -> void:
+	visible = GameState.setting("animations")
+	if not visible:
+		return
 	var t := Time.get_ticks_msec() * 0.001
 	for i in _parts.size():
 		var d: Dictionary = _parts[i]

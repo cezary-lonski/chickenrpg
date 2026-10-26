@@ -232,3 +232,6 @@ Założony **hiperekstralegendarny** przedmiot (dowolny slot) otacza gracza duż
 - Z walk, skrzyń i jaskiń wypadają co najwyżej **legendarne** przedmioty. Hiperlegendarne i hiperekstralegendarne da się zdobyć tylko przez **runy**.
 - Sklep w trybie platformowym sprzedaje wyłącznie przedmioty za złoto i poniżej legendarnych (bez „gratisowych” legendarek).
 - Menu startowe ma pixelartowe tło (świt, zamek, wioska), a ikoną aplikacji jest logo Chicken RPG.
+
+## Ustawienia grafiki
+W ustawieniach (i w menu Esc) są przełączniki: **Animacje** (oddychanie, mruganie, cząstki w tle) i **Aury i płomienie** (aury ekwipunku, szału i wsparcia). Oba domyślnie włączone.

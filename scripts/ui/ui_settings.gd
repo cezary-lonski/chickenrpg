@@ -54,7 +54,7 @@ func _ready() -> void:
 	var lv := UiKit.vbox(8)
 	left.add_child(lv)
 	lv.add_child(UiKit.label("DŹWIĘK I OBRAZ", 18, UiKit.ACCENT))
-	for entry in [["music", "Muzyka"], ["sfx", "Dźwięki"], ["shake", "Trzęsienie ekranu"], ["toasts", "Komunikaty na ekranie"], ["hitstop", "Spowolnienie przy ataku"]]:
+	for entry in [["music", "Muzyka"], ["sfx", "Dźwięki"], ["shake", "Trzęsienie ekranu"], ["toasts", "Komunikaty na ekranie"], ["hitstop", "Spowolnienie przy ataku"], ["animations", "Animacje (oddychanie, mruganie, tło)"], ["auras", "Aury i płomienie"]]:
 		var key := String(entry[0])
 		var b := UiKit.button("", 18)
 		b.custom_minimum_size = Vector2(320, 40)

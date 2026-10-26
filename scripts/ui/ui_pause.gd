@@ -71,7 +71,7 @@ func _ready() -> void:
 	_opts = UiKit.vbox(4)
 	_opts.visible = false
 	v.add_child(_opts)
-	for entry in [["music", "Muzyka"], ["sfx", "Dźwięki"], ["shake", "Trzęsienie"], ["toasts", "Komunikaty"], ["hitstop", "Spowolnienie ataku"]]:
+	for entry in [["music", "Muzyka"], ["sfx", "Dźwięki"], ["shake", "Trzęsienie"], ["toasts", "Komunikaty"], ["hitstop", "Spowolnienie ataku"], ["animations", "Animacje"], ["auras", "Aury"]]:
 		var key := String(entry[0])
 		var b := UiKit.button("", 16)
 		b.text = "%s: %s" % [String(entry[1]), "TAK" if GameState.setting(key) else "NIE"]
