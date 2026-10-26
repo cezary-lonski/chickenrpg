@@ -415,8 +415,14 @@ func _rpc_flow(event: String, data: Dictionary) -> void:
 	flow_received.emit(event, data)
 
 ## Zdarzenia świata (LAN): gość → host: flagi fabuły, żądania akcji; host → goście: nagrody, jaskinia.
-const WORLD_UP := ["flag", "begin_defense", "finish_story", "enter_cave", "leave_cave"]
-const WORLD_DOWN := ["rewards", "cave_cleared"]
+const WORLD_UP := ["flag", "begin_defense", "finish_story", "enter_cave", "leave_cave", "arena_invite", "arena_reply"]
+const WORLD_DOWN := ["rewards", "cave_cleared", "arena_invite", "arena_reply"]
+
+## Zaproszenie na arenę: tylko nazwa zapraszającego (przycięta); odpowiedź: tylko tak/nie.
+func _clean_arena(event_name: String, data: Dictionary) -> Dictionary:
+	if event_name == "arena_invite":
+		return {"from": String(data.get("from", "Gracz")).left(24)}
+	return {"accept": bool(data.get("accept", false))}
 
 func send_world_event(event_name: String, data: Dictionary = {}) -> void:
 	if is_host or not has_peer() or event_name not in WORLD_UP:
@@ -434,6 +440,8 @@ func _rpc_world_up(event_name: String, data: Dictionary) -> void:
 		if fname == "" or fname.length() > 64:
 			return
 		data = {"name": fname, "value": bool(data.get("value", true))}
+	elif event_name in ["arena_invite", "arena_reply"]:
+		data = _clean_arena(event_name, data)
 	else:
 		data = {}
 	world_event_received.emit(event_name, data)
@@ -446,6 +454,8 @@ func broadcast_world_event(event_name: String, data: Dictionary = {}) -> void:
 @rpc("authority", "call_remote", "reliable")
 func _rpc_world_down(event_name: String, data: Dictionary) -> void:
 	if event_name in WORLD_DOWN:
+		if event_name in ["arena_invite", "arena_reply"]:
+			data = _clean_arena(event_name, data)
 		world_event_received.emit(event_name, data)
 
 func send_input(move: Vector2, held: Dictionary, actions: Array) -> void:

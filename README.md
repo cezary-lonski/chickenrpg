@@ -238,3 +238,8 @@ W ustawieniach (i w menu Esc) są przełączniki: **Animacje** (oddychanie, mrug
 
 ## Import zapisu
 Menu → „Nowa gra RPG” → przy każdym slocie jest przycisk **Importuj zapis…**: wybierasz plik `chicken_brawl_save_*.json` (np. skopiowany z innego komputera lub folderu), a gra wczytuje go do tego slotu i ustawia go jako ostatni, więc „Kontynuuj” od razu go otwiera. Przy istniejącym slocie trzeba potwierdzić nadpisanie, a stary zapis zostaje jako kopia `*.bak.json`.
+
+## Menu startowe i gra wieloosobowa
+- Menu startowe (układ z logo po lewej) ma **animowane pikselowe tło**: płyną chmury, lecą ptaki, powiewa flaga na zamku, dymi komin, błyska rzeka i latają świetliki (można wyłączyć w ustawieniach → „Animacje”).
+- **Gry wieloosobowej (LAN) nie ma w menu startowym.** Otwierasz ją w trakcie gry: Esc → **Multiplayer (LAN)** (hostowanie albo dołączanie z kodem).
+- **Arena** też jest tylko w menu Esc, w grze wieloosobowej: Esc → **Arena: zaproś gracza**. Wybierasz gracza, on dostaje zaproszenie i się **zgadza albo odrzuca**. Po zgodzie host przełącza obu graczy w arenę 1 na 1. Tryb online został wyłączony z menu.

@@ -1,14 +1,15 @@
 ﻿class_name UiMainMenu
 extends Control
+## Menu startowe (układ B): logo po lewej na animowanym pikselowym tle, przyciski na przyciemnionym pasie po prawej.
+## Gra wieloosobowa (LAN) i arena nie są tu dostępne — otwiera się je z menu Esc w trakcie gry.
 
 var _continue_btn: Button
-var _options: PanelContainer
 var stats_row: Label
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	UiKit.full(self)
-	# tło startowe: pixelartowy krajobraz (świt, zamek, wioska), skalowany bez wygładzania
+	# tło: pixelartowy krajobraz (świt, zamek, wioska), skalowany bez wygładzania, z animacją na wierzchu
 	var bg := TextureRect.new()
 	bg.texture = load("res://menu_bg.png")
 	bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -17,75 +18,86 @@ func _ready() -> void:
 	UiKit.full(bg)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	add_child(UiKit.dim(Color(0.04, 0.03, 0.08, 0.28)))
-	var center := UiKit.vbox(2)
-	center.alignment = BoxContainer.ALIGNMENT_CENTER
-	UiKit.full(center)
-	add_child(center)
-	center.add_child(UiKit.title("CHICKEN BRAWL", 60))
-	center.add_child(UiKit.label("jesteś kurczakiem, oni są ptakami", 20, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
-	center.add_child(UiKit.sep(12))
-	_continue_btn = UiKit.button("Kontynuuj", 20)
+	var anim := UiMenuAnim.new()
+	UiKit.full(anim)
+	add_child(anim)
+	# przyciemniony pas pod menu
+	var strip := ColorRect.new()
+	strip.color = Color(0.05, 0.04, 0.08, 0.62)
+	strip.position = Vector2(820, 0)
+	strip.size = Vector2(460, 720)
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(strip)
+	# logo
+	var logo := TextureRect.new()
+	logo.texture = load("res://logo.png")
+	logo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_SCALE
+	logo.position = Vector2(40, 30)
+	logo.size = Vector2(400, 400)
+	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(logo)
+
+	_continue_btn = _wood_btn("Kontynuuj", Rect2(860, 56, 380, 66), true)
 	_continue_btn.pressed.connect(_on_continue)
-	center.add_child(_wrap(_continue_btn))
-	center.add_child(UiKit.sep(0))
-	var brpg := UiKit.button("Nowa gra RPG", 20)
-	brpg.pressed.connect(func(): Audio.play("confirm"); Flow.goto("slots"))
-	center.add_child(_wrap(brpg))
-	center.add_child(UiKit.sep(0))
-	var bplat := UiKit.button("Tryb platformowy", 20)
-	bplat.pressed.connect(func(): Audio.play("confirm"); Flow.goto("select"))
-	center.add_child(_wrap(bplat))
-	center.add_child(UiKit.sep(0))
-	var bwaves := UiKit.button("Własne fale", 20)
-	bwaves.pressed.connect(_on_waves)
-	center.add_child(_wrap(bwaves))
-	center.add_child(UiKit.sep(0))
-	var bchal := UiKit.button("Wyzwania — pojedynki", 20, Color(1.0, 0.75, 0.3))
-	bchal.pressed.connect(func(): Audio.play("confirm"); Flow.start_challenge())
-	center.add_child(_wrap(bchal))
-	center.add_child(UiKit.sep(0))
-	var barena := UiKit.button("Arena graczy", 20, Color(1.0, 0.45, 0.4))
-	barena.pressed.connect(func(): Audio.play("confirm"); Flow.goto("lan", {"arena": true}))
-	center.add_child(_wrap(barena))
-	center.add_child(UiKit.sep(0))
-	var bcreator := UiKit.button("Kreator Postaci", 20)
-	bcreator.pressed.connect(func(): Audio.play("confirm"); Flow.goto("creator"))
-	center.add_child(_wrap(bcreator))
-	center.add_child(UiKit.sep(0))
-	var bonline := UiKit.button("Gra Online", 20)
-	bonline.pressed.connect(func(): Audio.play("confirm"); Flow.goto("online"))
-	center.add_child(_wrap(bonline))
-	center.add_child(UiKit.sep(0))
-	var blan := UiKit.button("Gra LAN", 20)
-	blan.pressed.connect(func(): Audio.play("confirm"); Flow.goto("lan"))
-	center.add_child(_wrap(blan))
-	center.add_child(UiKit.sep(0))
-	var bset := UiKit.button("Ustawienia", 20)
-	bset.pressed.connect(func(): Audio.play("select"); Flow.goto("settings"))
-	center.add_child(_wrap(bset))
-	center.add_child(UiKit.sep(0))
-	var b4 := UiKit.button("Wyjście", 20)
-	b4.pressed.connect(_on_quit)
-	center.add_child(_wrap(b4))
-	center.add_child(UiKit.sep(14))
-	stats_row = UiKit.label("", 14, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER)
-	center.add_child(stats_row)
+	_wood_btn("Nowa gra RPG", Rect2(860, 134, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.goto("slots"))
+	_wood_btn("Tryb platformowy", Rect2(860, 194, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.goto("select"))
+	_wood_btn("Własne fale", Rect2(860, 254, 380, 50)).pressed.connect(_on_waves)
+	_wood_btn("Wyzwania — pojedynki", Rect2(860, 314, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.start_challenge())
+	_wood_btn("Kreator postaci", Rect2(860, 392, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.goto("creator"))
+	_wood_btn("Ustawienia", Rect2(860, 452, 184, 46), false, 19).pressed.connect(func(): Audio.play("select"); Flow.goto("settings"))
+	_wood_btn("Wyjście", Rect2(1056, 452, 184, 46), false, 19).pressed.connect(_on_quit)
+
+	stats_row = UiKit.label("", 15, Color(0.95, 0.9, 0.78))
+	stats_row.position = Vector2(862, 676)
+	add_child(stats_row)
+	var hint := UiKit.label("Gra wieloosobowa (LAN) i arena: menu Esc w trakcie gry", 12, Color(0.8, 0.76, 0.66))
+	hint.position = Vector2(862, 530)
+	add_child(hint)
 	GameState.profile_changed.connect(_refresh)
 	_refresh()
 	Audio.play_music("menu")
-	if _continue_btn: _continue_btn.grab_focus()
+	if _continue_btn and _continue_btn.visible:
+		_continue_btn.grab_focus()
 
-func _wrap(c: Control) -> Control:
-	var cc := HBoxContainer.new()
-	cc.alignment = BoxContainer.ALIGNMENT_CENTER
-	cc.add_child(c)
-	c.custom_minimum_size = Vector2(320, 38)
-	return cc
+func _wood(bgc: Color, border: Color, bw: int = 3) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bgc
+	s.border_color = border
+	s.set_border_width_all(bw)
+	s.border_width_top = bw + 1
+	s.set_corner_radius_all(3)
+	s.anti_aliasing = false
+	s.shadow_color = Color(0, 0, 0, 0.35)
+	s.shadow_offset = Vector2(0, 3)
+	return s
+
+func _wood_btn(text: String, r: Rect2, main := false, size := 22) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.position = r.position
+	b.size = r.size
+	b.add_theme_font_size_override("font_size", size + (4 if main else 0))
+	b.add_theme_color_override("font_color", Color(0.97, 0.93, 0.84))
+	b.add_theme_color_override("font_hover_color", Color(1.0, 0.86, 0.45))
+	b.add_theme_color_override("font_focus_color", Color(1.0, 0.86, 0.45))
+	b.add_theme_color_override("font_pressed_color", Color.WHITE)
+	b.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.03, 0.9))
+	b.add_theme_constant_override("outline_size", 3)
+	var base := Color(0.72, 0.38, 0.16) if main else Color(0.35, 0.24, 0.13)
+	b.add_theme_stylebox_override("normal", _wood(base, Color(0.17, 0.11, 0.06)))
+	b.add_theme_stylebox_override("hover", _wood(base.lightened(0.14), Color(0.95, 0.75, 0.3)))
+	b.add_theme_stylebox_override("pressed", _wood(base.darkened(0.15), Color(0.17, 0.11, 0.06)))
+	b.add_theme_stylebox_override("focus", _wood(base.lightened(0.08), Color(0.95, 0.75, 0.3)))
+	add_child(b)
+	return b
 
 func _refresh() -> void:
-	if stats_row: stats_row.text = "Złoto: %d   COD: %d" % [GameState.gold(), GameState.cod()]
-	if _continue_btn: _continue_btn.visible = GameState.slot_exists_any()
+	if stats_row:
+		stats_row.text = "Złoto %d  ·  COD %d" % [GameState.gold(), GameState.cod()]
+	if _continue_btn:
+		_continue_btn.visible = GameState.slot_exists_any()
 
 func _on_continue() -> void:
 	Audio.play("confirm")

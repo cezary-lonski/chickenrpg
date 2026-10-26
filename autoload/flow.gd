@@ -27,6 +27,7 @@ func _ready() -> void:
 	Net.start_received.connect(_on_net_start)
 	Net.game_started_received.connect(_on_net_game_started)
 	Net.flow_received.connect(_on_net_flow)
+	Net.world_event_received.connect(_on_arena_event)
 	Net.join_failed.connect(_on_net_join_failed)
 	GameState.level_up.connect(_on_level_up)
 	await get_tree().process_frame
@@ -588,8 +589,7 @@ func _show_pause() -> void:
 	pause_ui.achievements_pressed.connect(func(): _open_overlay(UiAchievements.new(), false))
 	pause_ui.arena_pressed.connect(func():
 		_hide_pause()
-		GameState.finish_run(false)
-		goto("lan", {"arena": true}))
+		open_arena_invite())
 	pause_ui.waves_pressed.connect(func():
 		_hide_pause()
 		GameState.finish_run(false)
@@ -721,3 +721,83 @@ func _hide_overlay() -> void:
 	if overlay and is_instance_valid(overlay):
 		overlay.queue_free()
 	overlay = null
+
+# ------------------------------------------------------------ arena: zaproszenia ---
+
+var _arena_waiting := false
+
+## Z menu Esc (tylko w grze wieloosobowej LAN): wybierz gracza i wyślij mu zaproszenie na arenę.
+func open_arena_invite() -> void:
+	if not Net.has_peer() or GameState.rpg_mode_str() != "lan":
+		GameState.toast.emit("Arena jest dostępna w grze wieloosobowej: Esc → Multiplayer (LAN).", UiKit.BAD)
+		return
+	if bool(GameState.rpg.get("arena", false)):
+		GameState.toast.emit("Arena już trwa.", UiKit.BAD)
+		return
+	var other := "Gracz 2"
+	if Net.is_host:
+		other = String(Net.first_client_info().get("name", "Gracz 2"))
+	else:
+		other = "Host"
+	var ui := UiChoice.new()
+	ui.setup("Arena 1 na 1. Wybierz gracza, którego zaprosisz — musi się zgodzić.", [{"text": other}, {"text": "Anuluj"}], Color(1.0, 0.45, 0.4))
+	ui.chosen.connect(func(i: int):
+		if i == 0:
+			_send_arena_invite())
+	open_dialog(ui)
+
+func _send_arena_invite() -> void:
+	var d := {"from": String(CharacterDB.get_data(GameState.current_character_id()).get("title", Net.my_name))}
+	if Net.is_host:
+		Net.broadcast_world_event("arena_invite", d)
+	else:
+		Net.send_world_event("arena_invite", d)
+	_arena_waiting = true
+	GameState.toast.emit("Wysłano zaproszenie na arenę. Czekasz na odpowiedź…", UiKit.ACCENT)
+
+func _send_arena_reply(accept: bool) -> void:
+	var d := {"accept": accept}
+	if Net.is_host:
+		Net.broadcast_world_event("arena_reply", d)
+	else:
+		Net.send_world_event("arena_reply", d)
+
+func _on_arena_event(event_name: String, data: Dictionary) -> void:
+	if not Net.has_peer():
+		return
+	match event_name:
+		"arena_invite":
+			var who := String(data.get("from", "Gracz"))
+			var ui := UiChoice.new()
+			ui.setup("%s zaprasza cię na arenę (1 na 1). Przyjmujesz zaproszenie?" % who, [{"text": "Przyjmij"}, {"text": "Odrzuć"}], Color(1.0, 0.45, 0.4))
+			ui.chosen.connect(func(i: int):
+				var ok := i == 0
+				_send_arena_reply(ok)
+				if ok and Net.is_host:
+					# host rozpoczyna arenę dla obu graczy
+					await get_tree().process_frame
+					_start_arena()
+				elif not ok:
+					GameState.toast.emit("Odrzucono zaproszenie na arenę.", UiKit.DIM))
+			open_dialog(ui)
+		"arena_reply":
+			if not _arena_waiting:
+				return
+			_arena_waiting = false
+			if bool(data.get("accept", false)):
+				GameState.toast.emit("Zaproszenie przyjęte! Arena startuje…", UiKit.GOOD)
+				if Net.is_host:
+					await get_tree().create_timer(0.6).timeout
+					_start_arena()
+			else:
+				GameState.toast.emit("Gracz odrzucił zaproszenie na arenę.", UiKit.BAD)
+
+## Host przełącza obie strony w tryb areny; goście dostają to z komunikatu „game_started”.
+func _start_arena() -> void:
+	if not Net.is_host or not Net.has_peer():
+		return
+	_hide_overlay()
+	_hide_pause()
+	GameState.rpg["arena"] = true
+	_net_game_built = false
+	goto("game", {"stage": int(GameState.run.get("stage_index", 0))})
