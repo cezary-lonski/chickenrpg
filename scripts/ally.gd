@@ -100,7 +100,8 @@ func _damage() -> float:
 	var lv := 1
 	if GameState.has_run():
 		lv = int(GameState.char_profile(String(GameState.run.get("character", "lord"))).get("level", 1))
-	return (10.0 + 1.6 * float(lv)) * (0.7 + 0.3 * GameState.stat("strength")) * 0.5
+	# strażnicy wspierają, nie grają za gracza: słabe, wolne uderzenia (poziom liczy się tylko w małym stopniu)
+	return (6.0 + 0.7 * float(lv)) * (0.8 + 0.2 * GameState.stat("strength")) * 0.5
 
 func _physics_process(delta: float) -> void:
 	if dying:
@@ -137,7 +138,7 @@ func _physics_process(delta: float) -> void:
 
 func _find_target() -> Node2D:
 	var best: Node2D = null
-	var bd := 460.0
+	var bd := 300.0
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(e) or not (e is Node2D):
 			continue
@@ -154,13 +155,18 @@ func _find_target() -> Node2D:
 	return best
 
 func _swing(t: Node2D) -> void:
-	_cd = 1.4
+	_cd = 2.2
 	_attack_t = 0.25
 	var hb: Hurtbox = t.get_node_or_null("Hurtbox")
 	if hb == null:
 		return
+	var dmg := _damage()
+	if "is_boss" in t and bool(t.get("is_boss")):
+		dmg *= 0.25   # bossów ma bić gracz, nie straż
+	elif "elite" in t and bool(t.get("elite")):
+		dmg *= 0.5
 	hb.take_hit({
-		"damage": _damage(), "kb": (t.global_position - global_position).normalized() * 160.0,
+		"damage": dmg, "kb": (t.global_position - global_position).normalized() * 160.0,
 		"hitstun": 0.18, "launch": false, "crit": false, "team": "player", "source": owner_player, "kind": "ally",
 	})
 	Fx.slash(t.global_position + Vector2(0, -30), signf(t.global_position.x - global_position.x), Color(0.8, 0.9, 1.0, 0.8), 0.9)
