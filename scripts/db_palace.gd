@@ -496,7 +496,7 @@ static func _extras() -> Dictionary:
 				},
 			},
 			"objectives": [
-				{"id": "swiadkowie", "phase": "pre", "type": "talk", "npcs": ["klawisz", "wiezien_bajarz"], "text": "Porozmawiaj ze strażnikiem i więźniem", "required": true},
+				{"id": "swiadkowie", "phase": "pre", "type": "talk", "npcs": ["wiezien_bajarz"], "text": "Porozmawiaj z więźniem Bajarzem", "required": true},
 				{"id": "krol", "phase": "post", "type": "free", "kind": "cage", "label": "Uwolnij Króla", "count": 1, "positions": [Vector2(1100, 420)], "text": "Podejdź do celi i uwolnij Króla", "required": true,
 					"reward": {"gold": 300, "xp": 250, "items": {"zwoj_teleportacji": 1}}},
 			],
@@ -518,7 +518,7 @@ static func _extras() -> Dictionary:
 				},
 			},
 			"objectives": [
-				{"id": "przewodnik", "phase": "pre", "type": "talk", "npcs": ["szpieg_piorko", "straganiarz_kruczy", "babcia_wrona"], "text": "Wypytaj mieszkańców o drogę do zamku", "required": true},
+				{"id": "przewodnik", "phase": "pre", "type": "talk", "npcs": ["straganiarz_kruczy", "babcia_wrona"], "text": "Wypytaj mieszkańców o drogę do zamku", "required": true},
 				{"id": "pieczecie", "phase": "pre", "type": "collect", "kind": "document", "label": "Podnieś pieczęć miejską", "count": 2, "positions": [A, J], "text": "Zbierz pieczęcie przepustkowe (opcjonalnie)", "required": false,
 					"clues": ["Pieczęć: czarny kruk na szarym tle.", "Pieczęć: przepustka dla gołębi pocztowych."], "reward": {"gold": 160, "xp": 150}},
 			],

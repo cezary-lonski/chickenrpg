@@ -24,7 +24,8 @@ Akt I (rozdziały I–VII), Akt II (mapa świata z wioskami) i finał w twierdzy
 | **Pałac** | 5 pięter z krukami-arystokratami, schody bez ekranu statystyk i sekretne komnaty z animowanymi historyjkami |
 | **Narada wojenna** | animowana historyjka na 6. piętrze, wybór strategii, potem zamach |
 | **Uwolnienie króla** | loch z klawiszami i więźniami, naczelnik więzienia |
-| **Miasto i Zamek Kruka** | generałowie zamiast arystokratów, sala tronowa i obowiązkowy pojedynek z rycerzem |
+| **Twierdza Kruka** | 2 piętra: mury i brama, koszary generałów (schody bez ekranu statystyk) |
+| **Miasto i Zamek Kruka** | miasto, 3 piętra zamku (dziedziniec, krużganki, wieża generałów), sala tronowa i obowiązkowy pojedynek z rycerzem |
 
 **Mapa świata**: osady rozmieszczone jak na prawdziwej mapie. Klikasz miejsce, gra wytycza trasę i maszerujesz przez wszystkie etapy; po bitwie wybierasz: idź dalej, zmień cel albo anuluj. **Zwój teleportacji** przenosi tylko do zbadanych miejsc.
 

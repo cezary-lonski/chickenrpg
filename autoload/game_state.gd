@@ -11,7 +11,7 @@ signal toast(text: String, color: Color)
 signal stats_changed(stats: Dictionary)
 
 const SAVE_PATH := "user://chicken_brawl_save.json"
-const SAVE_VERSION := 8
+const SAVE_VERSION := 9
 const SLOT_COUNT := 3
 const ATTR_POINTS_PER_LEVEL := 5
 const MAX_LEVEL := 100
@@ -195,8 +195,22 @@ func _migrate() -> void:
 		for key in ["chapter", "best"]:
 			if st8.has(key):
 				st8[key] = _chapter_v8(int(st8[key]))
+	# v9: dodano piętra twierdzy (2) po „Marszu na twierdzę” i piętra zamku (3) po Mieście Kruka.
+	if old_version < 9:
+		var st9: Dictionary = story()
+		for key9 in ["chapter", "best"]:
+			if st9.has(key9):
+				st9[key9] = _chapter_v9(int(st9[key9]))
 	profile["version"] = SAVE_VERSION
 	save_game()
+
+## Indeks rozdziału z wersji 8 → nowy (po wstawieniu pięter twierdzy i zamku).
+func _chapter_v9(old: int) -> int:
+	if old <= 12:
+		return old
+	if old == 13:
+		return old + 2   # Miasto Kruka
+	return old + 5
 
 ## Stary indeks rozdziału (do v7) → nowy.
 func _chapter_v8(old: int) -> int:

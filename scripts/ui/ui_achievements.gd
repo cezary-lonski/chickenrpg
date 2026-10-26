@@ -37,7 +37,7 @@ func _ready() -> void:
 
 func _row(d: Dictionary) -> Control:
 	var done := AchievementDB.is_done(d)
-	var cur := mini(AchievementDB.value(String(d["stat"])), int(d["need"]))
+	var cur := mini(AchievementDB.value(String(d["stat"])), AchievementDB.need_of(d))
 	var p := UiKit.panel(Color(0.18, 0.22, 0.1, 0.9) if done else UiKit.BG, 8)
 	var h := UiKit.hbox(14)
 	p.add_child(h)
@@ -47,5 +47,5 @@ func _row(d: Dictionary) -> Control:
 	h.add_child(v)
 	v.add_child(UiKit.label(String(d["name"]), 18, UiKit.ACCENT if done else UiKit.TEXT))
 	v.add_child(UiKit.label(String(d["desc"]), 14, UiKit.DIM))
-	h.add_child(UiKit.label("Ukończone" if done else "%d / %d" % [cur, int(d["need"])], 15, UiKit.GOOD if done else UiKit.DIM))
+	h.add_child(UiKit.label("Ukończone" if done else "%d / %d" % [cur, AchievementDB.need_of(d)], 15, UiKit.GOOD if done else UiKit.DIM))
 	return p

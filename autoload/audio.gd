@@ -15,8 +15,6 @@ var _next_voice: int = 0
 var _current_track := ""
 var _rng := RandomNumberGenerator.new()
 var _warm_thread: Thread
-var _voice: Array = []
-var _voice_token := 0
 
 # ------------------------------------------------------------------ tablice ---
 
@@ -102,35 +100,6 @@ func _store_music(track: String, st: AudioStreamWAV) -> void:
 func _exit_tree() -> void:
 	if _warm_thread != null and _warm_thread.is_started():
 		_warm_thread.wait_to_finish()
-
-## Głos postaci w dialogach: seria gdakań z nagrania, wysokość zależy od mówiącego.
-func speak(who: String, text: String) -> void:
-	_voice_token += 1
-	if who == "" or not GameState.setting("sfx"):
-		return
-	if _voice.is_empty():
-		for i in range(1, 13):
-			var st = load("res://audio/voice/gdak_%02d.wav" % i)
-			if st != null:
-				_voice.append(st)
-	if _voice.is_empty():
-		return
-	var token := _voice_token
-	var pitch := 0.75 + float(absi(hash(who)) % 100) / 100.0 * 0.8
-	var n := clampi(int(float(text.length()) / 7.0), 2, 9)
-	for i in n:
-		if token != _voice_token:
-			return
-		var p: AudioStreamPlayer = _pool[_next_voice % _pool.size()]
-		_next_voice += 1
-		p.stream = _voice[_rng.randi_range(0, _voice.size() - 1)]
-		p.pitch_scale = pitch * _rng.randf_range(0.92, 1.1)
-		p.volume_db = -3.0
-		p.play()
-		await get_tree().create_timer(_rng.randf_range(0.16, 0.24), true, false, true).timeout
-
-func stop_speaking() -> void:
-	_voice_token += 1
 
 func play_music(track: String) -> void:
 	if _current_track == track and _music_player.playing:
@@ -528,16 +497,18 @@ func _build_music(track: String) -> AudioStreamWAV:
 		var t0 := _n(e * float(bar * 8))
 		_pluck(s, t0, _pitch(root_hz, mode, c), _n(e * 4.0), 0.3)
 		_pluck(s, t0 + _n(e * 4.0), _pitch(root_hz, mode, c + 4), _n(e * 4.0), 0.22)
+		_add_bass(s, t0, _pitch(root_hz * 0.5, mode, c), _n(e * 3.6), 0.5)
+		_add_bass(s, t0 + _n(e * 4.0), _pitch(root_hz * 0.5, mode, c + 4 if (bar % 2) == 0 else c), _n(e * 3.6), 0.38)
 		if bool(cfg["arp"]):
 			for k in 8:
-				_pluck(s, t0 + _n(e * float(k)), _pitch(root_hz, mode, c + 7 + int(arp[k])), _n(e * 2.0), 0.1)
+				_pluck(s, t0 + _n(e * float(k)), _pitch(root_hz, mode, c + 7 + int(arp[k])), _n(e * 2.0), 0.06)
 
 	# melodia: motyw A (takty 1-2, 5-6) i odpowiedź B (3-4, 7-8)
 	var rhy: Array = [_rhythm(r), _rhythm(r)]
 	var con: Array = [_contour(r, 16), _contour(r, 16)]
 	for ph in 4:
 		var key := ph % 2
-		var anchor: int = int(prog[ph * 2]) + 14
+		var anchor: int = int(prog[ph * 2]) + 7
 		var cur := anchor + 1
 		var pos := ph * 16
 		var rh: Array = rhy[key]
@@ -546,13 +517,13 @@ func _build_music(track: String) -> AudioStreamWAV:
 			var d: int = int(rh[k])
 			var deg := cur
 			if k == rh.size() - 1 and key == 1:
-				deg = 18 if ph == 1 else 14
+				deg = 11 if ph == 1 else 7
 			var f := _pitch(root_hz, mode, deg)
 			var t0 := _n(e * float(pos))
 			if flute_lead:
-				_flute(s, t0, _n(e * float(d) * 0.97), f, 0.34)
+				_flute(s, t0, _n(e * float(d) * 0.97), f, 0.15)
 			else:
-				_pluck(s, t0, f, _n(e * float(mini(d * 2 + 2, 8))), 0.4)
+				_pluck(s, t0, f, _n(e * float(mini(d * 2 + 2, 8))), 0.26)
 			pos += d
 			cur = clampi(cur + int(cn[k % cn.size()]), anchor - 2, anchor + 6)
 
@@ -568,7 +539,7 @@ func _build_music(track: String) -> AudioStreamWAV:
 				_add_tek(s, _n(e * float(b0 + int(p))), 0.3)
 			if drums == 2:
 				for k in 8:
-					_add_shaker(s, _n(e * float(b0 + k)), 0.07 if k % 2 == 0 else 0.11)
+					_add_shaker(s, _n(e * float(b0 + k)), 0.03 if k % 2 == 0 else 0.05)
 
 	# echo (zapętlone, więc bez szwu)
 	var dry := s.duplicate()
@@ -576,6 +547,12 @@ func _build_music(track: String) -> AudioStreamWAV:
 	var d2 := _n(e * 5.0)
 	for i in total:
 		s[i] += dry[posmod(i - d1, total)] * 0.24 + dry[posmod(i - d2, total)] * 0.14
+
+	# zmiękczenie góry (jednobiegunowy dolnoprzepustowy) => mniej piskliwie
+	var lpv := s[total - 1]
+	for i in total:
+		lpv += (s[i] - lpv) * 0.4
+		s[i] = lpv
 
 	var peak := 0.0
 	for v in s:
@@ -620,8 +597,17 @@ func _flute(s: PackedFloat32Array, start: int, dur: int, freq: float, gain: floa
 		var vib := 1.0 + 0.008 * sin(t * TAU * 5.2) * minf(1.0, t * 3.0)
 		ph += freq * vib / float(MIX)
 		lp = lerpf(lp, _rng.randf_range(-1.0, 1.0), 0.15)
-		var v := sin(ph * TAU) + 0.22 * sin(ph * TAU * 2.0) + 0.07 * sin(ph * TAU * 3.0) + lp * 0.12
+		var v := sin(ph * TAU) + 0.08 * sin(ph * TAU * 2.0) + lp * 0.04
 		s[start + i] += v * gain * minf(1.0, float(i) / atk) * minf(1.0, float(n - i) / rel)
+
+func _add_bass(s: PackedFloat32Array, start: int, freq: float, dur: int, gain: float) -> void:
+	var n := mini(dur, s.size() - start)
+	var ph := 0.0
+	for i in maxi(n, 0):
+		ph += freq / float(MIX)
+		var t := float(i) / float(n)
+		var v := sin(ph * TAU) + 0.35 * sin(ph * TAU * 2.0) + 0.1 * sin(ph * TAU * 3.0)
+		s[start + i] += v * gain * minf(1.0, float(i) / 220.0) * (1.0 - t * 0.55) * minf(1.0, float(n - i) / 400.0)
 
 func _add_drone(s: PackedFloat32Array, freq: float, gain: float) -> void:
 	for i in s.size():

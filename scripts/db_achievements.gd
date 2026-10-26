@@ -5,7 +5,7 @@ extends RefCounted
 const DEFS := [
 	{"id": "pierwszy_krok", "name": "Pierwszy krok", "desc": "Ukończ pierwszy rozdział.", "stat": "quests", "need": 1},
 	{"id": "weteran", "name": "Weteran kurnika", "desc": "Ukończ 10 rozdziałów.", "stat": "quests", "need": 10},
-	{"id": "legenda_kampanii", "name": "Legenda kampanii", "desc": "Ukończ wszystkie rozdziały.", "stat": "quests", "need": 27},
+	{"id": "legenda_kampanii", "name": "Legenda kampanii", "desc": "Ukończ wszystkie rozdziały.", "stat": "quests", "need": 0},
 	{"id": "poziom_10", "name": "Rozgrzany kurczak", "desc": "Osiągnij 10. poziom.", "stat": "level", "need": 10},
 	{"id": "poziom_30", "name": "Doświadczony wojownik", "desc": "Osiągnij 30. poziom.", "stat": "level", "need": 30},
 	{"id": "poziom_100", "name": "Kurczak absolutny", "desc": "Osiągnij maksymalny, 100. poziom.", "stat": "level", "need": 100},
@@ -24,6 +24,10 @@ const DEFS := [
 	{"id": "stadko", "name": "Stadko", "desc": "Odblokuj 3 towarzyszy.", "stat": "pets", "need": 3},
 	{"id": "pogromca", "name": "Pogromca", "desc": "Pokonaj 500 wrogów.", "stat": "kills", "need": 500},
 ]
+
+## Wymagana wartość; „Legenda kampanii” wymaga ukończenia wszystkich rozdziałów (liczba z bazy).
+static func need_of(d: Dictionary) -> int:
+	return QuestDB.count() if String(d["id"]) == "legenda_kampanii" else int(d["need"])
 
 static func value(stat: String) -> int:
 	var p: Dictionary = GameState.profile
@@ -79,7 +83,7 @@ static func check() -> Array:
 		var id := String(d["id"])
 		if u.has(id):
 			continue
-		if value(String(d["stat"])) >= int(d["need"]):
+		if value(String(d["stat"])) >= need_of(d):
 			u[id] = true
 			out.append(String(d["name"]))
 	if not out.is_empty():

@@ -206,8 +206,15 @@ static func _act1() -> Array:
 				out.append((PalaceDB.CHAPTER_COUNCIL as Dictionary).duplicate(true))
 				out.append((PalaceDB.CHAPTER_KING as Dictionary).duplicate(true))
 				continue
+			"marsz_na_forteca":
+				out.append(d)
+				for f2 in FortressDB.CHAPTERS_FORT:
+					out.append((f2 as Dictionary).duplicate(true))
+				continue
 			"krol_i_kruk":
 				out.append((PalaceDB.CHAPTER_CITY as Dictionary).duplicate(true))
+				for f3 in FortressDB.CHAPTERS_CASTLE:
+					out.append((f3 as Dictionary).duplicate(true))
 				out.append((PalaceDB.CHAPTER_CASTLE as Dictionary).duplicate(true))
 				d["title"] = "Sala tronowa Kruka"
 		out.append(d)

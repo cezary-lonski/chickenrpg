@@ -331,7 +331,7 @@ const BASE_ZONES := {
 
 ## Dane strefy; do listy fal dopinany jest boss rozdziału (BossDB), o ile jeszcze go nie ma.
 ## Scalone strefy: Akt I/III + Akt II (Act2DB).
-static var ZONES: Dictionary = BASE_ZONES.merged(Act2DB.ZONES).merged(PalaceDB.ZONES)
+static var ZONES: Dictionary = BASE_ZONES.merged(Act2DB.ZONES).merged(PalaceDB.ZONES).merged(FortressDB.ZONES)
 
 static func get_data(id: String) -> Dictionary:
 	var z: Dictionary = ZONES.get(id, {})

@@ -238,6 +238,7 @@ func _begin_council() -> void:
 	ui.setup("council")
 	ui.on_close.connect(func():
 		_dialog_open = false
+		await get_tree().process_frame   # Flow najpierw domyka nakładkę historyjki
 		var qd: Dictionary = ChapterExtras.EXTRAS.get(quest_id, {}).get("dialogs", {}).get("krolowa", {})
 		_open_choice(qd.get("choice", {}), UiKit.ACCENT2, func():
 			_banner("ZAMACH!", "Zamachowcy wpadają do sali narad")
@@ -2204,7 +2205,7 @@ func _board_pick(a: Array) -> void:
 func _build_decor() -> void:
 	if cave_mode or march_mode:
 		return
-	var list: Array = PalaceDB.DECOR.get(quest_id, [])
+	var list: Array = PalaceDB.DECOR.get(quest_id, FortressDB.DECOR.get(quest_id, []))
 	for i in list.size():
 		var d: Array = list[i]
 		var kind := String(d[0])
