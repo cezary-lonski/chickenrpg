@@ -150,6 +150,8 @@ func _build(screen: String, args: Dictionary) -> void:
 			current = we
 			we.on_close.connect(func(): goto("menu"))
 			we.on_start.connect(_on_waves_start)
+		"achievements":
+			current = UiAchievements.new()
 		"slots":
 			current = UiSlotSelect.new()
 			(current as UiSlotSelect).on_start.connect(_on_slot_start)
@@ -221,6 +223,36 @@ func _back_to(from: String) -> void:
 			goto("menu")
 
 var pending_replay := -1
+
+## Bohater zapisanej gry: ta z postaci (Lord/Lady), która ma klasę i wyższy poziom.
+func pick_hero() -> Array:
+	var hero := "lord"
+	var best := -1
+	for cid in ["lord", "lady"]:
+		var cp := GameState.char_profile(cid)
+		var score := int(cp.get("level", 1)) + (1000 if String(cp.get("class", "")) != "" else 0)
+		if score > best:
+			best = score
+			hero = cid
+	var cls := String(GameState.char_profile(hero).get("class", ""))
+	var avail := ClassDatabase.for_character(hero)
+	if cls == "" or not avail.has(cls):
+		cls = String(avail[0]) if avail.size() > 0 else "wojownik"
+	return [hero, cls]
+
+## Tryb wyzwań: kolejne pojedynki z coraz silniejszymi rycerzami, wynik trafia do rankingu.
+func start_challenge() -> void:
+	var last := GameState.last_slot()
+	if last >= 1 and GameState.slot_exists(last):
+		GameState.set_slot(last)
+	else:
+		GameState.select_slot(1, true)
+	_slot_is_new = false
+	var hc := pick_hero()
+	GameState.start_rpg_run("solo", String(hc[0]), "", false)
+	GameState.set_class(String(hc[1]))
+	GameState.rpg["challenge"] = true
+	goto("game", {"stage": 0})
 
 func _on_waves_start(config: Dictionary, hero: String) -> void:
 	GameState.start_rpg_run("solo", hero, "", false)

@@ -28,6 +28,10 @@ func _ready() -> void:
 	bwaves.pressed.connect(_on_waves)
 	center.add_child(_wrap(bwaves))
 	center.add_child(UiKit.sep(0))
+	var bchal := UiKit.button("Wyzwania — pojedynki", 22, Color(1.0, 0.75, 0.3))
+	bchal.pressed.connect(func(): Audio.play("confirm"); Flow.start_challenge())
+	center.add_child(_wrap(bchal))
+	center.add_child(UiKit.sep(0))
 	var barena := UiKit.button("Arena graczy", 22, Color(1.0, 0.45, 0.4))
 	barena.pressed.connect(func(): Audio.play("confirm"); Flow.goto("lan", {"arena": true}))
 	center.add_child(_wrap(barena))
@@ -47,6 +51,10 @@ func _ready() -> void:
 	var bpaint := UiKit.button("Tryb Paint", 22)
 	bpaint.pressed.connect(func(): Audio.play("confirm"); Flow.goto("paint"))
 	center.add_child(_wrap(bpaint))
+	center.add_child(UiKit.sep(0))
+	var bach := UiKit.button("Osiągnięcia", 22)
+	bach.pressed.connect(func(): Audio.play("select"); Flow.goto("achievements"))
+	center.add_child(_wrap(bach))
 	center.add_child(UiKit.sep(0))
 	var bset := UiKit.button("Ustawienia", 22)
 	bset.pressed.connect(func(): Audio.play("select"); Flow.goto("settings"))
@@ -80,18 +88,9 @@ func _on_continue() -> void:
 	GameState.set_slot(last)
 	Flow._slot_is_new = false
 	# kontynuacja: od razu do gry, z zapisaną postacią, jej klasą i poziomem trudności
-	var hero := "lord"
-	var best := -1
-	for cid in ["lord", "lady"]:
-		var cp := GameState.char_profile(cid)
-		var score := int(cp.get("level", 1)) + (1000 if String(cp.get("class", "")) != "" else 0)
-		if score > best:
-			best = score
-			hero = cid
-	var cls := String(GameState.char_profile(hero).get("class", ""))
-	if cls == "" or not ClassDatabase.for_character(hero).has(cls):
-		var avail := ClassDatabase.for_character(hero)
-		cls = String(avail[0]) if avail.size() > 0 else "wojownik"
+	var hc := Flow.pick_hero()
+	var hero := String(hc[0])
+	var cls := String(hc[1])
 	Flow.pending_replay = -1
 	GameState.start_rpg_run("solo", hero, "", false)
 	GameState.set_class(cls)

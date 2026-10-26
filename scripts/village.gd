@@ -57,13 +57,16 @@ func _ready() -> void:
 	_net_host = GameState.rpg_mode_str() == "lan" and Net.is_host and Net.has_peer()
 	_net_client = GameState.rpg_mode_str() == "lan" and not Net.is_host and Net.has_peer()
 	arena_mode = bool(GameState.rpg.get("arena", false)) and (_net_host or _net_client)
+	challenge_mode = bool(GameState.rpg.get("challenge", false)) and not Net.has_peer()
 	var mr = GameState.rpg.get("march")
 	march_mode = mr is Dictionary and not (mr as Dictionary).is_empty() and not Net.has_peer() and int((mr["route"] as Array)[clampi(int(mr["i"]), 0, (mr["route"] as Array).size() - 1)]) == GameState.story_chapter()
-	cave_mode = (cave_id != "" and not SecretDB.cave_zone(cave_id).is_empty()) or custom_mode or arena_mode
+	cave_mode = (cave_id != "" and not SecretDB.cave_zone(cave_id).is_empty()) or custom_mode or arena_mode or challenge_mode
 	quest_id = _active_quest_id()
 	zone = ZoneDB.get_data(quest_id) if ZoneDB.has(quest_id) else ZoneDB.for_chapter(GameState.story_chapter())
 	if arena_mode:
 		zone = _arena_zone()
+	elif challenge_mode:
+		zone = _challenge_zone()
 	elif custom_mode:
 		zone = _custom_zone()
 	elif cave_mode:
@@ -101,6 +104,14 @@ func _ready() -> void:
 	_build_stash()
 	_build_secrets()
 	_build_lab()
+	var ach_timer := Timer.new()
+	ach_timer.wait_time = 4.0
+	ach_timer.autostart = true
+	ach_timer.timeout.connect(func():
+		for nm in AchievementDB.check():
+			GameState.toast.emit("OSIĄGNIĘCIE: %s" % nm, UiKit.ACCENT)
+			Audio.play("levelup", 1.2, -6.0))
+	add_child(ach_timer)
 	_setup_camera()
 	_spawn_players()
 	_spawn_allies()
@@ -169,6 +180,9 @@ func _begin_story() -> void:
 	if arena_mode:
 		_begin_arena()
 		return
+	if challenge_mode:
+		_begin_challenge()
+		return
 	if cave_mode:
 		_begin_cave()
 		return
@@ -200,6 +214,14 @@ func _with_title(lines: Array, title: String) -> Array:
 			pair[1] = txt
 		out.append(pair)
 	return out
+
+func _vignette_async(kind: String) -> void:
+	_dialog_open = true
+	var ui := UiVignette.new()
+	ui.setup(kind)
+	Flow.open_dialog(ui)
+	await ui.on_close
+	_dialog_open = false
 
 ## Narada wojenna to animowana historyjka (zamiast rozmów z NPC), a po niej wybór strategii i zamach.
 func _begin_council() -> void:
@@ -912,9 +934,13 @@ func _on_player_died() -> void:
 	if finished:
 		return
 	await get_tree().create_timer(1.9).timeout
-	if not finished:
-		finished = true
-		player_died.emit()
+	if finished:
+		return
+	if challenge_mode:
+		_challenge_over()
+		return
+	finished = true
+	player_died.emit()
 
 # ---------------------------------------------------------------- kamera ----
 
@@ -1452,6 +1478,12 @@ func _finish_story() -> void:
 	Fx.flash(Color(1, 0.95, 0.8), 0.5, 0.6)
 	Audio.play("levelup", 1.0, -2.0)
 	await get_tree().create_timer(2.2).timeout
+	if is_instance_valid(self) and UiVignette.EPILOGUE.has(quest_id) and not _net_client:
+		var seq = UiVignette.EPILOGUE[quest_id]
+		for sid in (seq if seq is Array else [seq]):
+			if not is_instance_valid(self):
+				return
+			await _vignette_async(String(sid))
 	if is_instance_valid(self):
 		var cine := _act_cinematic(quest_id)
 		if not cine.is_empty():
@@ -1480,6 +1512,8 @@ var cave_mode := false
 var stairs_mode := false
 var march_mode := false
 var arena_mode := false
+var challenge_mode := false
+var _ch_round := 0
 var custom_mode := false
 var custom_cfg: Dictionary = {}
 var cave_id := ""
@@ -2258,7 +2292,7 @@ var _duels := 0
 
 ## Czasem między falami pojawia się rycerz w zbroi i wyzywa na pojedynek.
 func _roll_duel() -> bool:
-	if cave_mode or custom_mode or arena_mode or march_mode or _net_host or _net_client or _duels >= 1:
+	if challenge_mode or cave_mode or custom_mode or arena_mode or march_mode or _net_host or _net_client or _duels >= 1:
 		return false
 	if wave_i >= waves.size() or bool(waves[wave_i].get("boss", false)):
 		return false
@@ -2311,6 +2345,7 @@ func _end_duel(kd: Dictionary) -> void:
 	if randf() < 0.25:
 		GameState.add_item("zwoj_teleportacji", 1)
 		lines.append("Zwój teleportacji")
+	AchievementDB.bump("duels")
 	GameState.toast.emit("Wygrany pojedynek! Łup: " + ", ".join(lines), UiKit.GOOD)
 	_banner("ZWYCIĘSTWO", "Pojedynek wygrany")
 	Fx.flash(Color(1, 1, 0.9), 0.3, 0.5)
@@ -2335,3 +2370,87 @@ func _free_spot(offsets: Array, taken: Array) -> Vector2:
 			best_d = dmin
 			best = p
 	return best
+
+# ------------------------------------------------------------ tryb wyzwań ---
+
+func _challenge_zone() -> Dictionary:
+	return {
+		"terrain": "palace", "spawn": Vector2(1100, 1080), "npcs": [], "giver": "", "waves": [],
+		"intro_banner": ["WYZWANIE", "Kolejni rycerze, coraz silniejsi"],
+		"outro_banner": ["KONIEC WYZWANIA", ""],
+	}
+
+func _begin_challenge() -> void:
+	await get_tree().create_timer(0.9).timeout
+	if not is_instance_valid(self) or finished:
+		return
+	var banner: Array = zone.get("intro_banner", ["", ""])
+	_banner(String(banner[0]), String(banner[1]))
+	await get_tree().create_timer(2.0).timeout
+	_challenge_next()
+
+func _challenge_next() -> void:
+	if finished or not is_instance_valid(self):
+		return
+	_ch_round += 1
+	var kid := "rycerz_pojedynku"
+	if _ch_round >= 7:
+		kid = "rycerz_hiper"
+	elif _ch_round >= 3:
+		kid = "rycerz_legenda"
+	var kd: Dictionary = EnemyDB.get_data(kid)
+	_banner("RUNDA %d" % _ch_round, String(kd["name"]))
+	Audio.play("roar", 0.8 + 0.02 * float(_ch_round), -4.0)
+	await get_tree().create_timer(1.6).timeout
+	if finished or not is_instance_valid(self):
+		return
+	var k: Enemy = (ENEMY_SCENE as PackedScene).instantiate() as Enemy
+	k.setup(kid, false, false)
+	k.apply_mods(1.0 + 0.12 * float(_ch_round - 1), 1.0 + 0.06 * float(_ch_round - 1), 1.0)
+	k.is_duel = true
+	k.aggro = 2000.0
+	entities.add_child(k)
+	var side := 1.0 if player.global_position.x < VILLAGE.x * 0.5 else -1.0
+	k.global_position = (player.global_position + Vector2(260.0 * side, 0.0)).clamp(Vector2(MARGIN + 40, MARGIN + 40), Vector2(VILLAGE.x - MARGIN - 40, VILLAGE.y - MARGIN - 40))
+	k.set_bounds_rect(MARGIN, VILLAGE.x - MARGIN, MARGIN, VILLAGE.y - MARGIN)
+	_arena = BossArena.new()
+	_arena.center = (player.global_position + k.global_position) * 0.5
+	_arena.radius = 380.0
+	add_child(_arena)
+	_track_boss(k)
+	k.died.connect(func(_e): _challenge_won(kd))
+
+func _challenge_won(kd: Dictionary) -> void:
+	if _arena and is_instance_valid(_arena):
+		_arena.lower()
+	_arena = null
+	AchievementDB.bump("duels")
+	AchievementDB.set_max("challenge_best", _ch_round)
+	GameState.add_gold(int(kd.get("gold", 90)))
+	if player and is_instance_valid(player):
+		player.heal(player.max_hp * 0.3)
+	_banner("RUNDA %d UKOŃCZONA" % _ch_round, "Łapiesz oddech…")
+	Audio.play("levelup", 1.0, -4.0)
+	await get_tree().create_timer(2.4).timeout
+	_challenge_next()
+
+func _challenge_over() -> void:
+	finished = true
+	var rounds := _ch_round - 1
+	var rank: Array = GameState.profile.get("challenge_rank", [])
+	rank.append({"rounds": rounds, "lv": GameState.player_level(), "cls": String(GameState.char_profile(GameState.current_character_id()).get("class", ""))})
+	rank.sort_custom(func(a, b): return int(a["rounds"]) > int(b["rounds"]))
+	rank = rank.slice(0, 5)
+	GameState.profile["challenge_rank"] = rank
+	AchievementDB.set_max("challenge_best", rounds)
+	GameState.save_game()
+	var txt := "RANKING (najlepsze 5):"
+	var i := 1
+	for e in rank:
+		txt += "
+%d.  %d rund  ·  poz. %d  ·  %s" % [i, int(e["rounds"]), int(e["lv"]), String(e["cls"])]
+		i += 1
+	var lines: Array = [["", "Padłeś w rundzie %d. Pokonanych rycerzy: %d." % [_ch_round, rounds]], ["", txt]]
+	_open_dialog(lines, Color(1.0, 0.75, 0.3), func():
+		GameState.finish_run(false)
+		Flow.goto("menu"))

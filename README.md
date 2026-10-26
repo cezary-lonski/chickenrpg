@@ -211,3 +211,9 @@ Przy podniesieniu rzadkości statystyki przedmiotu rosną proporcjonalnie. Kurcz
 
 ## Płomienie na postaci
 Założony **hiperekstralegendarny** przedmiot (dowolny slot) otacza gracza dużym **złotym płomieniem** (ok. 2 kurczaków), a **hiperlegendarny** — fioletowym. Złoty ma pierwszeństwo.
+
+## Historyjki zakończeń, osiągnięcia i wyzwania
+- Po bossach i kluczowych rozdziałach grają **animowane historyjki epilogowe**, każda z własną **muzyką generowaną w grze**. Rozdział „Ostatni świt” kończy **finałowa sekwencja** (wieś, koronacja, ostatni zachód słońca).
+- **Osiągnięcia** (menu → „Osiągnięcia”) z dziennikiem odkryć: sekretne komnaty, jaskinie, legendarki, pojedynki, rekord wyzwań.
+- **Wyzwania — pojedynki**: kolejni rycerze z rosnącą siłą, ranking 5 najlepszych wyników.
+- Raport balansu: [docs/balance_report.md](docs/balance_report.md).

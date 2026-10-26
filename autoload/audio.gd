@@ -46,6 +46,16 @@ const THEMES := {
 	"bagno": {"bpm": 76.0, "root": 0, "mode": "phrygian", "prog": [0, 0, 1, 1, 0, 0, 3, 4], "lead": "flute", "arp": false, "drums": 1},
 	"gniazdo": {"bpm": 138.0, "root": 4, "mode": "harmonic", "prog": [0, 0, 4, 4, 5, 5, 4, 0], "lead": "pluck", "arp": true, "drums": 2},
 	"boss": {"bpm": 132.0, "root": 2, "mode": "phrygian", "prog": [0, 0, 1, 0, 0, 1, 6, 0], "lead": "pluck", "arp": true, "drums": 2},
+	"ep_wies": {"bpm": 76.0, "root": 7, "mode": "ionian", "prog": [0, 3, 4, 0, 3, 4, 0, 0], "lead": "pluck", "arp": true, "drums": 0},
+	"ep_stolica": {"bpm": 68.0, "root": 2, "mode": "aeolian", "prog": [0, 5, 3, 4, 0, 5, 4, 0], "lead": "flute", "arp": false, "drums": 0},
+	"ep_kruk": {"bpm": 84.0, "root": 9, "mode": "harmonic", "prog": [0, 0, 5, 4, 0, 0, 5, 0], "lead": "pluck", "arp": true, "drums": 1},
+	"ep_krol": {"bpm": 90.0, "root": 0, "mode": "ionian", "prog": [0, 4, 5, 3, 0, 4, 3, 0], "lead": "flute", "arp": true, "drums": 0},
+	"ep_miasto": {"bpm": 80.0, "root": 5, "mode": "dorian", "prog": [0, 0, 3, 6, 0, 3, 4, 0], "lead": "pluck", "arp": true, "drums": 1},
+	"ep_zamek": {"bpm": 72.0, "root": 3, "mode": "dorian", "prog": [0, 3, 4, 0, 6, 3, 4, 0], "lead": "flute", "arp": true, "drums": 1},
+	"ep_swit": {"bpm": 84.0, "root": 8, "mode": "lydian", "prog": [0, 4, 3, 0, 0, 4, 3, 0], "lead": "flute", "arp": true, "drums": 0},
+	"fin_a": {"bpm": 66.0, "root": 7, "mode": "ionian", "prog": [0, 3, 4, 0, 3, 4, 0, 0], "lead": "flute", "arp": true, "drums": 0},
+	"fin_b": {"bpm": 98.0, "root": 0, "mode": "ionian", "prog": [0, 4, 5, 3, 0, 4, 3, 0], "lead": "flute", "arp": true, "drums": 2},
+	"fin_c": {"bpm": 62.0, "root": 5, "mode": "lydian", "prog": [0, 4, 3, 0, 0, 4, 3, 0], "lead": "flute", "arp": true, "drums": 0},
 	"victory": {"bpm": 116.0, "root": 5, "mode": "ionian", "prog": [0, 3, 4, 0, 3, 4, 0, 0], "lead": "flute", "arp": true, "drums": 2},
 }
 
@@ -133,6 +143,9 @@ func play_music(track: String) -> void:
 		_music[track] = _build_music(track)
 	_music_player.stream = _music[track]
 	_music_player.play()
+
+func current_track() -> String:
+	return _current_track
 
 func stop_music() -> void:
 	_current_track = ""

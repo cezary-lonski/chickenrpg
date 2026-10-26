@@ -62,6 +62,46 @@ const SCENES := {
 
 ## Scenki sterowane danymi: rekwizyty ("props"), animacja aktora ("anim") i dodatkowe postacie ("extras").
 const SCENES2 := {
+	"fin_wies": {"title": "Powrót do wioski", "npc": "starosta", "bg": Color(0.55, 0.42, 0.3), "anim": "pace", "ax": -60.0,
+		"props": [["bread", 170, 0], ["cart", -330, 0]], "extras": [["kogut", -220, 0, "kasia"], ["kogut", 300, 0, "straznik"], ["kogut", 420, 0, "kowal"]],
+		"context": "Rodzinna wioska, kilka miesięcy później. Płoty stoją, chleb się piecze, a na rynku znów słychać targowanie.",
+		"lines": [["Starosta Bartosz", "Patrzcie, kto wrócił! Ten sam kurczak, który kiedyś nie umiał nawet zamknąć kurnika."], ["Kasia", "Opowiadamy o tobie dzieciom. Trochę podkoloryzowaliśmy, ale tylko tyle, żeby było śmieszniej."], ["Strażnik Michał", "Ja twierdzę, że pierwszy cię poznałem. Nikt mi nie wierzy, ale ja swoje wiem."], ["Kowal Grzegorz", "Odlałem ci pamiątkę. Medal. Nie, to nie miecz — tym razem tylko do powieszenia na ścianie."], ["", "Wieś wybucha śmiechem. Ktoś podaje świeży chleb i dzbanek miodu, a słońce wschodzi nad dachami."]]},
+	"fin_tron": {"title": "Koronacja pokoju", "npc": "krolowa", "bg": Color(0.5, 0.35, 0.5), "anim": "preach", "ax": -40.0,
+		"props": [["mirror", 180, 0], ["desk_candle", -330, 0]], "extras": [["kogut", -280, 0, "marszalek"], ["kogut", 270, 0, "kanclerz_korony"], ["kogut", 410, 0, "mistrz_szpiegow"]],
+		"context": "Sala tronowa, tym razem pełna światła i flag. Królowa wstaje, a cały dwór milknie.",
+		"lines": [["Królowa Aurelia", "Ptaki królestwa! Dziś nie ogłaszam wojny. Dziś ogłaszam, że została wygrana."], ["Marszałek Dziobacz", "Wojsko melduje: wszyscy żywi, ranni dumni, a miska z ciastkami wreszcie pełna."], ["Kanclerz Piórko", "Skarbiec jest pusty, ale tym razem to dobra wiadomość. Wydaliśmy wszystko na odbudowę."], ["Mistrz Szpiegów Cichopiór", "Wiem, że nikt mnie tu nie widzi. Ale uwaga: jestem tuż obok. Ciii."], ["Królowa Aurelia", "Kurczaku, od tej chwili jesteś Obrońcą Korony. A jeśli ktoś zapyta dlaczego — odpowiedz, że lubisz chleb."], ["", "Fanfary. Konfetti z piór. Marszałek nieopacznie podpala pierwszy sztandar. Na szczęście zaraz gasi go zupa."]]},
+	"fin_ostatnia": {"title": "Ostatni zachód słońca", "npc": "kurczak", "bg": Color(0.65, 0.4, 0.28), "anim": "preach", "ax": -20.0,
+		"props": [["flowers", 170, 0], ["cart", -330, 0]], "extras": [["kogut", -250, 0, "starosta"], ["kogut", 260, 0, "krolowa"], ["kogut", 400, 0, "kowal"]],
+		"context": "Wzgórze nad wioską. Z jednej strony królestwo, z drugiej morze pól, a pomiędzy nimi długi cień kurczaka.",
+		"lines": [["", "Wojna dobiegła końca. Ptaki mogą spać spokojnie, a ich dzieci wreszcie bawić się na polu."], ["Królowa Aurelia", "Zawsze będziesz tu mile widziany. Z hełmem, bez hełmu, w zbroi albo w piżamie."], ["Kowal Grzegorz", "Gdyby kiedyś znowu zawyły dzwony, wiesz, gdzie szukać mnie z młotem."], ["Starosta Bartosz", "A jak nie zawyją, to wpadnij na chleb. Przecież to nasza prawdziwa broń."], ["", "Słońce znika za wzgórzem. Gdzieś daleko pieje kogut, bardziej z przyzwyczajenia niż z potrzeby."], ["", "KONIEC. Dziękujemy za wspólną przygodę, bohaterze. Do zobaczenia w następnym kurniku!"]]},
+	"epi_wies": {"title": "Poranek po najeździe", "npc": "starosta", "bg": Color(0.5, 0.42, 0.3), "anim": "pace", "ax": -100.0,
+		"props": [["bread", 160, 0], ["cart", -320, 0]], "extras": [["kurczak", 330, 0]],
+		"context": "Wioska o świcie. Dymią zgliszcza, ale już ktoś piecze chleb, bo żadna katastrofa nie trwa dłużej niż śniadanie.",
+		"lines": [["Starosta Bartosz", "Straty? Dwa płoty, jedna stodoła i honor Hrabiego Sroki. Płoty jakoś odbudujemy."], ["", "Piekarz podaje bochen prosto z pieca. Starosta gryzie i wzdycha z ulgą."], ["Starosta Bartosz", "Wiesz, w całej tej wojnie najgorsze jest to, że nikt nie zapłaci za chleb."]]},
+	"epi_stolica": {"title": "Gruzy i sztandary", "npc": "kupiec", "bg": Color(0.4, 0.38, 0.42), "anim": "pace", "ax": -120.0,
+		"props": [["cart", 150, 0], ["coins", -330, 0]], "extras": [["gasior", 310, 0]],
+		"context": "Stolica po bitwie: gruz, dym i jeden przedsiębiorczy kupiec, który już sprzedaje bilety na zwiedzanie ruin.",
+		"lines": [["Kupiec", "Ruiny, panie! Oryginalne, świeże, jeszcze ciepłe! Bilet normalny, ulgowy dla ocalałych."], ["", "Gąsior kupuje bilet. Zaraz potem odkrywa, że to bilet do jego własnego domu."], ["Kupiec", "Nie narzekać, tylko doceniać. Taki widok mają tylko kupujący."]]},
+	"epi_kruk": {"title": "Po wielkim Kruku", "npc": "straznik", "bg": Color(0.3, 0.28, 0.38), "anim": "preach", "ax": -60.0,
+		"props": [["desk_candle", 180, 0], ["clock", -330, -150]], "extras": [["kurczak", 300, 0], ["kurczak", 400, 0]],
+		"context": "Sala po upadku Czarnego Kruka. Kruk leży na dywanie, a straż nie wie, czy go przykryć, czy skuć.",
+		"lines": [["Strażnik Michał", "Stój! Kto tam?... A, nikt. Czarny Kruk leży i udaje martwego."], ["", "Kruk uchyla jedno oko, widzi tłum i z powrotem zamyka. Michał salutuje."], ["Strażnik Michał", "Zapiszmy: zwycięstwo. A jak wstanie, to zapiszemy: dogrywka."]]},
+	"epi_krol": {"title": "Król na wolności", "npc": "krolowa", "bg": Color(0.55, 0.4, 0.45), "anim": "preach", "ax": -60.0,
+		"props": [["bars", 160, 0], ["keys", 160, -260]], "extras": [["kogut", -300, 0, "klawisz"]],
+		"context": "Cela otwarta, krata odsunięta. Król siedzi na pryczy i pyta, czy już obiad.",
+		"lines": [["Królowa Aurelia", "Wasza Wysokość! Jesteś wolny! Cały lud czeka na twoje słowa."], ["", "Król prostuje się, odchrząkuje i wygłasza: ‘Chcę kanapkę.’ Tłum klaszcze."], ["Królowa Aurelia", "Dobrze. Najpierw kanapka, potem monarchia."]]},
+	"epi_miasto": {"title": "Miasto bez generałów", "npc": "kupiec", "bg": Color(0.35, 0.35, 0.4), "anim": "pace", "ax": -140.0,
+		"props": [["jars", 150, 0], ["cart", -320, 0]], "extras": [["kurczak", 320, 0]],
+		"context": "Targ w mieście Kruka cichnie. Straganiarze liczą klejnoty i zaczynają szeptać o nowym rządzie.",
+		"lines": [["Kupiec", "Dawniej płaciło się Krukowi podatek, a teraz? Nie wiem, komu płacić. Płacę wszystkim."], ["", "Kurczak próbuje odmówić. Kupiec wciska mu słoik ciemności w prezencie."], ["Kupiec", "Nigdy nie pytaj, co jest w słoiku. To prezent."]]},
+	"epi_zamek": {"title": "Tron bez władcy", "npc": "krolowa", "bg": Color(0.5, 0.35, 0.5), "anim": "preach", "ax": -80.0,
+		"props": [["mirror", 170, 0], ["desk_candle", -320, 0]], "extras": [["kogut", -250, 0, "marszalek"], ["kogut", 300, 0, "kanclerz_korony"]],
+		"context": "Sala tronowa Zamku Kruka. Tron stoi pusty, a trójka doradców kłóci się, kto na nim usiądzie pierwszy.",
+		"lines": [["Marszałek Dziobacz", "Tron należy do wojska! Ktoś musi na nim czuwać, siedząc."], ["Kanclerz Piórko", "Tron należy do skarbu. Zważywszy, ile kosztował."], ["Królowa Aurelia", "Wszyscy możecie postać. Tron jest zbyt wygodny, żeby oddać go któremukolwiek z was."]]},
+	"epi_swit": {"title": "Ostatni świt", "npc": "kowal", "bg": Color(0.6, 0.4, 0.3), "anim": "eat", "ax": -80.0,
+		"props": [["cauldron", 150, 0], ["shelf_bottles", -320, 0]], "extras": [["kurczak", 330, 0]],
+		"context": "Pierwszy świt bez cienia Kruka. Kowal Grzegorz rozpala kuźnię nie dla wojny, tylko dla czajnika.",
+		"lines": [["Kowal Grzegorz", "Młot odłożony. Pierwszy raz od lat zaparzę coś, co nie jest do kucia."], ["", "Z kuźni unosi się aromat melisy. Kurczak zamyka oczy. Gdzieś w oddali pieje kogut."], ["Kowal Grzegorz", "Koniec wojny. Teraz tylko naprawić dachy. I nazwać wszystkie nowe miecze plugawymi łyżkami."]]},
 	"council": {"title": "Narada wojenna", "npc": "krolowa", "bg": Color(0.42, 0.32, 0.46), "anim": "preach", "ax": 0.0,
 		"props": [["map_table", 0, 0]], "extras": [["kogut", -300, 0, "marszalek"], ["kogut", 230, 0, "kanclerz_korony"], ["kogut", 370, 0, "mistrz_szpiegow"]],
 		"context": "",
@@ -124,6 +164,20 @@ const SCENES2 := {
 		"lines": [["Piekarka Zosia", "Pożar! Gaście! Czym? Chlebem! Mamy go za dużo!"], ["", "Bochenki lecą w ogień. Płomienie gasną, a pod sufitem unosi się zapach grzanek."], ["Piekarka Zosia", "Pożar ugaszony, śniadanie gotowe. Bierz bułkę, dzielny kurczaku."]]},
 }
 
+## Historyjka na zakończenie rozdziału (po bossie), wg identyfikatora zadania.
+const EPILOGUE := {
+	"obrona_wioski": "epi_wies", "atak_na_stolice": "epi_stolica", "krol_i_kruk": "epi_kruk",
+	"uwolnij_krola": "epi_krol", "miasto_kruka": "epi_miasto", "zamek_kruka": "epi_zamek",
+	"ostatni_swit": ["epi_swit", "fin_wies", "fin_tron", "fin_ostatnia"],
+}
+
+## Osobna muzyka każdej historyjki zakończeń (motywy w Audio.THEMES).
+const MUSIC := {
+	"epi_wies": "ep_wies", "epi_stolica": "ep_stolica", "epi_kruk": "ep_kruk", "epi_krol": "ep_krol",
+	"epi_miasto": "ep_miasto", "epi_zamek": "ep_zamek", "epi_swit": "ep_swit",
+	"fin_wies": "fin_a", "fin_tron": "fin_b", "fin_ostatnia": "fin_c",
+}
+
 static var ALL: Dictionary = SCENES.merged(SCENES2)
 
 const CONTEXT := {
@@ -153,11 +207,16 @@ var _hint: Label
 var _stage: _Stage
 var _done := false
 
+var _prev_track := ""
+
 func setup(p_kind: String) -> void:
 	kind = p_kind if ALL.has(p_kind) else "bath"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	if MUSIC.has(kind):
+		_prev_track = Audio.current_track()
+		Audio.play_music(String(MUSIC[kind]))
 	UiKit.full(self)
 	add_child(UiKit.dim(Color(0.0, 0.0, 0.02, 0.9)))
 	var d: Dictionary = ALL[kind]
@@ -230,6 +289,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _close() -> void:
 	Audio.play("back")
+	if _prev_track != "" and MUSIC.has(kind):
+		Audio.play_music(_prev_track)
 	on_close.emit()
 
 # ---------------------------------------------------------------- scena ---
@@ -410,7 +471,7 @@ class _Stage extends Node2D:
 
 	## Wnętrze: ściana z boazerią i gzymsem, okno z zasłonami, podłoga z kafelkami, dywan, kurz i cień przy krawędziach.
 	func _room(bg: Color) -> void:
-		var win := "moon" if kind in ["bath", "owl", "worms"] else ("stained" if kind == "sermon" else "day")
+		var win := "moon" if kind in ["bath", "owl", "worms"] else ("stained" if kind == "sermon" else ("sunset" if kind in ["epi_swit", "fin_ostatnia", "fin_wies"] else "day"))
 		# ściana
 		r(-480, -430, 960, 340, bg)
 		r(-480, -430, 960, 36, bg.darkened(0.45))                       # gzyms
@@ -423,12 +484,15 @@ class _Stage extends Node2D:
 		# okno
 		var wx := -330.0
 		ob(wx, -360, 170, 190, Color(0.45, 0.32, 0.2))
-		var sky := Color(0.1, 0.12, 0.3) if win == "moon" else (Color(0.55, 0.75, 0.95) if win == "day" else Color(0.3, 0.3, 0.4))
+		var sky := Color(0.1, 0.12, 0.3) if win == "moon" else (Color(0.55, 0.75, 0.95) if win == "day" else (Color(0.95, 0.55, 0.3) if win == "sunset" else Color(0.3, 0.3, 0.4)))
 		r(wx + 12, -348, 146, 166, sky)
 		if win == "moon":
 			disc(wx + 110, -300, 20, Color(1.0, 0.97, 0.8))
 			for i in 7:
 				r(wx + 24 + i * 19, -330 + (i * 37) % 90, C, C, Color(1, 1, 1, 0.5 + 0.5 * sin(t * 3.0 + i)))
+		elif win == "sunset":
+			disc(wx + 85, -240, 34, Color(1.0, 0.9, 0.5))
+			r(wx + 12, -240, 146, 58, Color(0.85, 0.35, 0.25, 0.55))
 		elif win == "day":
 			disc(wx + 50, -290, 18, Color(1, 1, 1, 0.9))
 			disc(wx + 80, -296, 22, Color(1, 1, 1, 0.9))
