@@ -16,6 +16,13 @@ var _addr: Label
 var _players: RichTextLabel
 var _log: RichTextLabel
 var _cmd: LineEdit
+var _hint_panel: PanelContainer
+var _hint_box: VBoxContainer
+var _usage_label: Label
+var _ghost: Label
+var _hint_opts: Array = []
+var _hint_start := 0
+var _hint_sel := 0
 var _hist: Array = []
 var _hist_i := 0
 var _refresh_t := 0.0
@@ -101,7 +108,27 @@ func _build_ui() -> void:
 	_cmd.placeholder_text = "Komenda lub wiadomość do wszystkich…  (Enter)"
 	_cmd.custom_minimum_size = Vector2(0, 40)
 	_cmd.text_submitted.connect(_on_cmd)
+	_cmd.text_changed.connect(_on_cmd_text)
+	_cmd.gui_input.connect(_on_cmd_key)
 	right.add_child(_cmd)
+	# podpowiedzi komend jak w Minecrafcie (to samo co w czacie gry), konsola ma prawa admina
+	_hint_panel = UiKit.panel(Color(0.0, 0.0, 0.0, 0.85), 0)
+	_hint_panel.visible = false
+	_hint_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hint_panel.z_index = 50
+	_hint_box = VBoxContainer.new()
+	_hint_box.add_theme_constant_override("separation", 0)
+	_hint_panel.add_child(_hint_box)
+	add_child(_hint_panel)
+	_usage_label = UiKit.label("", 13, Color(0.7, 0.7, 0.72))
+	_usage_label.visible = false
+	_usage_label.z_index = 50
+	add_child(_usage_label)
+	_ghost = Label.new()
+	_ghost.add_theme_font_size_override("font_size", 16)
+	_ghost.add_theme_color_override("font_color", Color(1, 1, 1, 0.32))
+	_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cmd.add_child(_ghost)
 
 func _field(parent: Control, caption: String, value: String) -> LineEdit:
 	parent.add_child(UiKit.label(caption, 14, UiKit.DIM))
@@ -134,6 +161,7 @@ func _on_start_stop() -> void:
 
 func _on_cmd(text: String) -> void:
 	_cmd.clear()
+	_on_cmd_text("")
 	var t := text.strip_edges()
 	if t == "":
 		return
@@ -188,3 +216,76 @@ func _refresh() -> void:
 		var rec: Dictionary = p["rec"]
 		txt += "%s — poz. %d %s%s\n" % [rec["name"], int(rec["level"]), rec["class"], " [ADMIN]" if srv.is_admin_rec(rec) else ""]
 	_players.text = txt
+
+# ---------------------------------------------------------- podpowiedzi komend ---
+
+func _hint_ctx() -> Dictionary:
+	var names: Array = []
+	for pl in srv.peers.values():
+		names.append(String(pl["name"]))
+	return {"players": names}
+
+func _on_cmd_text(text: String) -> void:
+	var h := ServerCmds.hints(text, true, _hint_ctx())
+	_hint_opts = h["options"]
+	_hint_start = int(h["start"])
+	_hint_sel = clampi(_hint_sel, 0, maxi(0, _hint_opts.size() - 1))
+	var bad: bool = text.begins_with("/") and text.length() > 1 and String(h["usage"]) == "" and _hint_opts.is_empty()
+	_cmd.add_theme_color_override("font_color", Color(1.0, 0.4, 0.35) if bad else Color(0.95, 0.95, 0.95))
+	for c in _hint_box.get_children():
+		c.queue_free()
+	_ghost.text = ""
+	if String(h["usage"]) == "" and _hint_opts.is_empty():
+		_hint_panel.visible = false
+		_usage_label.visible = false
+		return
+	var from := clampi(_hint_sel - 4, 0, maxi(0, _hint_opts.size() - 10))
+	for i in range(from, mini(_hint_opts.size(), from + 10)):
+		var l := Label.new()
+		l.text = " %s " % String((_hint_opts[i] as Array)[0])
+		l.add_theme_font_size_override("font_size", 16)
+		l.add_theme_color_override("font_color", Color(1.0, 1.0, 0.33) if i == _hint_sel else Color(0.72, 0.72, 0.74))
+		_hint_box.add_child(l)
+	_hint_panel.visible = not _hint_opts.is_empty()
+	_usage_label.text = String(h["usage"])
+	_usage_label.visible = String(h["usage"]) != ""
+	if not _hint_opts.is_empty():
+		var sel_v := String((_hint_opts[clampi(_hint_sel, 0, _hint_opts.size() - 1)] as Array)[0])
+		var partial := text.substr(_hint_start)
+		if sel_v.to_lower().begins_with(partial.to_lower()):
+			_ghost.text = sel_v.substr(partial.length())
+	_place_hint.call_deferred()
+
+func _text_width(s: String) -> float:
+	return _cmd.get_theme_font("font").get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
+
+func _place_hint() -> void:
+	var origin := _cmd.global_position - global_position
+	_ghost.position = Vector2(_text_width(_cmd.text) + 6.0, 8.0)
+	var x := origin.x + 6.0 + _text_width(_cmd.text.substr(0, _hint_start))
+	var y := origin.y - 2.0
+	if _usage_label.visible:
+		var uh := _usage_label.get_combined_minimum_size().y
+		_usage_label.position = Vector2(origin.x + 6.0, y - uh)
+		y -= uh + 2.0
+	if _hint_panel.visible:
+		var ms := _hint_panel.get_combined_minimum_size()
+		_hint_panel.size = ms
+		_hint_panel.position = Vector2(x, y - ms.y)
+
+func _on_cmd_key(event: InputEvent) -> void:
+	if not (event is InputEventKey) or not event.pressed:
+		return
+	var key := (event as InputEventKey).keycode
+	if (key == KEY_UP or key == KEY_DOWN) and not _hint_opts.is_empty():
+		_hint_sel = posmod(_hint_sel + (-1 if key == KEY_UP else 1), _hint_opts.size())
+		_on_cmd_text(_cmd.text)
+		_cmd.accept_event()
+	elif key == KEY_TAB and not _hint_opts.is_empty():
+		var o: Array = _hint_opts[clampi(_hint_sel, 0, _hint_opts.size() - 1)]
+		var done := _cmd.text.substr(0, _hint_start) + String(o[0]) + " "
+		_cmd.text = done
+		_cmd.caret_column = done.length()
+		_hint_sel = 0
+		_on_cmd_text(done)
+		_cmd.accept_event()
