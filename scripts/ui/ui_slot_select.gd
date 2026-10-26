@@ -33,6 +33,38 @@ func _ready() -> void:
 	row.add_child(back)
 	_confirm_btns.clear()
 	_confirm_delete.clear()
+	_dialog = FileDialog.new()
+	_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	_dialog.use_native_dialog = true
+	_dialog.title = "Importuj zapis gry"
+	_dialog.filters = PackedStringArray(["*.json ; Zapis gry (.json)"])
+	_dialog.file_selected.connect(_on_import_file)
+	add_child(_dialog)
+	_status = UiKit.label("", 16, UiKit.GOOD, HORIZONTAL_ALIGNMENT_CENTER)
+	root.add_child(_status)
+
+var _dialog: FileDialog
+var _status: Label
+var _import_slot := 1
+var _confirm_import: Dictionary = {}
+
+func _start_import(slot: int) -> void:
+	_import_slot = slot
+	_dialog.popup_centered_ratio(0.7)
+
+func _on_import_file(path: String) -> void:
+	var err := GameState.import_save(path, _import_slot)
+	if err != "":
+		Audio.play("deny")
+		_status.text = err
+		_status.add_theme_color_override("font_color", UiKit.BAD)
+		return
+	Audio.play("confirm")
+	_status.text = "Zaimportowano zapis do slotu %d." % _import_slot
+	_status.add_theme_color_override("font_color", UiKit.GOOD)
+	await get_tree().create_timer(0.7).timeout
+	Flow.goto("slots")
 
 var _confirm_btns: Dictionary = {}
 var _confirm_delete: Dictionary = {}
@@ -56,6 +88,19 @@ func _slot_card(slot: int) -> PanelContainer:
 		v.add_child(UiKit.label("Pusty slot", 16, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
 
 	v.add_child(UiKit.sep(8))
+
+	# import zapisu z pliku (przy istniejącym slocie najpierw potwierdzenie nadpisania)
+	var imp := UiKit.button("Importuj zapis…", 15, UiKit.GOOD)
+	imp.custom_minimum_size = Vector2(260, 36)
+	_confirm_import[slot] = false
+	imp.pressed.connect(func():
+		if exists and not bool(_confirm_import.get(slot, false)):
+			_confirm_import[slot] = true
+			imp.text = "Nadpisze zapis. Kliknij ponownie"
+			Audio.play("deny")
+			return
+		_start_import(slot))
+	v.add_child(imp)
 
 	# przycisk główny: Kontynuuj / Nowa gra
 	var main := UiKit.button("", 20)

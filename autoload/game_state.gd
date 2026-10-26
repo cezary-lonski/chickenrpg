@@ -1032,6 +1032,39 @@ func slot_info(slot: int) -> Dictionary:
 		"done": (st.get("done", []) as Array).size(), "level": lvl, "gold": int(data.get("gold", 0)),
 	}
 
+## Importuje zapis z pliku (np. skopiowanego z innego komputera lub folderu) do wybranego slotu.
+## Zwraca pusty tekst, gdy się udało, albo opis błędu. Stary zapis ze slotu zostaje jako kopia „.bak.json”.
+func import_save(path: String, slot: int) -> String:
+	if slot < 1 or slot > SLOT_COUNT:
+		return "Nieprawidłowy slot."
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return "Nie można otworzyć pliku."
+	var text := f.get_as_text()
+	f.close()
+	var parsed = JSON.parse_string(text)
+	if typeof(parsed) != TYPE_DICTIONARY or not (parsed.has("story") or parsed.has("characters")):
+		return "To nie wygląda na zapis tej gry."
+	if slot_exists(slot):
+		var old := FileAccess.open(slot_path(slot), FileAccess.READ)
+		if old:
+			var bak := FileAccess.open(slot_path(slot).replace(".json", ".bak.json"), FileAccess.WRITE)
+			if bak:
+				bak.store_string(old.get_as_text())
+				bak.close()
+			old.close()
+	var out := FileAccess.open(slot_path(slot), FileAccess.WRITE)
+	if out == null:
+		return "Nie można zapisać slotu %d." % slot
+	out.store_string(text)
+	out.close()
+	# ostatni slot = zaimportowany, żeby „Kontynuuj” od razu go wczytało
+	var lf := FileAccess.open("user://chicken_brawl_last.json", FileAccess.WRITE)
+	if lf:
+		lf.store_string(str(slot))
+		lf.close()
+	return ""
+
 func delete_slot(slot: int) -> void:
 	if slot_exists(slot):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(slot_path(slot)))

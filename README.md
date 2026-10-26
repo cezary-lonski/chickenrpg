@@ -235,3 +235,6 @@ Założony **hiperekstralegendarny** przedmiot (dowolny slot) otacza gracza duż
 
 ## Ustawienia grafiki
 W ustawieniach (i w menu Esc) są przełączniki: **Animacje** (oddychanie, mruganie, cząstki w tle) i **Aury i płomienie** (aury ekwipunku, szału i wsparcia). Oba domyślnie włączone.
+
+## Import zapisu
+Menu → „Nowa gra RPG” → przy każdym slocie jest przycisk **Importuj zapis…**: wybierasz plik `chicken_brawl_save_*.json` (np. skopiowany z innego komputera lub folderu), a gra wczytuje go do tego slotu i ustawia go jako ostatni, więc „Kontynuuj” od razu go otwiera. Przy istniejącym slocie trzeba potwierdzić nadpisanie, a stary zapis zostaje jako kopia `*.bak.json`.
