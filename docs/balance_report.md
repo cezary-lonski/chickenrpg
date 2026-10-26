@@ -33,7 +33,7 @@ Suma życia/XP wrogów w falach każdego rozdziału (bez mnożników trudności)
 ```
 
 ## Wnioski
-- Krzywa XP jest łagodna: poziom 100 pojawia się dopiero w rozdziałach XXI–XXII (ostatnie dwa), więc finał jest wyzwaniem, a nie spacerem.
+- Krzywa XP jest łagodna: poziom 100 pojawia się dopiero w rozdziałach XX–XXI (ostatnie dwa), więc finał jest wyzwaniem, a nie spacerem.
 - Życie wrogów rośnie o 0,24 mnożnika na rozdział, a obrażenia o 0,07 — walka robi się dłuższa, nie bardziej zabójcza. Poziomy Koszmarny (×5 HP, ×3 obrażeń) i Piekielny (×10, ×5) wyraźnie podnoszą stawkę.
 - Skoki trudności są w rozdziałach z bossami: Zamek Kruka (4,7 tys. HP w falach), Czarny Kruk (5 tys.), Gniazdo nad burzą (5,1 tys.) i Ostatni świt (6,5 tys.).
 - Najlżejsze są Narada (7 wrogów, to krótki epizod) i Miasto Kruka; ich XP jest też najniższe, co pasuje do roli przerywników.
