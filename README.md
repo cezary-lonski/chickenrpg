@@ -1,5 +1,10 @@
 # Chicken RPG (Chicken Brawl)
 
+## 👉 [**POBIERZ GRĘ — Windows (.exe), beta 0.1**](https://github.com/cezary-lonski/chickenrpg/releases/download/v0.1.0-beta/ChickenRPG-0.1-beta-win64.zip)
+
+Rozpakuj archiwum i uruchom `ChickenRPG.exe` (bez instalacji). Wszystkie wersje: [Releases](https://github.com/cezary-lonski/chickenrpg/releases).
+Jeśli Windows pokaże ostrzeżenie SmartScreen: „Więcej informacji” → „Uruchom mimo to” (plik nie jest podpisany).
+
 Kurczak kontra ptasia armia Czarniego Kruka. Gra akcyjna 2D w Godot 4.7 z trybem
 **RPG top-down** (widok z góry) oraz klasycznym trybem platformowym (z boku).
 
