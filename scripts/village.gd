@@ -688,14 +688,19 @@ func _nearest_interactable() -> Interactable:
 			best = it
 	return best
 
+## Gdy trwa rozmowa/historyjka lub rozdział się kończy, klawisz E nie może otwierać ekwipunku.
+func blocks_loadout() -> bool:
+	return _dialog_open or finished
+
 func try_interact() -> bool:
 	if _dialog_open or finished:
 		return false
 	var it := _nearest_interactable()
-	if it != null and (_nearest_npc().is_empty() or it.global_position.distance_to(player.global_position) < 70.0):
+	var target := _nearest_npc()
+	# wygrywa to, co bliżej: obiekt (tablica, drzwi, schody) albo rozmówca
+	if it != null and (target.is_empty() or it.global_position.distance_to(player.global_position) <= (target["node"] as Node2D).global_position.distance_to(player.global_position) + 30.0):
 		it.interact(player)
 		return true
-	var target := _nearest_npc()
 	if target.is_empty():
 		return false
 	_talk_to(String(target["id"]))

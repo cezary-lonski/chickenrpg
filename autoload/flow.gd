@@ -60,6 +60,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			if bool(stage.call("try_interact")):
 				get_viewport().set_input_as_handled()
 				return
+		if not blocked and stage.has_method("blocks_loadout") and bool(stage.call("blocks_loadout")):
+			get_viewport().set_input_as_handled()
+			return
 		if not blocked:
 			_open_loadout_overlay(true)
 			get_viewport().set_input_as_handled()

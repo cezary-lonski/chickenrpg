@@ -26,6 +26,9 @@ func _ready() -> void:
 func setup(p_kind: String, p_label: String, p_uid: String = "", hidden: bool = false) -> void:
 	kind = p_kind
 	label_text = p_label
+	# tablica, drzwi komnat, schody, skrytka i laboratorium mają większy zasięg niż drobne obiekty
+	if p_kind in ["board", "door", "stairs", "stash", "lab"]:
+		radius = 120.0
 	uid = p_uid
 	hidden_until_near = hidden
 	_vis = 0.0 if hidden else 1.0
