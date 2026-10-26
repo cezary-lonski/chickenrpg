@@ -112,6 +112,12 @@ func _rebuild() -> void:
 		c.queue_free()
 	var slot := String(TABS[_tab]["id"])
 	for id in ItemDB.by_slot(slot):
+		# sklep sprzedaje tylko rzeczy za złoto i poniżej legendarnych (bez „gratisowych” legendarek)
+		var sd := ItemDB.get_data(id)
+		if int(sd.get("price", 0)) <= 0:
+			continue
+		if ItemDB.RARITIES.find(ItemDB.rarity_of(id)) >= ItemDB.RARITIES.find("legendarny"):
+			continue
 		_list.add_child(_make_row(id, slot))
 
 func _make_row(id: String, slot: String) -> Control:

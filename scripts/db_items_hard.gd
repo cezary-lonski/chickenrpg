@@ -1,8 +1,8 @@
 class_name ItemsHard
 extends RefCounted
-## Legendarki wzmacniające umiejętności. Każdy wzór istnieje w trzech wersjach — im trudniejszy
-## poziom trudności, tym lepsza: legendarna (normalny), hiperlegendarna (koszmarny)
-## i hiperekstralegendarna (piekielny). Wypadają z potworów, bossów i skrzyń.
+## Legendarki wzmacniające umiejętności. Wzór istnieje w trzech wersjach (legendarna, hiperlegendarna,
+## hiperekstralegendarna), ale z potworów, bossów i skrzyń wypada wyłącznie wersja legendarna.
+## Rzadkości powyżej legendarnej można zdobyć tylko przez runy.
 ##
 ## fx: skill_power (moc umiejętności), skill_cdr (krótsze odnowienie), skill_cost (tańsze umiejętności),
 ## skill_range (zasięg), energy_regen (energia/s) — poza zwykłymi regen/lifesteal/dmg_reduction.
@@ -114,14 +114,8 @@ static func _build() -> Dictionary:
 
 ## Losuje legendarkę: poziom trudności 0..2 decyduje o jakości (na wyższych trudnościach
 ## częściej wypadają lepsze wersje). Zwraca id przedmiotu.
-static func roll(difficulty_level: int) -> String:
-	var lv := 0
-	var r := randf()
-	match clampi(difficulty_level, 0, 2):
-		1: lv = 1 if r < 0.7 else 0
-		2: lv = 2 if r < 0.6 else (1 if r < 0.9 else 0)
-	if difficulty_level >= 2 and randf() < 0.14:
-		var pg: Array = PET_GEAR.keys()
-		return String(pg[randi() % pg.size()])
+## Losuje legendarkę. Przedmioty powyżej legendarnych (hiperlegendarne i hiperekstralegendarne) nie wypadają
+## już nigdzie — da się je zdobyć wyłącznie przez runy, więc poziom trudności nie podnosi tu rzadkości.
+static func roll(_difficulty_level: int) -> String:
 	var keys: Array = TEMPLATES.keys()
-	return id_of(String(keys[randi() % keys.size()]), lv)
+	return id_of(String(keys[randi() % keys.size()]), 0)

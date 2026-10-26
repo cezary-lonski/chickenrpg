@@ -227,3 +227,8 @@ Założony **hiperekstralegendarny** przedmiot (dowolny slot) otacza gracza duż
 - Życie i energia to **puste w środku kurczaki** przy rzędzie jajek: widać kontur i oko, a wnętrze wypełnia się od dołu.
 - **Dziewięć umiejętności** (klawisze 1–9) jako jajka w równym rzędzie z odstępami, nazwa na jajku, numer pod nim, cooldown zaciemnia jajko.
 - Drewniane panele (statystyki, zadanie, złoto) i komunikaty; pasek szybkich przedmiotów zniknął z ekranu (rzut przedmiotem nadal na klawisz I).
+
+## Zasady rzadkości
+- Z walk, skrzyń i jaskiń wypadają co najwyżej **legendarne** przedmioty. Hiperlegendarne i hiperekstralegendarne da się zdobyć tylko przez **runy**.
+- Sklep w trybie platformowym sprzedaje wyłącznie przedmioty za złoto i poniżej legendarnych (bez „gratisowych” legendarek).
+- Menu startowe ma pixelartowe tło (świt, zamek, wioska), a ikoną aplikacji jest logo Chicken RPG.

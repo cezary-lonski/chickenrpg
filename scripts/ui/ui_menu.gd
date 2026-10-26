@@ -8,7 +8,16 @@ var stats_row: Label
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	UiKit.full(self)
-	add_child(UiKit.bg_texture())
+	# tło startowe: pixelartowy krajobraz (świt, zamek, wioska), skalowany bez wygładzania
+	var bg := TextureRect.new()
+	bg.texture = load("res://menu_bg.png")
+	bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bg.stretch_mode = TextureRect.STRETCH_SCALE
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	UiKit.full(bg)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
+	add_child(UiKit.dim(Color(0.04, 0.03, 0.08, 0.28)))
 	var center := UiKit.vbox(2)
 	center.alignment = BoxContainer.ALIGNMENT_CENTER
 	UiKit.full(center)
