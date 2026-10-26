@@ -1080,6 +1080,12 @@ func key_label(action: String) -> String:
 				MOUSE_BUTTON_LEFT: parts.append("LPM")
 				MOUSE_BUTTON_RIGHT: parts.append("PPM")
 				MOUSE_BUTTON_MIDDLE: parts.append("ŚPM")
+				MOUSE_BUTTON_XBUTTON1: parts.append("Mysz boczny 1 (wstecz)")
+				MOUSE_BUTTON_XBUTTON2: parts.append("Mysz boczny 2 (naprzód)")
+				MOUSE_BUTTON_WHEEL_UP: parts.append("Kółko w górę")
+				MOUSE_BUTTON_WHEEL_DOWN: parts.append("Kółko w dół")
+				MOUSE_BUTTON_WHEEL_LEFT: parts.append("Kółko w lewo")
+				MOUSE_BUTTON_WHEEL_RIGHT: parts.append("Kółko w prawo")
 				_: parts.append("Mysz %d" % (ev as InputEventMouseButton).button_index)
 	return " / ".join(parts) if not parts.is_empty() else "—"
 

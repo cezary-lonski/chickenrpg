@@ -114,7 +114,7 @@ func _start_capture(action: String, btn: Button) -> void:
 	_cap_action = action
 	_cap_btn = btn
 	btn.text = "…"
-	(_rows[action] as Label).text = "Naciśnij klawisz lub przycisk myszy…"
+	(_rows[action] as Label).text = "Naciśnij klawisz lub dowolny przycisk myszy (też boczny)…"
 	Audio.play("select")
 
 func _input(event: InputEvent) -> void:
@@ -131,8 +131,6 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton and event.pressed:
 		var mb: int = (event as InputEventMouseButton).button_index
-		if mb not in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE, MOUSE_BUTTON_RIGHT]:
-			return
 		GameState.rebind_mouse(_cap_action, mb)
 		_finish_capture()
 		get_viewport().set_input_as_handled()
