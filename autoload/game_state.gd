@@ -52,7 +52,7 @@ func _blank_profile() -> Dictionary:
 		"unlocks": {"cod": 0, "zlot": 0},
 		"stage_unlocked": 1,
 		"characters": {},
-		"settings": {"music": true, "sfx": true, "shake": true, "toasts": true, "binds": {}, "mouse_binds": {}, "volume": 1.0, "fullscreen": false},
+		"settings": {"music": true, "sfx": true, "shake": true, "toasts": true, "hitstop": false, "binds": {}, "mouse_binds": {}, "volume": 1.0, "fullscreen": false},
 		"stats": {"kills": 0, "deaths": 0, "runs": 0, "bosses": 0, "time": 0.0},
 		"seen_intro": false,
 		"story": {"chapter": 0, "quest": "", "step": 0, "flags": {}, "done": []},
@@ -1071,7 +1071,8 @@ func _register_default_actions() -> void:
 		_set_keys(action, DEFAULT_KEYS[action])
 
 func setting(key: String) -> bool:
-	return bool(profile.get("settings", {}).get(key, true))
+	# spowolnienie przy ataku jest domyślnie wyłączone (dawało efekt „lagu”), reszta opcji — włączona
+	return bool(profile.get("settings", {}).get(key, key != "hitstop"))
 
 func toggle_setting(key: String) -> bool:
 	if not profile.has("settings"): profile["settings"] = {}

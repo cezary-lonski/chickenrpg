@@ -1,13 +1,14 @@
 # Chicken RPG (Chicken Brawl)
 
 Kurczak kontra ptasia armia Czarniego Kruka. Gra akcyjna 2D w Godot 4.7 z trybem
-**RPG top-down** (widok z góry).
+**RPG top-down** (widok z góry) oraz klasycznym trybem platformowym (z boku).
 
 ## Tryby gry
 
 - **Kontynuuj** — od razu wchodzisz do gry zapisaną postacią (bez wyboru klasy i trudności). **Nowa gra RPG** — wybór slotu, bohatera, klasy i poziomu trudności (tylko przy tworzeniu).
 - **Własne fale** — wybierasz potwory, ich liczbę i liczbę fal; pod tym trybem jest też **Arena graczy** (PvP tylko w LAN i online).
 - **Gra online / Gra LAN** — hostujesz z poziomu gry zapisaną postacią, a dołączając wybierasz własną (KOD, a online dodatkowo IP hosta).
+- **Tryb platformowy** — klasyczna gra z boku (etapy, sklep), dostępna w menu głównym.
 - **Kreator postaci** — własny wygląd kurczaka, a w nim **Kreator animacji**.
 
 Grafika to ręcznie generowany **pixel art** (stworzenia, rekwizyty, teren, ikony przedmiotów).

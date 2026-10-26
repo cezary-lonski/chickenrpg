@@ -47,10 +47,18 @@ func clear_world() -> void:
 
 # ---------------------------------------------------------------- hitstop ---
 
+var _hs_token := 0
+
+## Krótkie spowolnienie czasu przy trafieniu. Opcja w ustawieniach („Spowolnienie przy ataku”), domyślnie wyłączona.
 func hitstop(duration: float) -> void:
-	# Wyłączone: spowolnienie czasu podczas trafień/zabić dawało efekt "lag".
-	# Zachowujemy funkcję jako no-op, żeby istniejące wywołania nie psuły gry.
-	pass
+	if duration <= 0.0 or not GameState.setting("hitstop"):
+		return
+	_hs_token += 1
+	var mine := _hs_token
+	Engine.time_scale = 0.15
+	await get_tree().create_timer(minf(duration, 0.3), true, false, true).timeout
+	if mine == _hs_token:
+		Engine.time_scale = 1.0
 
 func _process(delta: float) -> void:
 	if _shake_time > 0.0 and camera and enabled_shake:
