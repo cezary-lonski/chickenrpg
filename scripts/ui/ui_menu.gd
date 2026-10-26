@@ -48,6 +48,7 @@ func _ready() -> void:
 	add_child(hint)
 	GameState.profile_changed.connect(_refresh)
 	_refresh()
+	add_child(UiUpdater.new())
 	Audio.play_music("menu")
 	if _continue_btn and _continue_btn.visible:
 		_continue_btn.grab_focus()

@@ -30,6 +30,7 @@ var _char := ""
 var _busy := false
 var _class_ids: Array = []
 var _new := false
+var _login_only := false
 var _nicks: Dictionary = {}
 var _base: OptionButton
 var _base_ids: Array = []
@@ -85,9 +86,12 @@ func _ready() -> void:
 		b.pressed.connect(_pick_slot.bind(i))
 		_slot_row.add_child(b)
 
-	var nb := UiKit.button("Nowa postać (bez zapisu)", 18, UiKit.GOOD)
+	var nb := UiKit.button("Utwórz nową postać (zapis na serwerze)", 16, UiKit.GOOD)
 	nb.pressed.connect(_pick_new)
 	outer.add_child(_center(nb))
+	var lb := UiKit.button("Wejdź na postać zapisaną na serwerze", 16, UiKit.ACCENT2)
+	lb.pressed.connect(_pick_login)
+	outer.add_child(_center(lb))
 	var look_row := UiKit.hbox(10)
 	look_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	outer.add_child(look_row)
@@ -311,6 +315,7 @@ func _save_last() -> void:
 
 func _pick_slot(slot: int) -> void:
 	Audio.play("select")
+	_login_only = false
 	_slot = slot
 	_new = false
 	_base.visible = false
@@ -365,10 +370,29 @@ func _pick_char(id: String) -> void:
 
 ## Klucz zapamiętanego nicku: zapis+postać albo „nowa postać”. Nick wpisujesz raz, hasło przy każdym wejściu.
 func _nick_key() -> String:
+	if _login_only:
+		return "login"
 	return "new:%s" % _char if _new else "s%d:%s" % [_slot, _char]
+
+func _pick_login() -> void:
+	Audio.play("select")
+	_login_only = true
+	_new = false
+	_slot = 0
+	_char = ""
+	_base.visible = false
+	for c in _char_box.get_children():
+		c.queue_free()
+	_char_box.add_child(UiKit.label("Wpisz nick i hasło postaci, którą masz już zapisaną na tym serwerze.", 14, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	_class_ids = []
+	_cls.clear()
+	_nick.text = String(_nicks.get("login", ""))
+	_join_btn.disabled = false
+	_status.text = "Postać zostanie wczytana z zapisu na serwerze."
 
 func _pick_new() -> void:
 	Audio.play("select")
+	_login_only = false
 	_new = true
 	_slot = 0
 	for c in _char_box.get_children():
@@ -396,6 +420,8 @@ func _set_base(id: String) -> void:
 	_status.text = "Nowa postać: %s." % String(CharacterDB.get_data(id).get("title", id))
 
 func _build_pack() -> Dictionary:
+	if _login_only:
+		return {}
 	if _new:
 		var inv0: Array = []
 		var sb := ItemDB.starter_backpack()
@@ -422,7 +448,7 @@ func _build_pack() -> Dictionary:
 	}
 
 func _on_join() -> void:
-	if _busy or _char == "":
+	if _busy or (_char == "" and not _login_only):
 		return
 	var nick := _nick.text.strip_edges()
 	if not ServerChars.valid_name(nick):
@@ -445,7 +471,7 @@ func _on_join() -> void:
 
 func _on_fail(reason: String) -> void:
 	_busy = false
-	_join_btn.disabled = _char == ""
+	_join_btn.disabled = _char == "" and not _login_only
 	_status.add_theme_color_override("font_color", UiKit.BAD)
 	_status.text = reason
 	Audio.play("deny")
@@ -460,7 +486,7 @@ func _on_login(ok: bool, msg: String, _info: Dictionary) -> void:
 		Flow.goto("mmo")
 		return
 	_busy = false
-	_join_btn.disabled = _char == ""
+	_join_btn.disabled = _char == "" and not _login_only
 	_status.add_theme_color_override("font_color", UiKit.BAD)
 	_status.text = msg
 	Audio.play("deny")

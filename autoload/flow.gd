@@ -24,6 +24,7 @@ var _net_loaded_key := ""
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	get_viewport().size_changed.connect(_fit_screen)
 	Net.start_received.connect(_on_net_start)
 	Net.game_started_received.connect(_on_net_game_started)
 	Net.flow_received.connect(_on_net_flow)
@@ -95,6 +96,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 # --------------------------------------------------------------- pomocnicze ---
+
+## Ekran jest dzieckiem Node2D, więc kotwice nie dają mu rozmiaru (w wyeksportowanej grze było 0 i menu
+## nie miało tła). Ustawiamy rozmiar wprost na rozmiar okna i pilnujemy go przy zmianie okna.
+func _fit_screen() -> void:
+	if current is Control and is_instance_valid(current):
+		var c := current as Control
+		c.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		c.position = Vector2.ZERO
+		c.size = get_viewport().get_visible_rect().size
 
 func add_to_tree(n: Node) -> Node:
 	get_tree().current_scene.add_child(n)
@@ -228,6 +238,8 @@ func _build(screen: String, args: Dictionary) -> void:
 			current = UiMainMenu.new()
 	if current and current.get_parent() == null:
 		get_tree().current_scene.add_child(current)
+		if current is Control:
+			_fit_screen()
 
 func _back_to(from: String) -> void:
 	match from:
