@@ -28,7 +28,7 @@ func _ready() -> void:
 func _texture() -> Texture2D:
 	if item_id == "gold":
 		return Art.hud_icon("gold", 20, Color(1.0, 0.82, 0.28))
-	return Art.item_icon(String(ItemDB.get_data(item_id).get("icon", "jajko")), 22)
+	return Art.item_icon(item_id, 22)
 
 func _physics_process(delta: float) -> void:
 	_t += delta

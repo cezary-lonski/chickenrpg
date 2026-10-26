@@ -328,27 +328,42 @@ func _process(delta: float) -> void:
 	_process_boss(delta)
 	for t in _toasts.duplicate():
 		t["t"] = float(t["t"]) - delta
+		var nd: Control = t["node"]
+		if is_instance_valid(nd) and float(t["t"]) < 0.6:
+			nd.modulate.a = clampf(float(t["t"]) / 0.6, 0.0, 1.0)   # powolne gaśnięcie
 		if float(t["t"]) <= 0.0:
-			var node: Control = t["node"]
-			if is_instance_valid(node):
-				node.queue_free()
+			if is_instance_valid(nd):
+				nd.queue_free()
 			_toasts.erase(t)
+	# komunikaty wchodzą po kolei, w odstępach, a nie wszystkie naraz
+	_toast_gap -= delta
+	if _toast_gap <= 0.0 and not _toast_queue.is_empty() and _toasts.size() < 5:
+		var q: Array = _toast_queue.pop_front()
+		_show_toast(String(q[0]), q[1])
+		_toast_gap = 0.9 if _toast_queue.size() < 4 else 0.6
+
+var _toast_queue: Array = []
+var _toast_gap := 0.0
 
 func add_toast(text: String, color: Color = UiKit.TEXT) -> void:
+	if not GameState.setting("toasts"):
+		return
+	if _toast_queue.size() >= 12:
+		_toast_queue.pop_front()
+	_toast_queue.append([text, color])
+
+func _show_toast(text: String, color: Color) -> void:
 	var p := UiKit.panel(Color(0.06, 0.07, 0.1, 0.85), 8)
 	p.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	var l := UiKit.label(text, 17, color, HORIZONTAL_ALIGNMENT_CENTER)
 	p.add_child(l)
 	toast_box.add_child(p)
-	_toasts.append({"node": p, "t": 2.6})
-	if _toasts.size() > 5:
-		var old: Control = _toasts[0]["node"]
-		if is_instance_valid(old):
-			old.queue_free()
-		_toasts.pop_front()
+	_toasts.append({"node": p, "t": 5.0})
 	p.modulate.a = 0.0
+	p.position.x = -30.0
 	var tw := create_tween()
-	tw.tween_property(p, "modulate:a", 1.0, 0.15)
+	tw.set_parallel(true)
+	tw.tween_property(p, "modulate:a", 1.0, 0.4)
 
 func _rebuild_items() -> void:
 	for c in item_row.get_children():

@@ -16,6 +16,7 @@ signal arena_pressed
 signal map_pressed
 signal stash_pressed
 signal achievements_pressed
+signal hospital_pressed
 
 var _panel: PanelContainer
 var _root: Control
@@ -55,6 +56,7 @@ func _ready() -> void:
 	_btn(g, "Towarzysze", func(): pets_pressed.emit(), UiKit.ACCENT2)
 	_btn(g, "Skrytka", func(): stash_pressed.emit(), UiKit.ACCENT)
 	_btn(g, "Mapa świata (M)", func(): map_pressed.emit(), UiKit.ACCENT2)
+	_btn(g, "Szpital (zdrowie strażników)", func(): hospital_pressed.emit(), UiKit.GOOD)
 	_btn(g, "Osiągnięcia", func(): achievements_pressed.emit(), UiKit.ACCENT)
 	_btn(g, "Własne fale", func(): waves_pressed.emit(), Color(0.9, 0.5, 1.0))
 	_btn(g, "Arena graczy (LAN / online)", func(): arena_pressed.emit(), Color(1.0, 0.45, 0.4))
@@ -69,7 +71,7 @@ func _ready() -> void:
 	_opts = UiKit.vbox(4)
 	_opts.visible = false
 	v.add_child(_opts)
-	for entry in [["music", "Muzyka"], ["sfx", "Dźwięki"], ["shake", "Trzęsienie"]]:
+	for entry in [["music", "Muzyka"], ["sfx", "Dźwięki"], ["shake", "Trzęsienie"], ["toasts", "Komunikaty"]]:
 		var key := String(entry[0])
 		var b := UiKit.button("", 16)
 		b.text = "%s: %s" % [String(entry[1]), "TAK" if GameState.setting(key) else "NIE"]

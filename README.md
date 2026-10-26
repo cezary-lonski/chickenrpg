@@ -216,3 +216,8 @@ Założony **hiperekstralegendarny** przedmiot (dowolny slot) otacza gracza duż
 - **Osiągnięcia** (Esc → „Osiągnięcia” w grze RPG) z dziennikiem odkryć: sekretne komnaty, jaskinie, legendarki, pojedynki, rekord wyzwań.
 - **Wyzwania — pojedynki**: kolejni rycerze z rosnącą siłą, ranking 5 najlepszych wyników.
 - Raport balansu: [docs/balance_report.md](docs/balance_report.md).
+
+## Drobne usprawnienia
+- Przedmioty leżące na ziemi mają własne ikony (wcześniej wszystkie wyglądały jak jajka).
+- Komunikaty na ekranie pojawiają się po kolei, trwają ok. 5 s i gasną powoli; można je wyłączyć w ustawieniach („Komunikaty na ekranie”, domyślnie włączone).
+- **Szpital** (Esc → „Szpital”): zdrowie strażników i peta oraz liczba poziomów do powrotu poległych.

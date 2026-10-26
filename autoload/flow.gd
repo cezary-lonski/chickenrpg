@@ -567,6 +567,7 @@ func _show_pause() -> void:
 	pause_ui.restart_pressed.connect(_restart_current)
 	pause_ui.map_pressed.connect(open_travel_map)
 	pause_ui.stash_pressed.connect(open_stash)
+	pause_ui.hospital_pressed.connect(func(): _open_overlay(UiHospital.new(), false))
 	pause_ui.achievements_pressed.connect(func(): _open_overlay(UiAchievements.new(), false))
 	pause_ui.arena_pressed.connect(func():
 		_hide_pause()
