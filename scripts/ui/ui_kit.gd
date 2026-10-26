@@ -3,13 +3,14 @@ extends RefCounted
 ## Wspólne kawałki interfejsu: kolory, panele, przyciski, ikony.
 ## Cały wygląd gry trzyma się tej paleta i tych helperów.
 
-const BG := Color(0.08, 0.09, 0.13, 0.95)
-const BG2 := Color(0.14, 0.16, 0.22, 0.97)
-const BG3 := Color(0.19, 0.22, 0.29, 0.98)
-const ACCENT := Color(1.0, 0.72, 0.25)
-const ACCENT2 := Color(0.45, 0.78, 0.95)
-const TEXT := Color(0.93, 0.94, 0.97)
-const DIM := Color(0.6, 0.63, 0.7)
+const BG := Color(0.05, 0.04, 0.08, 0.62)
+const BG2 := Color(0.35, 0.24, 0.13, 0.94)
+const BG3 := Color(0.44, 0.30, 0.16, 0.96)
+const EDGE := Color(0.17, 0.11, 0.06)
+const ACCENT := Color(1.0, 0.86, 0.45)
+const ACCENT2 := Color(0.55, 0.82, 0.95)
+const TEXT := Color(0.97, 0.93, 0.84)
+const DIM := Color(0.81, 0.76, 0.66)
 const GOOD := Color(0.42, 0.9, 0.5)
 const BAD := Color(0.95, 0.4, 0.35)
 const HP := Color(0.88, 0.24, 0.24)
@@ -22,9 +23,10 @@ static func sb(bg: Color, _radius: int = 8, border: float = 0.0, border_col: Col
 	var s := StyleBoxFlat.new()
 	s.bg_color = bg
 	s.anti_aliasing = false
+	s.set_corner_radius_all(4)
 	if border <= 0.0 and bg.a > 0.1:
-		border = 2.0
-		border_col = Color(bg.r * 0.45, bg.g * 0.45, bg.b * 0.5, 1.0)
+		border = 3.0
+		border_col = EDGE
 	if border > 0.0:
 		s.border_width_left = int(border)
 		s.border_width_right = int(border)
@@ -35,6 +37,10 @@ static func sb(bg: Color, _radius: int = 8, border: float = 0.0, border_col: Col
 	s.content_margin_right = 12
 	s.content_margin_top = 8
 	s.content_margin_bottom = 8
+	if bg.a > 0.1:
+		s.shadow_color = Color(0, 0, 0, 0.35)
+		s.shadow_size = 3
+		s.shadow_offset = Vector2(0, 3)
 	return s
 
 static func panel(bg: Color = BG, radius: int = 12) -> PanelContainer:
@@ -82,11 +88,14 @@ static func button(text: String, size: int = 22, accent: Color = ACCENT) -> Butt
 	b.add_theme_color_override("font_hover_color", accent)
 	b.add_theme_color_override("font_pressed_color", Color(1, 1, 1))
 	b.add_theme_color_override("font_focus_color", accent)
+	b.add_theme_font_size_override("font_size", size)
+	b.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.03, 0.9))
+	b.add_theme_constant_override("outline_size", 4)
 	b.add_theme_stylebox_override("normal", sb(BG2, 8))
-	b.add_theme_stylebox_override("hover", sb(BG3, 8, 2, accent))
-	b.add_theme_stylebox_override("pressed", sb(Color(accent.r, accent.g, accent.b, 0.25), 8))
-	b.add_theme_stylebox_override("focus", sb(Color(0, 0, 0, 0), 8, 2, Color(accent.r, accent.g, accent.b, 0.5)))
-	b.add_theme_stylebox_override("disabled", sb(Color(0.1, 0.1, 0.12, 0.8), 8))
+	b.add_theme_stylebox_override("hover", sb(BG3, 8, 3, accent))
+	b.add_theme_stylebox_override("pressed", sb(BG2.darkened(0.15), 8))
+	b.add_theme_stylebox_override("focus", sb(BG3, 8, 3, Color(accent.r, accent.g, accent.b, 0.7)))
+	b.add_theme_stylebox_override("disabled", sb(Color(0.25, 0.19, 0.13, 0.55), 8))
 	return b
 
 static func icon(tex: Texture2D, px: int = 32) -> TextureRect:
@@ -141,6 +150,7 @@ static func bg_texture(tint: Color = Color(0.05, 0.06, 0.09, 1.0)) -> TextureRec
 	full(t)
 	t.stretch_mode = TextureRect.STRETCH_SCALE
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	t.modulate = Color(1, 1, 1, 0.3)   # tło gry ma być widać
 	return t
 
 static func stat_line(name_text: String, value: float, suffix: String = "", col: Color = TEXT) -> HBoxContainer:
@@ -159,7 +169,7 @@ static func _fmt(v: float) -> String:
 
 static func dim(c: Color = Color(0.02, 0.02, 0.04, 0.72)) -> ColorRect:
 	var r := ColorRect.new()
-	r.color = c
+	r.color = Color(c.r, c.g, c.b, minf(c.a, 0.3))   # przezroczyste tło: gra prześwituje
 	full(r)
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return r

@@ -27,53 +27,81 @@ func _ready() -> void:
 	_root = Control.new()
 	UiKit.full(_root)
 	add_child(_root)
-	var dim := UiKit.dim(Color(0.02, 0.02, 0.05, 0.72))
+	var dim := UiKit.dim(Color(0.05, 0.04, 0.08, 0.25))
 	_root.add_child(dim)
-	_panel = UiKit.panel(Color(0.07, 0.08, 0.12, 0.98), 14)
+	var wrap := UiKit.hbox(14)
+	UiKit.full_margin(wrap, 40.0)
+	_root.add_child(wrap)
+	_panel = UiKit.panel(UiKit.BG, 14)
 	_panel.custom_minimum_size = Vector2(400, 0)
-	_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	_root.add_child(_panel)
-	var v := UiKit.vbox(3)
+	wrap.add_child(_panel)
+	var v := UiKit.vbox(6)
 	_panel.add_child(v)
-	v.add_child(UiKit.title("PAUZA", 40))
+	v.add_child(UiKit.label("PAUZA", 36, UiKit.ACCENT))
+	v.add_child(UiKit.label("Poziom %d · Złoto %d" % [GameState.player_level(), GameState.gold()], 14, UiKit.DIM))
 	v.add_child(UiKit.sep(6))
-	var first := UiKit.button("Wracaj do walki", 20)
-	first.custom_minimum_size = Vector2(606, 36)
+	var first := UiKit.button("Wracaj do walki", 22)
+	first.custom_minimum_size = Vector2(0, 54)
+	var fs := UiKit.sb(Color(0.72, 0.38, 0.16), 6)
+	first.add_theme_stylebox_override("normal", fs)
+	first.add_theme_stylebox_override("focus", UiKit.sb(Color(0.8, 0.45, 0.2), 6, 3, UiKit.ACCENT))
+	first.add_theme_stylebox_override("hover", UiKit.sb(Color(0.8, 0.45, 0.2), 6, 3, UiKit.ACCENT))
 	first.pressed.connect(func():
 		Audio.play("confirm")
 		resume_pressed.emit())
 	v.add_child(first)
-	var g := GridContainer.new()
-	g.columns = 2
-	g.add_theme_constant_override("h_separation", 6)
-	g.add_theme_constant_override("v_separation", 4)
-	v.add_child(g)
-	_btn(g, "Ekwipunek", func(): loadout_pressed.emit())
-	_attr_button = _btn(g, "Atrybuty", func(): attributes_pressed.emit(), UiKit.ACCENT2)
-	_skills_button = _btn(g, "Umiejętności", func(): skills_pressed.emit(), UiKit.ACCENT2)
-	_btn(g, "Towarzysze", func(): pets_pressed.emit(), UiKit.ACCENT2)
-	_btn(g, "Skrytka", func(): stash_pressed.emit(), UiKit.ACCENT)
-	_btn(g, "Mapa świata (M)", func(): map_pressed.emit(), UiKit.ACCENT2)
-	_btn(g, "Szpital (zdrowie strażników)", func(): hospital_pressed.emit(), UiKit.GOOD)
-	_btn(g, "Osiągnięcia", func(): achievements_pressed.emit(), UiKit.ACCENT)
-	_btn(g, "Własne fale", func(): waves_pressed.emit(), Color(0.9, 0.5, 1.0))
-	_btn(g, "Multiplayer (LAN)", func(): host_pressed.emit(false), UiKit.GOOD)
-	_btn(g, "Arena: zaproś gracza", func(): arena_pressed.emit(), Color(1.0, 0.45, 0.4))
-	_btn(g, "Od nowa", func(): restart_pressed.emit())
-	_btn(g, "Ustawienia", func(): settings_pressed.emit())
-	_btn(g, "Wyjdź do menu", func(): menu_pressed.emit(), UiKit.BAD)
-	v.add_child(UiKit.sep(6))
-	var t := UiKit.label("WASD ruch · Shift sprint · J lekki · K ciężki · L unik · U blok · I rzut · O furia\n1-9 skile · E rozmowa/użycie · Q dziennik · T umiejętności", 13, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER)
-	v.add_child(t)
+	_btn(v, "Ekwipunek", func(): loadout_pressed.emit())
+	_attr_button = _btn(v, "Atrybuty", func(): attributes_pressed.emit())
+	_skills_button = _btn(v, "Umiejętności", func(): skills_pressed.emit())
+	_btn(v, "Towarzysze", func(): pets_pressed.emit())
+	_btn(v, "Mapa świata (M)", func(): map_pressed.emit())
+	var sp := Control.new()
+	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(sp)
+	_btn(v, "Ustawienia", func(): settings_pressed.emit())
+	_btn(v, "Wyjdź do menu", func(): menu_pressed.emit(), UiKit.BAD)
+	var right := UiKit.vbox(14)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wrap.add_child(right)
+	var top := UiKit.panel(UiKit.BG, 14)
+	right.add_child(top)
+	var tv := UiKit.vbox(6)
+	top.add_child(tv)
+	tv.add_child(UiKit.label("MIASTO I USŁUGI", 13, UiKit.ACCENT))
+	var g1 := _row3(tv)
+	_btn(g1, "Szpital", func(): hospital_pressed.emit(), UiKit.GOOD)
+	_btn(g1, "Skrytka", func(): stash_pressed.emit())
+	_btn(g1, "Osiągnięcia", func(): achievements_pressed.emit())
+	tv.add_child(UiKit.label("GRA WIELOOSOBOWA", 13, UiKit.ACCENT))
+	var g2 := _row3(tv)
+	_btn(g2, "Multiplayer (LAN)", func(): host_pressed.emit(false), UiKit.GOOD)
+	_btn(g2, "Arena: zaproś gracza", func(): arena_pressed.emit(), UiKit.BAD)
+	_btn(g2, "Własne fale", func(): waves_pressed.emit())
+	var g3 := _row3(tv)
+	_btn(g3, "Od nowa", func(): restart_pressed.emit())
+	_btn(g3, "Usuń zapis", _do_reset, UiKit.BAD)
+	var bottom := UiKit.panel(UiKit.BG, 14)
+	bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(bottom)
+	var v2 := UiKit.vbox(6)
+	bottom.add_child(v2)
+	v2.add_child(UiKit.label("STEROWANIE", 13, UiKit.ACCENT))
+	v2.add_child(UiKit.label("WASD ruch · Shift sprint · J lekki · K ciężki · L unik · U blok · I rzut · O furia
+1-9 skile · E rozmowa/użycie · Q dziennik · T umiejętności", 14, UiKit.DIM))
+	v2.add_child(UiKit.sep(6))
+	v2.add_child(UiKit.label("OPCJE", 13, UiKit.ACCENT))
 	_opts = UiKit.vbox(4)
-	_opts.visible = false
-	v.add_child(_opts)
+	v2.add_child(_opts)
+	var orow := _row3(_opts)
+	var oi := 0
 	for entry in [["music", "Muzyka"], ["sfx", "Dźwięki"], ["shake", "Trzęsienie"], ["toasts", "Komunikaty"], ["hitstop", "Spowolnienie ataku"], ["animations", "Animacje"], ["auras", "Aury"]]:
 		var key := String(entry[0])
-		var b := UiKit.button("", 16)
+		if oi > 0 and oi % 3 == 0:
+			orow = _row3(_opts)
+		oi += 1
+		var b := UiKit.button("", 15)
 		b.text = "%s: %s" % [String(entry[1]), "TAK" if GameState.setting(key) else "NIE"]
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.pressed.connect(func():
 			var on := GameState.toggle_setting(key)
 			b.text = "%s: %s" % [String(entry[1]), "TAK" if on else "NIE"]
@@ -82,12 +110,15 @@ func _ready() -> void:
 				Audio.set_music_enabled(on)
 			elif key == "sfx":
 				Audio.play("confirm"))
-		_opts.add_child(b)
-	v.add_child(UiKit.sep(4))
-	_btn(v, "Usuń zapis", _do_reset)
+		orow.add_child(b)
 	_refresh_attr_button()
 	first.grab_focus()
 	Audio.play("pause")
+
+func _row3(parent: Control) -> HBoxContainer:
+	var h := UiKit.hbox(8)
+	parent.add_child(h)
+	return h
 
 var _opts: VBoxContainer
 var _attr_button: Button
@@ -109,7 +140,8 @@ func _refresh_attr_button() -> void:
 
 func _btn(parent: Control, text: String, cb: Callable, col: Color = UiKit.ACCENT) -> Button:
 	var b := UiKit.button(text, 17, col)
-	b.custom_minimum_size = Vector2(300, 34)
+	b.custom_minimum_size = Vector2(0, 38)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.pressed.connect(func():
 		Audio.play("confirm")
 		cb.call())
