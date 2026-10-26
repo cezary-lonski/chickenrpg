@@ -4,14 +4,14 @@ extends Control
 ## brak energii przygasza je, pusty slot to ciemne jajko. Nazwa na jajku, numer klawisza pod nim.
 
 const N := 9
-const STEP := 54.0
-const EGG_W := 36.0
-const EGG_H := 46.0
+const STEP := 70.0
+const EGG_W := 52.0
+const EGG_H := 66.0
 
 var player: Player = null
 
 func _init() -> void:
-	custom_minimum_size = Vector2(STEP * float(N - 1) + EGG_W, 74)
+	custom_minimum_size = Vector2(STEP * float(N - 1) + EGG_W, 104)
 	size = custom_minimum_size
 	mouse_filter = Control.MOUSE_FILTER_PASS
 
@@ -60,10 +60,10 @@ func _draw() -> void:
 					shade.append(Vector2(p.x, minf(p.y, cut)))
 				draw_colored_polygon(shade, Color(0.05, 0.05, 0.08, 0.6))
 			var nm := String(d.get("name", "?")).substr(0, 4)
-			draw_string(font, Vector2(cx - EGG_W * 0.5, cy + 2.0), nm, HORIZONTAL_ALIGNMENT_CENTER, EGG_W, 11, Color(0.2, 0.13, 0.07))
+			draw_string(font, Vector2(cx - EGG_W * 0.5, cy + 1.0), nm, HORIZONTAL_ALIGNMENT_CENTER, EGG_W, 15, Color(0.2, 0.13, 0.07))
 			var sub := ("%.0f" % cd) if cd > 0.0 else ("%d" % int(cost))
-			draw_string(font, Vector2(cx - EGG_W * 0.5, cy + 15.0), sub, HORIZONTAL_ALIGNMENT_CENTER, EGG_W, 10, Color(0.4, 0.28, 0.16) if cd <= 0.0 else Color(1.0, 0.85, 0.6))
-		draw_string(font, Vector2(cx - 10.0, cy + EGG_H * 0.5 + 16.0), str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, 20.0, 12, Color(0.95, 0.88, 0.7))
+			draw_string(font, Vector2(cx - EGG_W * 0.5, cy + 19.0), sub, HORIZONTAL_ALIGNMENT_CENTER, EGG_W, 12, Color(0.4, 0.28, 0.16) if cd <= 0.0 else Color(1.0, 0.85, 0.6))
+		draw_string(font, Vector2(cx - 10.0, cy + EGG_H * 0.5 + 16.0), str(i + 1), HORIZONTAL_ALIGNMENT_CENTER, 20.0, 14, Color(0.95, 0.88, 0.7))
 
 func _get_tooltip(at: Vector2) -> String:
 	if player == null or not is_instance_valid(player):

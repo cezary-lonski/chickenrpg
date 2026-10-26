@@ -5,7 +5,7 @@ extends Control
 
 const W := 56
 const H := 56
-const S := 2.0                     # skala pikseli
+const S := 4.0                     # skala pikseli
 const K := Color(0.05, 0.04, 0.07)
 
 var value := 1.0
@@ -31,9 +31,9 @@ func _init() -> void:
 
 func _ready() -> void:
 	_build()
-	_label = UiKit.label(text, 16, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+	_label = UiKit.label(text, 26, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
 	_label.position = Vector2(0, 34.0 * S)
-	_label.size = Vector2(46.0 * S, 24)
+	_label.size = Vector2(46.0 * S, 34)
 	if flipped:
 		_label.position.x = (W - 46.0) * S
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

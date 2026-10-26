@@ -182,19 +182,19 @@ func _build() -> void:
 
 	# --- umiejętności: wachlarz jajek na dole
 	_skill_fan = UiSkillFan.new()
-	_skill_fan.position = Vector2(640.0 - _skill_fan.size.x * 0.5, 636)
+	_skill_fan.position = Vector2(640.0 - _skill_fan.size.x * 0.5, 612)
 	root.add_child(_skill_fan)
 	# kurczaki-mierniki życia i energii tuż przy rzędzie jajek, puste w środku
 	hp_bar = UiChickenGauge.new()
 	hp_bar.set_fill(Color(0.85, 0.28, 0.25))
 	hp_bar.hi_col = Color(0.95, 0.5, 0.45)
-	hp_bar.position = Vector2(_skill_fan.position.x - 116.0, 598)
+	hp_bar.position = Vector2(_skill_fan.position.x - 224.0, 492)
 	root.add_child(hp_bar)
 	en_bar = UiChickenGauge.new()
 	en_bar.flipped = true
 	en_bar.set_fill(Color(0.29, 0.56, 0.88))
 	en_bar.hi_col = Color(0.56, 0.76, 0.94)
-	en_bar.position = Vector2(_skill_fan.position.x + _skill_fan.size.x + 4.0, 598)
+	en_bar.position = Vector2(_skill_fan.position.x + _skill_fan.size.x, 492)
 	root.add_child(en_bar)
 
 	# --- przedmioty
@@ -220,7 +220,7 @@ func _build() -> void:
 
 	# --- toasty
 	toast_box = UiKit.vbox(4)
-	toast_box.position = Vector2(400, 460)
+	toast_box.position = Vector2(400, 360)
 	toast_box.custom_minimum_size = Vector2(480, 130)
 	toast_box.alignment = BoxContainer.ALIGNMENT_END
 	root.add_child(toast_box)
@@ -228,7 +228,7 @@ func _build() -> void:
 	# --- podpowiedź o sterowaniu (na starcie etapu)
 	var hint_text := "WSAD ruch · Shift sprint · J/K atak · L unik · U blok · I rzut · O furia · 1-9 skile · E rozmowa · Q dziennik" if GameState.is_topdown() else "A/D ruch · Shift sprint · spacja skok (2x = stamina) · J/K atak · L unik · U blok · I rzut · O furia · 1-9 skile"
 	var hint := UiKit.label(hint_text, 14, Color(0.85, 0.87, 0.92, 0.8), HORIZONTAL_ALIGNMENT_CENTER)
-	hint.position = Vector2(190, 570)
+	hint.position = Vector2(190, 456)
 	hint.custom_minimum_size = Vector2(900, 0)
 	root.add_child(hint)
 	var ht := create_tween()
