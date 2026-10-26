@@ -1915,7 +1915,7 @@ func _giver_gate(phase: String) -> String:
 # ------------------------------------------------------------ żołnierze i laboratoria ---
 
 func _spawn_allies() -> void:
-	if arena_mode or player == null or not is_instance_valid(player):
+	if arena_mode or challenge_mode or player == null or not is_instance_valid(player):
 		return
 	GameState.level_up.connect(_on_level_return)
 	var n := int(zone.get("allies", 4 if QuestDB.act_of(maxi(0, GameState.story_chapter())) == 2 else 3))

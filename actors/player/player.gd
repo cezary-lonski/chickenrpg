@@ -1951,7 +1951,7 @@ func _respawn_pet() -> void:
 	if _pet != null and is_instance_valid(_pet):
 		_pet.queue_free()
 	_pet = null
-	if bool(GameState.rpg.get("arena", false)) or GameState.is_fallen("pet"):
+	if bool(GameState.rpg.get("arena", false)) or bool(GameState.rpg.get("challenge", false)) or GameState.is_fallen("pet"):
 		return
 	if not is_inside_tree() or get_parent() == null:
 		return
