@@ -27,7 +27,7 @@ func setup(p_kind: String, p_label: String, p_uid: String = "", hidden: bool = f
 	kind = p_kind
 	label_text = p_label
 	# tablica, drzwi komnat, schody, skrytka i laboratorium mają większy zasięg niż drobne obiekty
-	if p_kind in ["board", "door", "stairs", "stash", "lab"]:
+	if p_kind in ["board", "door", "stairs", "stash", "lab", "hospital"]:
 		radius = 120.0
 	uid = p_uid
 	hidden_until_near = hidden
@@ -90,6 +90,7 @@ func _draw() -> void:
 		"crate": _draw_crate()
 		"sign": _draw_sign()
 		"lab": _draw_lab()
+		"hospital": _draw_hospital()
 		"board": _draw_board()
 		"door": _draw_door()
 		"stairs": _draw_stairs()
@@ -187,6 +188,11 @@ func _draw_lab() -> void:
 	var pulse := 0.5 + 0.5 * sin(_t * 3.0)
 	_pc(Vector2(0, -22), 34.0 + 3.0 * pulse, Color(0.3, 1.0, 0.7, 0.12))
 	_pp(PackedVector2Array([Vector2(-8, -64 - 3.0 * pulse), Vector2(8, -64 - 3.0 * pulse), Vector2(0, -76 - 3.0 * pulse)]), Color(0.4, 1.0, 0.8))
+
+func _draw_hospital() -> void:
+	var pulse := 0.5 + 0.5 * sin(_t * 3.0)
+	_pc(Vector2(0, -22), 34.0 + 3.0 * pulse, Color(1.0, 0.45, 0.5, 0.12))
+	_pp(PackedVector2Array([Vector2(-8, -64 - 3.0 * pulse), Vector2(8, -64 - 3.0 * pulse), Vector2(0, -76 - 3.0 * pulse)]), Color(1.0, 0.55, 0.6))
 
 func _draw_board() -> void:
 	var wood := Color(0.5, 0.34, 0.2)

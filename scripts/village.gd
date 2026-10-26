@@ -104,6 +104,7 @@ func _ready() -> void:
 	_build_stash()
 	_build_secrets()
 	_build_lab()
+	_build_hospital()
 	var ach_timer := Timer.new()
 	ach_timer.wait_time = 4.0
 	ach_timer.autostart = true
@@ -992,6 +993,7 @@ func _refresh_boss_hud() -> void:
 	hud.set_boss(best)
 
 func _process(delta: float) -> void:
+	_tick_hospital(delta)
 	_sync_acc -= delta
 	if _sync_acc <= 0.0:
 		_sync_acc = 0.4
@@ -1923,7 +1925,6 @@ func _giver_gate(phase: String) -> String:
 func _spawn_allies() -> void:
 	if arena_mode or challenge_mode or player == null or not is_instance_valid(player):
 		return
-	GameState.level_up.connect(_on_level_return)
 	var n := int(zone.get("allies", 4 if QuestDB.act_of(maxi(0, GameState.story_chapter())) == 2 else 3))
 	for i in n:
 		if GameState.is_fallen("ally:%d" % i):
@@ -1932,13 +1933,17 @@ func _spawn_allies() -> void:
 		a.setup(player, i)
 		entities.add_child(a)
 
-## Polegli towarzysze wracają karetką, gdy bohater zdobędzie 5 poziomów od ich śmierci.
-func _on_level_return(_lv: int) -> void:
-	if arena_mode or finished or player == null or not is_instance_valid(player):
+## Polegli towarzysze wracają karetką po 5 minutach w szpitalu.
+## Szpital: czas leczenia upływa podczas gry; po 5 minutach towarzysz wraca karetką z pełnym życiem.
+func _tick_hospital(delta: float) -> void:
+	if arena_mode or challenge_mode or finished or player == null or not is_instance_valid(player):
 		return
 	var fallen: Dictionary = GameState.rpg.get("fallen", {})
+	if fallen.is_empty():
+		return
 	for key in fallen.keys():
-		if GameState.player_level() >= int(fallen[key]):
+		fallen[key] = float(fallen[key]) - delta
+		if float(fallen[key]) <= 0.0:
 			fallen.erase(key)
 			_return_support(String(key))
 
@@ -1982,6 +1987,67 @@ func _build_lab() -> void:
 	lab.radius = 90.0
 	_spot(lab, pos + Vector2(0, 38))
 	lab.activated.connect(func(_w): Flow.open_lab_overlay())
+
+## Budynek szpitala: za złoto leczy rannych strażników i peta oraz wypisuje poległych.
+func _build_hospital() -> void:
+	if cave_mode or march_mode or _net_client or arena_mode or challenge_mode:
+		return
+	var taken: Array = []
+	if _board != null:
+		taken.append(_board.position)
+	for n in get_tree().get_nodes_in_group("interactables"):
+		taken.append((n as Node2D).position)
+	var pos := _free_spot([Vector2(-560, -80), Vector2(560, -80), Vector2(-700, 120), Vector2(700, 120), Vector2(-420, -300), Vector2(420, -300), Vector2(0, -420)], taken)
+	var bld := Node2D.new()
+	bld.position = pos
+	entities.add_child(bld)
+	bld.add_child(PixelProps.hospital_building())
+	var sbody := StaticBody2D.new()
+	sbody.collision_layer = 1
+	sbody.collision_mask = 0
+	var scs := CollisionShape2D.new()
+	var ssh := RectangleShape2D.new()
+	ssh.size = Vector2(210, 80)
+	scs.shape = ssh
+	scs.position = Vector2(0, -50)
+	sbody.add_child(scs)
+	bld.add_child(sbody)
+	var door := Interactable.new()
+	door.setup("hospital", "Wejdź do szpitala")
+	_spot(door, pos + Vector2(0, 38))
+	door.activated.connect(func(_w): _open_hospital())
+
+func _open_hospital() -> void:
+	if _dialog_open or finished:
+		return
+	var ui := UiHospital.new()
+	ui.setup(true)
+	ui.act.connect(func(kind: String, key: String):
+		if kind == "heal":
+			var cost := UiHospital.heal_cost(key)
+			if GameState.gold() < cost:
+				return
+			GameState.spend(cost)
+			var mx := UiHospital.max_hp_of(key)
+			GameState.set_support_hp(key, mx)
+			for a in get_tree().get_nodes_in_group("allies"):
+				if key.begins_with("ally:") and is_instance_valid(a) and int(a.get("slot")) == int(key.substr(5)):
+					a.set("hp", mx)
+			if key == "pet" and player != null and is_instance_valid(player) and player.get("_pet") != null and is_instance_valid(player.get("_pet")):
+				(player.get("_pet")).set("hp", mx)
+			GameState.toast.emit("Wyleczono za %d zł." % cost, UiKit.GOOD)
+		elif kind == "revive":
+			var rc := UiHospital.revive_cost()
+			if GameState.gold() < rc or not GameState.is_fallen(key):
+				return
+			GameState.spend(rc)
+			(GameState.rpg["fallen"] as Dictionary).erase(key)
+			GameState.clear_support_hp(key)
+			_return_support(key)
+			GameState.toast.emit("Wypisano ze szpitala za %d zł." % rc, UiKit.GOOD)
+		GameState.save_game()
+		ui.refresh())
+	Flow.open_dialog(ui)
 
 # ------------------------------------------------------------- LAN: świat wspólny ---
 

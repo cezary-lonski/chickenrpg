@@ -1476,11 +1476,18 @@ func stash_take(tab: int, slot: int) -> bool:
 func player_level() -> int:
 	return int(char_profile(current_character_id()).get("level", 1))
 
-## Poległy towarzysz (żołnierz „ally:N” albo „pet”) wraca po zdobyciu 5 poziomów.
+## Poległy towarzysz (żołnierz „ally:N” albo „pet”) leży w szpitalu i wraca po HOSPITAL_SECS sekundach gry.
+const HOSPITAL_SECS := 300.0
+
 func mark_fallen(key: String) -> void:
 	if not (rpg.get("fallen") is Dictionary):
 		rpg["fallen"] = {}
-	rpg["fallen"][key] = player_level() + 5
+	rpg["fallen"][key] = HOSPITAL_SECS
+
+## Ile sekund zostało do wyjścia ze szpitala.
+func hospital_left(key: String) -> float:
+	var d: Dictionary = rpg.get("fallen", {})
+	return clampf(float(d.get(key, 0.0)), 0.0, HOSPITAL_SECS)
 
 ## Życie żołnierzy i petów nie regeneruje się: zapamiętujemy je między etapami (do poległego powrotu).
 func support_hp(key: String, max_hp: float) -> float:

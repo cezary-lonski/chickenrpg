@@ -31,7 +31,7 @@ Akt I (rozdziały I–VII), Akt II (mapa świata z wioskami) i finał w twierdzy
 
 **Poziomy trudności**, **powtórki rozdziałów**, **skrytka** w stylu Diablo 2 Resurrected, **pojedynki** z rycerzem (idealnie paruje, może nosić hiperlegendarną zbroję) oraz **legendarne przedmioty wyłącznie z bossów jaskiń**.
 
-**Strażnicy i pety** mają własne życie, nie regenerują go, po śmierci przyjeżdża karetka, a wracają co 5 poziomów. Są też **sierżant Cezary**, **kowal z węglem** do kucia i **kryształy/diamenty** do kupienia.
+**Strażnicy i pety** mają własne życie, nie regenerują go, po śmierci przyjeżdża karetka, a po śmierci leżą w **szpitalu** i wracają po 5 minutach gry. Są też **sierżant Cezary**, **kowal z węglem** do kucia i **kryształy/diamenty** do kupienia.
 
 Każdy rozdział: prolog → rozmowa z dawcą zadania → 3–4 fale wrogów (z przerywnikiem
 z bossem) → rozmowa po bitwie → nagroda i przejście do kolejnego rozdziału.
@@ -177,7 +177,7 @@ Przy podniesieniu rzadkości statystyki przedmiotu rosną proporcjonalnie. Kurcz
 * **Arena graczy** (tylko LAN / online; menu główne albo Esc): pojedynek dwóch graczy zapisanymi postaciami — każdy walczy swoimi statystykami i wyglądem z własnego zapisu, skillami i atakami (trafiają wrogiego gracza). Odliczanie 3-2-1, paski życia u góry, KO kończy walkę.
 * **Animacje umiejętności**: każda umiejętność ma znak przywołania pod stopami, a część własny efekt w stylu pixel art — pierścienie, unoszące się strzałki / plusy / tarcze / łapy, błysk wystrzału, celownik headshota, linie prędkości, potężny zamach, płomienie ognistego kręgu i kopuła bariery.
 
-* **Żołnierze i pety mają życie** (pasek nad głową). Wrogowie biją je tak jak gracza. Gdy któryś polegnie, przyjeżdża karetka (pixel art, migający kogut), zabiera go, a walka toczy się dalej. Poległy wraca karetką po zdobyciu **5 poziomów** od swojej śmierci.
+* **Żołnierze i pety mają życie** (pasek nad głową). Wrogowie biją je tak jak gracza. Gdy któryś polegnie, przyjeżdża karetka (pixel art, migający kogut), zabiera go, a walka toczy się dalej. Poległy leży w szpitalu (Esc → „Szpital”: życie rośnie, widać czas do powrotu) i wraca karetką po **5 minutach** gry.
 * **Tworzenie BU**: przy wybuchu na ekranie pojawia się 5000 okien błędów.
 
 * **Tablica zleceń** (w każdej strefie, obok miejsca startu): trzy zlecenia poboczne, w których nie chodzi o walkę — **zbieranie ziół**, **tropienie śladów** do skrzyni zaginionego kupca, **doręczenie paczki listów** wybranemu mieszkańcowi oraz **polowanie na łowcę nagród**. Dwa aktywne zlecenia naraz, nagroda to złoto, XP, przedmioty i punkt reputacji; postęp widać w dzienniku zadań.
@@ -220,4 +220,4 @@ Założony **hiperekstralegendarny** przedmiot (dowolny slot) otacza gracza duż
 ## Drobne usprawnienia
 - Przedmioty leżące na ziemi mają własne ikony (wcześniej wszystkie wyglądały jak jajka).
 - Komunikaty na ekranie pojawiają się po kolei, trwają ok. 5 s i gasną powoli; można je wyłączyć w ustawieniach („Komunikaty na ekranie”, domyślnie włączone).
-- **Szpital** (Esc → „Szpital”): zdrowie strażników i peta oraz liczba poziomów do powrotu poległych.
+- **Szpital**: poległy strażnik/pet leży w szpitalu (życie rośnie, wraca po 5 minutach gry). Podgląd: Esc → „Szpital”. W wioskach stoi **budynek szpitala** — za złoto leczy rannych i od razu wypisuje poległych.

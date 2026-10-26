@@ -79,7 +79,7 @@ func _die() -> void:
 		hb.set_deferred("monitorable", false)
 	GameState.mark_fallen("pet")
 	GameState.clear_support_hp("pet")
-	GameState.toast.emit("%s poległ — karetka już jedzie. Wróci po 5 poziomach." % String(data.get("name", "Pupil")), Color(1.0, 0.6, 0.5))
+	GameState.toast.emit("%s poległ — karetka już jedzie. Leży w szpitalu — wróci za 5 minut." % String(data.get("name", "Pupil")), Color(1.0, 0.6, 0.5))
 	Ambulance.dispatch(get_parent(), global_position, func():
 		Fx.burst(global_position + Vector2(0, -16), Color(1, 1, 1), 10, 180.0, 3.0, 0.4)
 		queue_free())

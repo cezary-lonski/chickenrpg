@@ -370,3 +370,30 @@ static func lab_building() -> Sprite2D:
 	cv.rect(Rect2(-6, -192, 12, 18), Color(0.7, 0.9, 0.85), false)
 	cv.finish()
 	return cv.to_sprite()
+
+## Budynek szpitala: jasne mury, czerwony dach, krzyż nad drzwiami i okna z firankami.
+static func hospital_building() -> Sprite2D:
+	var cv := PixelCanvas.new(60, 56, Vector2(-120, -216), CELL)
+	var wall := Color(0.92, 0.92, 0.94)
+	var roof := Color(0.72, 0.2, 0.22)
+	cv.rect(Rect2(-100, -92, 200, 92), wall, true)
+	for i in 10:
+		cv.rect(Rect2(-100 + i * 20, -92, 2, 92), wall.darkened(0.12), false)
+	cv.rect(Rect2(-100, -16, 200, 16), Color(0.62, 0.62, 0.68), false)
+	cv.poly(PackedVector2Array([Vector2(-114, -92), Vector2(114, -92), Vector2(86, -158), Vector2(-86, -158)]), roof, true)
+	for r in 4:
+		cv.line(Vector2(-108 + r * 6, -98 - r * 16), Vector2(108 - r * 6, -98 - r * 16), roof.darkened(0.3), 1.0)
+	cv.rect(Rect2(-18, -64, 36, 64), Color(0.35, 0.22, 0.14), true)
+	cv.rect(Rect2(-22, -68, 44, 6), Color(0.6, 0.6, 0.66), false)
+	for x in [-72.0, 52.0]:
+		cv.rect(Rect2(x - 4, -78, 38, 38), Color(0.6, 0.6, 0.66), false)
+		cv.rect(Rect2(x, -74, 30, 30), Color(0.7, 0.88, 1.0), false)
+		cv.line(Vector2(x + 15, -74), Vector2(x + 15, -44), Color(0.6, 0.6, 0.66), 1.0)
+	# czerwony krzyż nad dachem
+	cv.rect(Rect2(-10, -196, 20, 6), Color(0.9, 0.15, 0.2), false)
+	cv.rect(Rect2(-3, -203, 6, 20), Color(0.9, 0.15, 0.2), false)
+	cv.rect(Rect2(-22, -184, 44, 28), Color(1.0, 1.0, 1.0), false)
+	cv.rect(Rect2(-14, -173, 28, 6), Color(0.9, 0.15, 0.2), false)
+	cv.rect(Rect2(-3, -182, 6, 24), Color(0.9, 0.15, 0.2), false)
+	cv.finish()
+	return cv.to_sprite()
