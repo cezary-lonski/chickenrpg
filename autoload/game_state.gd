@@ -229,6 +229,8 @@ func _apply_binds() -> void:
 		_set_keys(action, arr)
 	var mb: Dictionary = profile.get("settings", {}).get("mouse_binds", {})
 	for action in mb.keys():
+		if b.has(action) and not (b[action] as Array).is_empty():
+			continue   # stary zapis z dwoma przypisaniami: zostaje klawisz
 		var arr: Array = mb[action]
 		if arr.is_empty(): continue
 		_set_mouse(action, arr)
@@ -252,16 +254,23 @@ func _set_mouse(action: String, buttons: Array) -> void:
 		InputMap.action_add_event(action, ev)
 
 func rebind(action: String, key: int) -> void:
+	# jedna czynność = jeden przycisk: przypisanie klawisza zdejmuje mysz
 	_set_keys(action, [key])
+	_set_mouse(action, [])
+	if profile.has("settings") and (profile["settings"] as Dictionary).has("mouse_binds"):
+		(profile["settings"]["mouse_binds"] as Dictionary).erase(action)
 	if not profile.has("settings"): profile["settings"] = {}
 	if not profile["settings"].has("binds"): profile["settings"]["binds"] = {}
 	profile["settings"]["binds"][action] = [key]
 	save_game()
 
 func rebind_mouse(action: String, button: int) -> void:
+	# jedna czynność = jeden przycisk: przypisanie myszy zdejmuje klawisz
+	_set_keys(action, [])
 	_set_mouse(action, [button])
 	if not profile.has("settings"): profile["settings"] = {}
 	if not profile["settings"].has("mouse_binds"): profile["settings"]["mouse_binds"] = {}
+	if profile["settings"].has("binds"): (profile["settings"]["binds"] as Dictionary).erase(action)
 	profile["settings"]["mouse_binds"][action] = [button]
 	save_game()
 
