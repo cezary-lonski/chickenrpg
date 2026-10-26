@@ -142,6 +142,7 @@ func _build(screen: String, args: Dictionary) -> void:
 		"select":
 			current = UiSelect.new()
 			(current as UiSelect).on_chosen.connect(_on_character_chosen)
+			(current as UiSelect).on_continue.connect(_on_character_continue)
 		"loadout":
 			current = UiLoadout.new()
 			(current as UiLoadout).setup(String(args.get("from", "select")))
@@ -226,6 +227,10 @@ func _back_to(from: String) -> void:
 			_show_pause()
 		_:
 			goto("select")
+
+func _on_character_continue(id: String, stage_index: int) -> void:
+	GameState.start_run(id, stage_index)
+	goto("loadout", {"from": "select"})
 
 func _on_character_chosen(id: String) -> void:
 	GameState.start_run(id, 0)

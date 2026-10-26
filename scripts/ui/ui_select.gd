@@ -3,6 +3,7 @@ extends Control
 ## Wybór kurczaka: podgląd, statystyki, odblokowania.
 
 signal on_chosen(id: String)
+signal on_continue(id: String, stage_index: int)
 
 var _cards: Array = []
 var _sel := 0
@@ -10,6 +11,7 @@ var _ids: Array = []
 var _desc: Label
 var _info: VBoxContainer
 var _go: Button
+var _cont: Button
 var _unlock_btn: Button
 var _card_root: HBoxContainer
 
@@ -60,6 +62,10 @@ func _ready() -> void:
 	var back := UiKit.button("Wstecz", 20)
 	back.pressed.connect(func(): Audio.play("back"); Flow.goto("menu"))
 	row.add_child(back)
+	_cont = UiKit.button("Kontynuuj", 22)
+	_cont.custom_minimum_size = Vector2(260, 50)
+	_cont.pressed.connect(_on_continue)
+	row.add_child(_cont)
 	_go = UiKit.button("Wyrusz!", 24)
 	_go.custom_minimum_size = Vector2(260, 50)
 	_go.pressed.connect(_on_choose)
@@ -145,6 +151,9 @@ func _select(i: int) -> void:
 	# przyciski
 	var unlocked := GameState.is_unlocked(id)
 	_go.disabled = not unlocked
+	var reached := _reached_stage()
+	_cont.visible = unlocked and reached > 0
+	_cont.text = "Kontynuuj od etapu %d" % (reached + 1)
 	if unlocked:
 		_unlock_btn.visible = false
 		_go.text = "Wyrusz jako %s" % String(data["title"])
@@ -157,6 +166,18 @@ func _select(i: int) -> void:
 		_unlock_btn.text = "Odblokuj za %d %s" % [cost, "piór" if cur == "cod" else "złota"]
 		var can := (GameState.cod() >= cost) if cur == "cod" else (GameState.gold() >= cost)
 		_unlock_btn.add_theme_color_override("font_hover_color", UiKit.GOOD if can else UiKit.BAD)
+
+## Najdalszy odblokowany etap trybu platformowego (indeks od 0); 0 = jeszcze nic nie przeszedłeś.
+func _reached_stage() -> int:
+	return clampi(int(GameState.profile.get("stage_unlocked", 1)) - 1, 0, maxi(0, StageDB.count() - 1))
+
+func _on_continue() -> void:
+	var id := String(_ids[_sel])
+	if not GameState.is_unlocked(id):
+		Audio.play("deny")
+		return
+	Audio.play("confirm")
+	on_continue.emit(id, _reached_stage())
 
 func _on_unlock() -> void:
 	if GameState.try_unlock(String(_ids[_sel])):
