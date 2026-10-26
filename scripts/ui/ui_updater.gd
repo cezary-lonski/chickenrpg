@@ -90,7 +90,7 @@ func _on_list(result: int, code: int, _h: PackedStringArray, body: PackedByteArr
 		var url := ""
 		for a in rel.get("assets", []):
 			var n := String(a.get("name", "")).to_lower()
-			if n.ends_with(".zip") and (n.contains("win") or n.contains("windows")):
+			if n.ends_with(".zip") and n.begins_with("chickenrpg"):
 				url = String(a.get("browser_download_url", ""))
 				break
 		if url == "":
