@@ -155,7 +155,7 @@ const BASE_EXTRAS := {
 				"post": [["Stary Druid", "Las uznał cię za godnego. Idź, i niech wiatr niesie ci pióra."]],
 			},
 			"mira": {
-				"pre": [["Łowczyni Mira", "Elitarni strażnicy krążą po gaju. Jeden nosi pióro w kolorze księżyca — pokonaj go, a gaj się uspokoi."], ["Łowczyni Mira", "Uważaj na ich skrzydła. Uderzają z góry."]],
+				"pre": [["Łowczyni Mira", "Gaj pilnuje Generał Kruków, elitarny strażnik w zbroi z księżycowym piórem — pokonaj go, a gaj się uspokoi."], ["Łowczyni Mira", "Uważaj na ich skrzydła. Uderzają z góry."]],
 				"post": [["Łowczyni Mira", "Tropiłam wielu, ale taki jak ty to rzadkość."]],
 			},
 		},
@@ -163,7 +163,7 @@ const BASE_EXTRAS := {
 			{"id": "swiadkowie", "phase": "pre", "type": "talk", "npcs": ["druid", "mira"], "text": "Porozmawiaj z druidem i łowczynią", "required": true},
 			{"id": "kamienie", "phase": "pre", "type": "collect", "kind": "document", "label": "Podnieś Kamień Próby", "count": 3, "positions": [A, F, J], "text": "Zbierz trzy Kamienie Prób", "required": true,
 				"clues": ["Kamień Odwagi: ciepły i ciężki, jakby tętnił.", "Kamień Mądrości: gładki, jak oślepiający szafir.", "Kamień Współczucia: miękki, pachnie żywicą."], "reward": {"gold": 110, "xp": 90}},
-			{"id": "elita", "phase": "pre", "type": "elite", "enemy": "jastrzab", "name": "Strażnik Księżycowego Pióra", "pos": Vector2(1100, 1000), "text": "Pokonaj elitarnego strażnika gaju (opcjonalnie)", "required": false,
+			{"id": "elita", "phase": "pre", "type": "elite", "enemy": "krol_krukow", "name": "Generał Kruków", "pos": Vector2(1100, 1000), "text": "Pokonaj Generała Kruków, elitarnego strażnika gaju (opcjonalnie)", "required": false,
 				"reward": {"gold": 160, "items": {"sztabka_kurczalu": 1, "krysztal_cienia": 1}, "xp": 180}},
 		],
 	},

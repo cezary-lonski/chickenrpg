@@ -188,7 +188,7 @@ const BASE_LIST := {
 		],
 	},
 	"krol_krukow": {
-		"name": "Król Kruków", "ai": "boss", "scale": 2.0, "tier": 6, "boss": true,
+		"name": "Generał Kruków", "ai": "boss", "scale": 2.0, "tier": 6, "boss": true,
 		"health": 1050.0, "defense": 0.2, "speed": 96.0, "poise": 1.0, "xp": 520, "gold": 280,
 		"pal": {"body": Color(0.11, 0.11, 0.15), "shade": Color(0.05, 0.05, 0.08), "comb": Color(0.6, 0.1, 0.12), "beak": Color(0.7, 0.7, 0.75), "eye": Color(1.0, 0.35, 0.1)},
 		"aggro": 2200.0, "attack_range": 84.0, "cooldown": [0.7, 1.2],
