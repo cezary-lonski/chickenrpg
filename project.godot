@@ -27,12 +27,14 @@ Flow="*res://autoload/flow.gd"
 Net="*res://autoload/net.gd"
 Mmo="*res://autoload/mmo.gd"
 Look="*res://autoload/look.gd"
+Touch="*res://autoload/touch.gd"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
+window/handheld/orientation=0
 
 [layer_names]
 
@@ -49,6 +51,8 @@ window/stretch/mode="canvas_items"
 2d/default_gravity=1800.0
 
 [rendering]
+
+textures/vram_compression/import_etc2_astc=true
 
 textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
