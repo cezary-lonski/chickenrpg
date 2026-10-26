@@ -54,6 +54,8 @@ func _ready() -> void:
 		_max_f.value = float(mx)
 	if auto:
 		_on_start_stop.call_deferred()
+	if DisplayServer.get_name() == "headless":
+		_start_stdin_console()
 
 func _build_ui() -> void:
 	UiKit.full(self)
@@ -289,3 +291,32 @@ func _on_cmd_key(event: InputEvent) -> void:
 		_hint_sel = 0
 		_on_cmd_text(done)
 		_cmd.accept_event()
+
+# ------------------------------------------------- konsola terminalowa (bez okna) ---
+
+var _stdin_thread: Thread = null
+
+## Tryb --headless: komendy wpisujesz w terminalu (z "/" albo zwykły tekst = ogłoszenie do wszystkich), wynik idzie do logu.
+func _start_stdin_console() -> void:
+	print("Konsola serwera: wpisz komendę (np. /help, /list, /say tekst, /op nick, /stop) i Enter.")
+	_stdin_thread = Thread.new()
+	_stdin_thread.start(func():
+		while true:
+			var line := OS.read_string_from_stdin(4096)
+			if line == "":
+				OS.delay_msec(300)
+				continue
+			for one in line.split("
+"):
+				_on_stdin_line.call_deferred(one.strip_edges()))
+
+func _on_stdin_line(line: String) -> void:
+	if line == "":
+		return
+	if not srv.running:
+		print("Serwer nie działa.")
+		return
+	if line.begins_with("/"):
+		srv.cmds.run(srv, 0, line)
+	else:
+		srv.cmds.run(srv, 0, "/say " + line)
