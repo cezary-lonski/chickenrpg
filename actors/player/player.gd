@@ -61,6 +61,8 @@ var facing := 1.0
 var forced_character := ""
 var net_controlled := false
 var net_ghost := false
+## Klient serwera: duch własnej postaci (obiekty interaktywne reagują na jego bliskość).
+var local_view := false
 var net_move := Vector2.ZERO
 var net_held: Dictionary = {}
 var bounds_min := -100000.0
@@ -123,6 +125,9 @@ var spawn_invuln := 1.0
 var can_act := true
 ## Arena graczy / współpraca: osobne statystyki zdalnego gracza i drużyna trafień.
 var stats_override: Dictionary = {}
+## Serwer dedykowany: własny ekwipunek i rangi umiejętności tego gracza (zamiast globalnego GameState).
+var gear_override: Dictionary = {}
+var rank_override: Dictionary = {}
 var team_tag := "player"
 
 var grab_lock := 0.0
@@ -155,6 +160,8 @@ func _ready() -> void:
 	hitbox.hit_landed.connect(_on_weapon_hit)
 	character_id = forced_character if forced_character != "" else String(GameState.run.get("character", "kurczak"))
 	_apply_character()
+	if gear_override.is_empty() and not net_controlled:
+		GameState.enforce_class_weapon()
 	GameState.stats_changed.connect(_on_stats_changed)
 	if not net_ghost and not net_controlled:
 		GameState.pets_changed.connect(_respawn_pet)
@@ -260,7 +267,7 @@ func _clear_buf() -> void:
 func _held(action: String) -> bool:
 	if net_controlled:
 		return bool(net_held.get(action, false))
-	return Input.is_action_pressed(action)
+	return Input.is_action_pressed(action) and not GameState.chat_typing
 
 func net_apply_input(move: Vector2, held: Dictionary, actions: Array) -> void:
 	net_move = move
@@ -468,7 +475,7 @@ func _input_x() -> float:
 		return _berserk_dir().x
 	if net_controlled:
 		return net_move.x
-	return Input.get_axis("move_left", "move_right")
+	return 0.0 if GameState.chat_typing else Input.get_axis("move_left", "move_right")
 
 func _input_y() -> float:
 	if net_ghost:
@@ -479,7 +486,7 @@ func _input_y() -> float:
 		return _berserk_dir().y
 	if net_controlled:
 		return net_move.y
-	return Input.get_axis("move_up", "move_down")
+	return 0.0 if GameState.chat_typing else Input.get_axis("move_up", "move_down")
 
 func _try_common_actions() -> bool:
 	if stun_t > 0.0:
@@ -495,11 +502,11 @@ func _try_common_actions() -> bool:
 	if _take("special"):
 		Audio.play("deny", 1.3, -16.0)
 	# ciężki atak
-	if _take("heavy") and can_act:
+	if _take("heavy") and can_act and not _melee_blocked():
 		_start_attack(_weap_attacks()["heavy"], 3, _grounded())
 		return true
 	# lekki atak
-	if _take("light") and can_act:
+	if _take("light") and can_act and not _melee_blocked():
 		if _grounded():
 			_start_attack(_weap_attacks()["light"][0], 0, true)
 		else:
@@ -616,8 +623,49 @@ func _st_air(delta: float) -> void:
 
 # ---------------------------------------------------------------- ataki -----
 
+func _weapon_id() -> String:
+	if not gear_override.is_empty():
+		return String(gear_override.get("weapon", "kolt"))
+	var w := String(GameState.equipped().get("weapon", "kolt"))
+	var cls := GameState.class_id()
+	if cls == "lucznik" and not BowDB.is_bow(w):
+		return "luk_mysliwski"
+	return w
+
+func _is_archer() -> bool:
+	return gear_override.is_empty() and GameState.class_id() == "lucznik"
+
+## Mag walczy wyłącznie zaklęciami: ataki bronią (J/K) są dla niego zablokowane.
+func _melee_blocked() -> bool:
+	if not gear_override.is_empty() or GameState.class_id() != "mag":
+		return false
+	if state_t > 0.0 and Time.get_ticks_msec() - _mage_hint_ms > 1500:
+		_mage_hint_ms = Time.get_ticks_msec()
+		Fx.popup(global_position + Vector2(0, -84), "Mag walczy zaklęciami (1-9)", Color(0.7, 0.55, 1.0))
+	return true
+
+var _mage_hint_ms := 0
+
+## Serwer dedykowany: ustawia statystyki, ekwipunek i umiejętności gracza z jego postaci na serwerze.
+func apply_server_loadout(stats: Dictionary, gear: Dictionary, slots: Array, ranks: Dictionary) -> void:
+	stats_override = stats
+	gear_override = gear
+	rank_override = ranks
+	skill_slots = slots.duplicate()
+	while skill_cd.size() < skill_slots.size():
+		skill_cd.append(0.0)
+	var keep := hp
+	_on_stats_changed({})
+	hp = clampf(keep, 0.0, max_hp)
+	health_changed.emit(hp, max_hp)
+
+func _skill_scale(id: String) -> float:
+	if not rank_override.is_empty() or not gear_override.is_empty():
+		return SkillTreeDB.scale(maxi(1, int(rank_override.get(id, 1))))
+	return GameState.skill_scale(id)
+
 func _weap_attacks() -> Dictionary:
-	return ItemDB.weapon_attacks(String(GameState.equipped().get("weapon", "kolt")))
+	return ItemDB.weapon_attacks(_weapon_id())
 
 func _start_attack(data: Dictionary, combo_index: int, grounded: bool) -> void:
 	attack_data = data
@@ -628,7 +676,7 @@ func _start_attack(data: Dictionary, combo_index: int, grounded: bool) -> void:
 		_snap_to_enemy(150.0)
 		velocity.x = facing * float(data["lunge"])
 		set_state(S.ATTACK)
-		var weapon := String(GameState.equipped().get("weapon", "kolt"))
+		var weapon := _weapon_id()
 		var tier := int(ItemDB.get_data(weapon).get("tier", 1))
 		var lightish := float(data["dmg"]) < 20.0
 		var snd := "swing" if lightish else "swing_heavy"
@@ -703,7 +751,38 @@ func _st_air_attack(delta: float) -> void:
 	if is_on_floor() and state_t > t.x + t.y:
 		set_state(S.IDLE)
 
+## Łucznik: lekki atak to szybka strzała, ciężki — naciągnięty, mocny strzał.
+func _fire_arrow() -> void:
+	var heavy := float(attack_data["dmg"]) >= 20.0
+	var crit := randf() < clampf(_stat("crit"), 0.0, 0.9)
+	var dmg := float(attack_data["dmg"]) * _stat("strength")
+	if crit:
+		dmg *= 1.75
+	var vel := _aim_dir()
+	var bow_col: Color = ItemDB.get_data(_weapon_id()).get("vis", {}).get("col", Color(0.9, 0.9, 0.8))
+	var speed := 1350.0 if heavy else 980.0
+	var proj := (PROJECTILE_SCENE as PackedScene).instantiate() as EggProjectile
+	proj.setup(self, "strzala", {
+		"damage": dmg,
+		"radius": 44.0 if heavy else 26.0,
+		"speed": speed,
+		"gravity": 0.0,
+		"stun": float(attack_data["stun"]),
+		"crit": crit,
+		"dir": vel.x,
+		"aim": vel,
+		"col": bow_col.lightened(0.45) if not crit else Color(1.0, 0.85, 0.4),
+	}, 0.0)
+	get_parent().add_child(proj)
+	proj.global_position = _proj_origin(vel)
+	proj.velocity = vel * speed
+	visual.arm = 1.0
+	Audio.play("throw", 1.35 if not heavy else 0.8, -6.0)
+
 func _fire_attack() -> void:
+	if _is_archer():
+		_fire_arrow()
+		return
 	var rng_range := float(attack_data["range"])
 	var crit := randf() < clampf(_stat("crit"), 0.0, 0.9)
 	var dmg := float(attack_data["dmg"]) * _stat("strength")
@@ -724,7 +803,7 @@ func _fire_attack() -> void:
 		"source": self,
 		"kind": "light" if float(attack_data["dmg"]) < 20.0 else "heavy",
 		"air": state == S.AIR_ATTACK,
-		"on_hit": ItemDB.weapon_on_hit(String(GameState.equipped().get("weapon", "kolt"))).duplicate(true),
+		"on_hit": ItemDB.weapon_on_hit(_weapon_id()).duplicate(true),
 	}, 8)
 	visual.arm = 1.0
 	var tip := global_position + ((aim * float(attack_data["range"]) * 0.85) if GameState.is_topdown() else Vector2(facing * float(attack_data["range"]) * 0.85, -34.0))
@@ -814,7 +893,7 @@ func _chain_hit(target: Node, dmg: float, seen: Array = []) -> void:
 			best = e
 	if best == null:
 		return
-	var on_hit: Dictionary = ItemDB.weapon_on_hit(String(GameState.equipped().get("weapon", "kolt"))).duplicate(true)
+	var on_hit: Dictionary = ItemDB.weapon_on_hit(_weapon_id()).duplicate(true)
 	var dir := signf(best.global_position.x - tgt.global_position.x)
 	if dir == 0.0:
 		dir = facing
@@ -874,10 +953,10 @@ func _st_block(delta: float) -> void:
 	visual.crouch = 0.85
 	_snap_to_enemy(170.0, true)
 	# wyjście z bloku
-	if _take("light"):
+	if _take("light") and not _melee_blocked():
 		_start_attack(_weap_attacks()["light"][0], 0, true)
 		return
-	if _take("heavy"):
+	if _take("heavy") and not _melee_blocked():
 		_start_attack(_weap_attacks()["heavy"], 3, true)
 		return
 	if _take("dash") and dash_cd <= 0.0:
@@ -1273,7 +1352,7 @@ func _try_skill(i: int) -> void:
 func _cast_skill(id: String, d: Dictionary) -> void:
 	_skill_anim_t = 0.6
 	Fx.cast_glyph(global_position + Vector2(0, -4), d.get("col", Color(1, 1, 1)))
-	var sc := GameState.skill_scale(id) * (1.0 + _stat("skill_power"))
+	var sc := _skill_scale(id) * (1.0 + _stat("skill_power"))
 	var rng_bonus := _stat("skill_range")
 	if rng_bonus > 0.0:
 		d = d.duplicate()

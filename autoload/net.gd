@@ -18,6 +18,8 @@ signal snapshot_received(snapshot: Dictionary)
 signal flow_received(event: String, data: Dictionary)
 signal online_info_ready(info: Dictionary)
 signal world_event_received(event_name: String, data: Dictionary)
+signal chat_received(from: String, text: String, private: bool)
+signal trade_received(kind: String, data: Dictionary)
 
 const LAN_PORT_BASE := 26000
 const LAN_PORT_COUNT := 999
@@ -31,6 +33,7 @@ var is_host := false
 var host_code := ""
 var my_name := "Gracz"
 var my_class := "wojownik"
+var remote_nick := ""
 var client_info: Dictionary = {}
 var latest_snapshot: Dictionary = {}
 var pending_game_start: Dictionary = {}
@@ -366,7 +369,10 @@ func _rpc_client_info(info: Dictionary) -> void:
 			if ItemDB.has(String((info["gear"] as Dictionary)[slot])):
 				gear[String(slot)] = String((info["gear"] as Dictionary)[slot])
 		clean["gear"] = gear
+	clean["name"] = GameState.clean_nick(String(clean["name"]))
+	remote_nick = String(clean["name"])
 	client_info[sender] = clean
+	_rpc_hello.rpc_id(sender, my_name)
 	client_info_received.emit(sender, clean)
 
 ## Id jedynego dozwolonego gościa (najniższy id połączonego peera).
@@ -528,7 +534,100 @@ func _accept_snapshot(raw_size: int, wire: PackedByteArray) -> void:
 
 # ---------------------------------------------------------------- stop/close ---
 
+# ------------------------------------------------------------- czat i wymiana ---
+
+const TRADE_KINDS := ["request", "accept", "decline", "offer", "confirm", "cancel", "execute"]
+const MAX_TRADE_ROWS := 12
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_hello(host_nick: String) -> void:
+	remote_nick = GameState.clean_nick(host_nick)
+
+static func clean_text(t: String) -> String:
+	var out := ""
+	for ch in t.left(200):
+		if ch.unicode_at(0) >= 32:
+			out += ch
+	return out.strip_edges()
+
+## Czy `nick` to drugi gracz (bez względu na wielkość liter).
+func is_remote_nick(nick: String) -> bool:
+	return remote_nick != "" and nick.to_lower() == remote_nick.to_lower()
+
+## Wysyła wiadomość: `to` pusty = do wszystkich, inaczej tylko do drugiego gracza (/msg).
+func send_chat(text: String, to: String = "") -> void:
+	text = clean_text(text)
+	if text == "" or not has_peer():
+		return
+	if is_host:
+		_rpc_chat_down.rpc(my_name, text, to != "")
+	else:
+		_rpc_chat_up.rpc_id(1, text, to != "")
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_chat_up(text: String, private: bool) -> void:
+	if not is_host or multiplayer.get_remote_sender_id() != _guest_id():
+		return
+	text = clean_text(text)
+	if text != "":
+		chat_received.emit(remote_nick if remote_nick != "" else "Gracz", text, private)
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_chat_down(from: String, text: String, private: bool) -> void:
+	text = clean_text(text)
+	if text != "":
+		chat_received.emit(GameState.clean_nick(from), text, private)
+
+static func clean_trade(kind: String, data: Dictionary) -> Dictionary:
+	var out := {}
+	var src = data.get("items", {})
+	if kind in ["offer", "confirm"]:
+		var items := {}
+		if src is Dictionary:
+			for k in src:
+				if items.size() >= MAX_TRADE_ROWS:
+					break
+				var id := String(k)
+				var n := int(src[k])
+				if ItemDB.has(id) and n > 0:
+					items[id] = mini(n, 999)
+		out["items"] = items
+		if kind == "confirm":
+			out["ok"] = bool(data.get("ok", false))
+	elif kind == "execute":
+		for key in ["h", "g"]:
+			var items2 := {}
+			var s2 = data.get(key, {})
+			if s2 is Dictionary:
+				for k in s2:
+					if items2.size() >= MAX_TRADE_ROWS:
+						break
+					if ItemDB.has(String(k)) and int(s2[k]) > 0:
+						items2[String(k)] = mini(int(s2[k]), 999)
+			out[key] = items2
+	return out
+
+func send_trade(kind: String, data: Dictionary = {}) -> void:
+	if kind not in TRADE_KINDS or not has_peer():
+		return
+	if is_host:
+		_rpc_trade_down.rpc(kind, data)
+	else:
+		_rpc_trade_up.rpc_id(1, kind, data)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_trade_up(kind: String, data: Dictionary) -> void:
+	if not is_host or multiplayer.get_remote_sender_id() != _guest_id() or kind not in TRADE_KINDS or kind == "execute":
+		return
+	trade_received.emit(kind, clean_trade(kind, data))
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_trade_down(kind: String, data: Dictionary) -> void:
+	if kind in TRADE_KINDS:
+		trade_received.emit(kind, clean_trade(kind, data))
+
 func reset() -> void:
+	remote_nick = ""
 	_net_gen += 1
 	_joining = false
 	_clear_upnp()

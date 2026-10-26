@@ -47,7 +47,7 @@ func _nearest_player() -> Node2D:
 	for p in get_tree().get_nodes_in_group("player"):
 		if not is_instance_valid(p) or not (p is Node2D):
 			continue
-		if "net_ghost" in p and bool(p.get("net_ghost")):
+		if "net_ghost" in p and bool(p.get("net_ghost")) and not bool(p.get("local_view")):
 			continue
 		var d := (p as Node2D).global_position.distance_to(global_position)
 		if d < bd:

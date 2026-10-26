@@ -84,7 +84,7 @@ func _ready() -> void:
 	right.add_child(rv)
 	var tabs := UiKit.hbox(6)
 	rv.add_child(tabs)
-	for entry in [["look", "Wygląd"], ["colors", "Kolory"], ["clothes", "Ubrania"], ["name", "Nazwa"]]:
+	for entry in [["look", "Wygląd"], ["colors", "Kolory"], ["clothes", "Ubrania"], ["name", "Nick"]]:
 		var key2 := String(entry[0])
 		var tb := UiKit.button(String(entry[1]), 17)
 		tb.pressed.connect(func(): _tab = key2; Audio.play("select"); _rebuild())
@@ -104,7 +104,7 @@ func _ready() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	root.add_child(row)
 	var back := UiKit.button("Wstecz", 20)
-	back.pressed.connect(func(): Audio.play("back"); Flow.goto("menu" if then == "menu" else "slots"))
+	back.pressed.connect(func(): Audio.play("back"); Flow.goto(_back_screen()))
 	row.add_child(back)
 	var undo := UiKit.button("Cofnij", 20, UiKit.ACCENT2)
 	undo.pressed.connect(_undo_last)
@@ -316,16 +316,28 @@ func _build_clothes() -> void:
 # ---------------------------------------------------------------------- nazwa ---
 
 func _build_name() -> void:
-	_tab_box.add_child(UiKit.label("Nazwa postaci (do 18 znaków):", 16, UiKit.TEXT))
+	_tab_box.add_child(UiKit.label("Nick (3–16 znaków: litery, cyfry, _):", 16, UiKit.TEXT))
+	_tab_box.add_child(UiKit.label("Widzą go inni gracze na czacie i w komendach, np. /msg nick.", 13, UiKit.DIM))
 	_name_edit = LineEdit.new()
-	_name_edit.max_length = 18
+	_name_edit.max_length = 16
 	_name_edit.text = String(_app.get("name", ""))
-	_name_edit.placeholder_text = "np. Kogut Zawadiaka"
+	_name_edit.placeholder_text = "np. KogutZawadiaka"
 	_name_edit.custom_minimum_size = Vector2(360, 40)
-	_name_edit.text_changed.connect(func(t: String): _app["name"] = t.strip_edges())
+	_name_edit.text_changed.connect(func(t: String):
+		var clean := GameState.clean_nick(t)
+		if clean != t:
+			var c := _name_edit.caret_column
+			_name_edit.text = clean
+			_name_edit.caret_column = mini(c, clean.length())
+		_app["name"] = clean)
 	_tab_box.add_child(_name_edit)
 
 # --------------------------------------------------------------------- zapis ---
+
+func _back_screen() -> String:
+	if then == "menu" or then == "mmo_connect":
+		return then
+	return "slots"
 
 func _open_paint() -> void:
 	Audio.play("confirm")
@@ -334,14 +346,21 @@ func _open_paint() -> void:
 
 func _confirm() -> void:
 	if _name_edit and is_instance_valid(_name_edit):
-		_app["name"] = _name_edit.text.strip_edges()
+		_app["name"] = GameState.clean_nick(_name_edit.text)
+	if String(_app.get("name", "")).length() < 3:
+		_tab = "name"
+		_rebuild()
+		_status.text = "Wpisz nick (min. 3 znaki: litery, cyfry, _)."
+		_status.add_theme_color_override("font_color", UiKit.BAD)
+		Audio.play("deny")
+		return
 	GameState.set_appearance(_app)
 	Audio.play("confirm")
 	GameState.toast.emit("Wygląd zapisany.", UiKit.GOOD)
 	on_done.emit()
-	Flow.goto("menu" if then == "menu" else then)
+	Flow.goto(then)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_pressed() and event.is_action_pressed("ui_cancel") and not (_name_edit and _name_edit.has_focus()):
 		Audio.play("back")
-		Flow.goto("menu" if then == "menu" else "slots")
+		Flow.goto(_back_screen())

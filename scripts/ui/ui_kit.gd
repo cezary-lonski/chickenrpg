@@ -146,12 +146,43 @@ static func full_margin(c: Control, m: float = 18.0) -> Control:
 
 static func bg_texture(tint: Color = Color(0.05, 0.06, 0.09, 1.0)) -> TextureRect:
 	var t := TextureRect.new()
+	# poza grą (menu, kreator, wybór zapisu…) pod spodem nie ma świata — rysujemy pikselowy krajobraz menu
+	if Flow.stage == null or not is_instance_valid(Flow.stage):
+		t.texture = load("res://menu_bg.png")
+		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		t.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		full(t)
+		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		t.modulate = Color(0.62, 0.62, 0.7)
+		return t
 	t.texture = Art.gradient([Color(tint.r + 0.05, tint.g + 0.05, tint.b + 0.07), tint], true, 8, 256)
 	full(t)
 	t.stretch_mode = TextureRect.STRETCH_SCALE
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	t.modulate = Color(1, 1, 1, 0.3)   # tło gry ma być widać
 	return t
+
+## Scena „jak menu startowe (układ B)”: animowany krajobraz i przyciemniony pas po prawej (bez logo).
+## Treść ekranu ma trafić na pas (x 820..1280).
+static func menu_scene(parent: Control) -> void:
+	var bg := TextureRect.new()
+	bg.texture = load("res://menu_bg.png")
+	bg.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	bg.stretch_mode = TextureRect.STRETCH_SCALE
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	full(bg)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(bg)
+	var anim := UiMenuAnim.new()
+	full(anim)
+	parent.add_child(anim)
+	var strip := ColorRect.new()
+	strip.color = Color(0.05, 0.04, 0.08, 0.62)
+	strip.position = Vector2(820, 0)
+	strip.size = Vector2(460, 720)
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(strip)
 
 static func stat_line(name_text: String, value: float, suffix: String = "", col: Color = TEXT) -> HBoxContainer:
 	var h := hbox(6)

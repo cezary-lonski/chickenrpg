@@ -16,6 +16,21 @@ var hp := 100.0
 var max_hp := 100.0
 var state := 0          # Player.S.DEAD po poległym (wrogowie przestają go celować)
 var dying := false
+## Serwer dedykowany: dane gracza zamiast globalnego GameState; duch (ghost) tylko rysuje się według migawek.
+signal hp_changed(key: String, hp: float)
+signal fell(key: String)
+var server_peer := 0
+var s_level := 1
+var s_strength := 1.0
+var s_hp := -1.0
+var ghost := false
+var net_id := ""
+
+func _level() -> int:
+	return s_level if (server_peer != 0 or ghost) else GameState.player_level()
+
+func _strength() -> float:
+	return s_strength if (server_peer != 0 or ghost) else GameState.stat("strength")
 
 const SPECIES := ["kogut", "gasior", "kogut", "gasior"]
 const PALS := [
@@ -50,11 +65,17 @@ func _ready() -> void:
 	_name_label.custom_minimum_size = Vector2(100, 0)
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(_name_label)
-	max_hp = 70.0 + 16.0 * float(GameState.player_level())
-	hp = maxf(1.0, GameState.support_hp("ally:%d" % slot, max_hp))
-	SupportHp.attach(self, 20.0)
+	max_hp = 70.0 + 16.0 * float(_level())
+	if server_peer != 0 or ghost:
+		hp = maxf(1.0, minf(s_hp if s_hp >= 0.0 else max_hp, max_hp))
+	else:
+		hp = maxf(1.0, GameState.support_hp("ally:%d" % slot, max_hp))
+	if not ghost:
+		SupportHp.attach(self, 20.0)
 	if owner_player and is_instance_valid(owner_player):
 		global_position = owner_player.global_position + _formation()
+	if ghost:
+		set_physics_process(false)
 
 func _draw() -> void:
 	if not dying:
@@ -66,7 +87,10 @@ func apply_hit(info: Dictionary) -> bool:
 		return false
 	var dmg := maxf(1.0, float(info.get("damage", 0.0)) * 0.8)
 	hp -= dmg
-	GameState.set_support_hp("ally:%d" % slot, maxf(hp, 0.0))
+	if server_peer != 0:
+		hp_changed.emit("ally:%d" % slot, maxf(hp, 0.0))
+	else:
+		GameState.set_support_hp("ally:%d" % slot, maxf(hp, 0.0))
 	visual.flash(1.0)
 	Fx.damage_number(global_position + Vector2(0, -64), dmg, Color(1.0, 0.55, 0.45))
 	Audio.play("hit", randf_range(0.9, 1.1), -8.0)
@@ -84,6 +108,10 @@ func _die() -> void:
 	var hb: Node = get_node_or_null("Hurtbox")
 	if hb:
 		hb.set_deferred("monitorable", false)
+	if server_peer != 0:
+		fell.emit("ally:%d" % slot)
+		get_tree().create_timer(0.8).timeout.connect(queue_free)
+		return
 	GameState.mark_fallen("ally:%d" % slot)
 	GameState.clear_support_hp("ally:%d" % slot)
 	GameState.toast.emit("%s poległ — karetka już jedzie. Leży w szpitalu — wróci za 5 minut." % String(NAMES[slot % NAMES.size()]), Color(1.0, 0.6, 0.5))
@@ -98,10 +126,12 @@ func _formation() -> Vector2:
 
 func _damage() -> float:
 	var lv := 1
-	if GameState.has_run():
+	if server_peer != 0:
+		lv = s_level
+	elif GameState.has_run():
 		lv = int(GameState.char_profile(String(GameState.run.get("character", "lord"))).get("level", 1))
 	# strażnicy wspierają, nie grają za gracza: słabe, wolne uderzenia (poziom liczy się tylko w małym stopniu)
-	return (6.0 + 0.7 * float(lv)) * (0.8 + 0.2 * GameState.stat("strength")) * 0.5
+	return (6.0 + 0.7 * float(lv)) * (0.8 + 0.2 * _strength()) * 0.5
 
 func _physics_process(delta: float) -> void:
 	if dying:

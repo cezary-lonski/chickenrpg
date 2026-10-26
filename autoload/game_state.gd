@@ -29,6 +29,7 @@ var profile: Dictionary = {}
 var run: Dictionary = {}
 var active_slot: int = 1
 var game_paused: bool = false
+var chat_typing: bool = false   # pole czatu otwarte: klawisze nie sterują postacią
 var run_committed: bool = false
 var skill_points_total: int = 0
 var skill_points_spent: int = 0
@@ -166,7 +167,7 @@ func load_game() -> void:
 	cod_changed.emit(cod())
 
 func save_game() -> void:
-	if profile.is_empty(): return
+	if profile.is_empty() or ServerMode.is_active(): return
 	profile["version"] = SAVE_VERSION
 	var path := slot_path(active_slot)
 	var f := FileAccess.open(path, FileAccess.WRITE)
@@ -532,6 +533,8 @@ func set_class_for(char_id: String, cls: String) -> void:
 	if String(cp.get("class", "")) != cls:
 		cp["class"] = cls
 		cp["skills"] = ClassDatabase.default_slots(cls)
+	if char_id == current_character_id():
+		enforce_class_weapon()
 	save_game()
 
 const SKILL_SLOTS := 9
@@ -813,6 +816,10 @@ func equip_item(id: String, slot: String = "") -> bool:
 			elif String(eq.get("amulet2", "")) == "": slot = "amulet2"
 	if not ItemDB.fits_slot(id, slot):
 		toast.emit("Ten przedmiot nie pasuje do tego slotu.", Color(0.95, 0.4, 0.35))
+		return false
+	var blocked := ItemDB.class_block(id, class_id())
+	if blocked != "":
+		toast.emit(blocked, Color(0.95, 0.4, 0.35))
 		return false
 	if kind == "amulet":
 		var other := "amulet2" if slot == "amulet" else "amulet"
@@ -1171,6 +1178,21 @@ func set_appearance(ap: Dictionary) -> void:
 	save_game()
 	profile_changed.emit()
 
+## Nick: tylko litery, cyfry i _ (bez spacji, żeby działały komendy typu /msg nick).
+static func clean_nick(t: String) -> String:
+	var out := ""
+	for ch in t.strip_edges():
+		if ch == "_" or ch.unicode_at(0) > 127 and ch.to_upper() != ch.to_lower() or (ch >= "0" and ch <= "9") or (ch.to_upper() >= "A" and ch.to_upper() <= "Z"):
+			out += ch
+	return out.left(16)
+
+## Nick gracza (z kreatora); bez niego — tytuł wybranej postaci.
+func nick() -> String:
+	var n := clean_nick(String(profile.get("appearance", {}).get("name", "")))
+	if n.length() >= 3:
+		return n
+	return String(CharacterDB.get_data(current_character_id()).get("title", "Gracz"))
+
 func has_created_character() -> bool:
 	return bool(profile.get("seen_creator", false))
 
@@ -1247,6 +1269,24 @@ func skill_points() -> int:
 
 func class_id() -> String:
 	return String(_cp().get("class", ""))
+
+## Mag nie ma broni, łucznik ma tylko łuk: zdejmuje niepasującą broń (wraca do plecaka)
+## i daje łucznikowi łuk myśliwski.
+func enforce_class_weapon() -> void:
+	var cls := class_id()
+	if cls != "mag" and cls != "lucznik":
+		return
+	var eq := equipped()
+	var w := String(eq.get("weapon", ""))
+	if w != "" and ItemDB.class_block(w, cls) == "":
+		return
+	if w != "" and w != "kolt":
+		add_item(w, 1, equipped_q("weapon"))
+	var cp := _cp()
+	if cp.get("equip_q") is Dictionary: (cp["equip_q"] as Dictionary).erase("weapon")
+	if cp.get("equip_m") is Dictionary: (cp["equip_m"] as Dictionary).erase("weapon")
+	eq["weapon"] = "luk_mysliwski" if cls == "lucznik" else ""
+	save_game()
 
 func _free_skill(id: String) -> bool:
 	if id == "furia":

@@ -30,10 +30,11 @@ func _ready() -> void:
 	Net.world_event_received.connect(_on_arena_event)
 	Net.join_failed.connect(_on_net_join_failed)
 	GameState.level_up.connect(_on_level_up)
+	add_child(UiChat.new())
 	await get_tree().process_frame
 	if not _booted:
 		_booted = true
-		goto("menu")
+		goto("server" if ServerMode.is_active() else "menu")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_pressed() or event.is_echo():
@@ -45,7 +46,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			toggle_pause()
 			get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and (event as InputEventKey).keycode == KEY_M and overlay == null and not _busy:
+	if event is InputEventKey and (event as InputEventKey).keycode == KEY_M and overlay == null and not _busy and current_screen not in ["mmo", "server", "mmo_connect"]:
 		open_travel_map()
 		get_viewport().set_input_as_handled()
 		return
@@ -159,6 +160,12 @@ func _build(screen: String, args: Dictionary) -> void:
 			current = we
 			we.on_close.connect(func(): goto("menu"))
 			we.on_start.connect(_on_waves_start)
+		"server":
+			current = UiServerApp.new()
+		"mmo_connect":
+			current = UiMmoConnect.new()
+		"mmo":
+			current = MmoWorld.new()
 		"slots":
 			current = UiSlotSelect.new()
 			(current as UiSlotSelect).on_start.connect(_on_slot_start)

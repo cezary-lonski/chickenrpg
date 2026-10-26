@@ -354,11 +354,17 @@ static func objectives(zone_id: String, phase: String = "") -> Array:
 static func flag(zone_id: String, obj_id: String, i: int = 0) -> String:
 	return "o:%s:%s:%d" % [zone_id, obj_id, i]
 
-static func count_done(zone_id: String, obj: Dictionary) -> int:
+## Flaga fabuły: z podanego słownika (serwer/klient online) albo z zapisu bieżącej gry.
+static func _on(fl, key: String) -> bool:
+	if fl is Dictionary:
+		return bool((fl as Dictionary).get(key, false))
+	return GameState.story_flag(key)
+
+static func count_done(zone_id: String, obj: Dictionary, fl = null) -> int:
 	var n := 0
 	var total := _total(obj)
 	for i in total:
-		if GameState.story_flag(flag(zone_id, String(obj["id"]), i)):
+		if _on(fl, flag(zone_id, String(obj["id"]), i)):
 			n += 1
 	return n
 
@@ -370,40 +376,40 @@ static func _total(obj: Dictionary) -> int:
 			return 1
 	return int(obj.get("count", 1))
 
-static func is_done(zone_id: String, obj: Dictionary) -> bool:
-	return count_done(zone_id, obj) >= _total(obj)
+static func is_done(zone_id: String, obj: Dictionary, fl = null) -> bool:
+	return count_done(zone_id, obj, fl) >= _total(obj)
 
-static func required_done(zone_id: String, phase: String) -> bool:
+static func required_done(zone_id: String, phase: String, fl = null) -> bool:
 	for o in objectives(zone_id, phase):
-		if bool(o.get("required", false)) and not is_done(zone_id, o):
+		if bool(o.get("required", false)) and not is_done(zone_id, o, fl):
 			return false
 	return true
 
 ## Lista postępu do dziennika i HUD: [{text, done, count, total, required, phase}]
-static func progress(zone_id: String, phase: String = "") -> Array:
+static func progress(zone_id: String, phase: String = "", fl = null) -> Array:
 	var out: Array = []
 	for o in objectives(zone_id, phase):
 		out.append({
-			"text": String(o["text"]), "done": is_done(zone_id, o), "count": count_done(zone_id, o),
+			"text": String(o["text"]), "done": is_done(zone_id, o, fl), "count": count_done(zone_id, o, fl),
 			"total": _total(o), "required": bool(o.get("required", false)), "phase": String(o.get("phase", "pre")),
 		})
 	return out
 
-static func remaining_text(zone_id: String, phase: String) -> String:
+static func remaining_text(zone_id: String, phase: String, fl = null) -> String:
 	var parts: Array = []
-	for p in progress(zone_id, phase):
+	for p in progress(zone_id, phase, fl):
 		if bool(p["required"]) and not bool(p["done"]):
 			parts.append("%s (%d/%d)" % [String(p["text"]), int(p["count"]), int(p["total"])])
 	return ", ".join(parts)
 
 ## Dodatkowa nagroda końcowa za wybory w dialogach (wyliczana przy ukończeniu rozdziału).
-static func final_bonus(zone_id: String) -> Dictionary:
+static func final_bonus(zone_id: String, fl = null) -> Dictionary:
 	var gold := 0
 	var items := {}
 	for npc_id in get_extras(zone_id).get("dialogs", {}):
 		var ch: Dictionary = get_extras(zone_id)["dialogs"][npc_id].get("choice", {})
 		for opt in ch.get("options", []):
-			if GameState.story_flag(String(opt["flag"])) and opt.has("final"):
+			if _on(fl, String(opt["flag"])) and opt.has("final"):
 				var f: Dictionary = opt["final"]
 				gold += int(f.get("gold", 0))
 				for it in f.get("items", {}):

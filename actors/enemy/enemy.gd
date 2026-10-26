@@ -78,6 +78,9 @@ var _grabbed := false
 var leap_dir := 0.0
 var net_id := ""
 var net_ghost := false
+## Serwer dedykowany: bez lokalnych nagród, zabójcę obsługuje serwer.
+var server_mode := false
+var last_killer: Node = null
 
 func setup(id: String, p_flying: bool = false, p_elite: bool = false) -> void:
 	species = id
@@ -699,6 +702,11 @@ func _die(info: Dictionary = {}) -> void:
 	Fx.burst(global_position + Vector2(0, -26), Color(0.9, 0.4, 0.35), 16, 280.0, 3.0, 0.5)
 	drop_roll = randf()
 	var src = info.get("source")
+	if server_mode:
+		last_killer = src if (src and is_instance_valid(src) and src is Player) else null
+		set_state(S.DEAD)
+		died.emit(self)
+		return
 	if src and is_instance_valid(src) and src is Player:
 		var luck := GameState.stat("luck")
 		GameState.add_xp(int(round(float(xp_value) * luck)))

@@ -1,6 +1,6 @@
 ﻿class_name UiMainMenu
 extends Control
-## Menu startowe (układ B): logo po lewej na animowanym pikselowym tle, przyciski na przyciemnionym pasie po prawej.
+## Menu startowe (układ B): animowane tło (bez logo) z menu po prawej na pikselowym tle, przyciski na przyciemnionym pasie po prawej.
 ## Gra wieloosobowa (LAN) i arena nie są tu dostępne — otwiera się je z menu Esc w trakcie gry.
 
 var _continue_btn: Button
@@ -28,16 +28,6 @@ func _ready() -> void:
 	strip.size = Vector2(460, 720)
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(strip)
-	# logo
-	var logo := TextureRect.new()
-	logo.texture = load("res://logo.png")
-	logo.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	logo.stretch_mode = TextureRect.STRETCH_SCALE
-	logo.position = Vector2(40, 30)
-	logo.size = Vector2(400, 400)
-	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(logo)
 
 	_continue_btn = _wood_btn("Kontynuuj", Rect2(860, 56, 380, 66), true)
 	_continue_btn.pressed.connect(_on_continue)
@@ -45,15 +35,16 @@ func _ready() -> void:
 	_wood_btn("Tryb platformowy", Rect2(860, 194, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.goto("select"))
 	_wood_btn("Własne fale", Rect2(860, 254, 380, 50)).pressed.connect(_on_waves)
 	_wood_btn("Wyzwania — pojedynki", Rect2(860, 314, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.start_challenge())
-	_wood_btn("Kreator postaci", Rect2(860, 392, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.goto("creator"))
-	_wood_btn("Ustawienia", Rect2(860, 452, 184, 46), false, 19).pressed.connect(func(): Audio.play("select"); Flow.goto("settings"))
-	_wood_btn("Wyjście", Rect2(1056, 452, 184, 46), false, 19).pressed.connect(_on_quit)
+	_wood_btn("Serwer online (ChickenSerwer)", Rect2(860, 374, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.goto("mmo_connect"))
+	_wood_btn("Kreator postaci", Rect2(860, 434, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.goto("creator"))
+	_wood_btn("Ustawienia", Rect2(860, 494, 184, 46), false, 19).pressed.connect(func(): Audio.play("select"); Flow.goto("settings"))
+	_wood_btn("Wyjście", Rect2(1056, 494, 184, 46), false, 19).pressed.connect(_on_quit)
 
 	stats_row = UiKit.label("", 15, Color(0.95, 0.9, 0.78))
 	stats_row.position = Vector2(862, 676)
 	add_child(stats_row)
 	var hint := UiKit.label("Gra wieloosobowa (LAN) i arena: menu Esc w trakcie gry", 12, Color(0.8, 0.76, 0.66))
-	hint.position = Vector2(862, 530)
+	hint.position = Vector2(862, 560)
 	add_child(hint)
 	GameState.profile_changed.connect(_refresh)
 	_refresh()

@@ -18,6 +18,22 @@ var hp := 60.0
 var max_hp := 60.0
 var state := 0
 var dying := false
+## Serwer dedykowany: dane gracza zamiast globalnego GameState; duch (ghost) tylko rysuje się według migawek.
+signal hp_changed(key: String, hp: float)
+signal fell(key: String)
+var server_peer := 0
+var s_level := 1
+var s_strength := 1.0
+var s_gear := ""
+var s_hp := -1.0
+var ghost := false
+var net_id := ""
+
+func _level() -> int:
+	return s_level if (server_peer != 0 or ghost) else GameState.player_level()
+
+func _gear() -> String:
+	return s_gear if (server_peer != 0 or ghost) else GameState.pet_gear(pet_id)
 
 func setup(owner_node: Node2D, id: String) -> void:
 	owner_player = owner_node
@@ -32,18 +48,25 @@ func _ready() -> void:
 	visual.idle_seed = randf() * 3.0
 	add_child(visual)
 	_refresh_aura()
-	GameState.pets_changed.connect(_refresh_aura)
-	max_hp = (float(data.get("hp", 40.0)) + 8.0 * float(GameState.player_level())) * (1.0 + _bonus("pet_hp"))
-	hp = maxf(1.0, GameState.support_hp("pet", max_hp))
-	SupportHp.attach(self, 14.0)
+	if server_peer == 0 and not ghost:
+		GameState.pets_changed.connect(_refresh_aura)
+	max_hp = (float(data.get("hp", 40.0)) + 8.0 * float(_level())) * (1.0 + _bonus("pet_hp"))
+	if server_peer != 0 or ghost:
+		hp = maxf(1.0, minf(s_hp if s_hp >= 0.0 else max_hp, max_hp))
+	else:
+		hp = maxf(1.0, GameState.support_hp("pet", max_hp))
+	if not ghost:
+		SupportHp.attach(self, 14.0)
 	if owner_player and is_instance_valid(owner_player):
 		global_position = owner_player.global_position + Vector2(-40, 10)
+	if ghost:
+		set_physics_process(false)
 
 ## Wyposażenie peta o wysokiej rzadkości daje aurę: hiperekstralegendarne — ogromne złote słońce.
 func _refresh_aura() -> void:
 	if visual == null:
 		return
-	var gid := GameState.pet_gear(pet_id)
+	var gid := _gear()
 	var rar := ItemDB.rarity_of(gid) if gid != "" else ""
 	var g := {}
 	if rar == "hiperextralegendarny":
@@ -61,7 +84,10 @@ func apply_hit(info: Dictionary) -> bool:
 		return false
 	var dmg := maxf(1.0, float(info.get("damage", 0.0)) * 0.7)
 	hp -= dmg
-	GameState.set_support_hp("pet", maxf(hp, 0.0))
+	if server_peer != 0:
+		hp_changed.emit("pet", maxf(hp, 0.0))
+	else:
+		GameState.set_support_hp("pet", maxf(hp, 0.0))
 	visual.flash(1.0)
 	Fx.damage_number(global_position + Vector2(0, -40), dmg, Color(1.0, 0.55, 0.45))
 	Audio.play("hit", randf_range(1.1, 1.3), -9.0)
@@ -77,6 +103,10 @@ func _die() -> void:
 	var hb: Node = get_node_or_null("Hurtbox")
 	if hb:
 		hb.set_deferred("monitorable", false)
+	if server_peer != 0:
+		fell.emit("pet")
+		get_tree().create_timer(0.8).timeout.connect(queue_free)
+		return
 	GameState.mark_fallen("pet")
 	GameState.clear_support_hp("pet")
 	GameState.toast.emit("%s poległ — karetka już jedzie. Leży w szpitalu — wróci za 5 minut." % String(data.get("name", "Pupil")), Color(1.0, 0.6, 0.5))
@@ -87,13 +117,14 @@ func _die() -> void:
 # ----------------------------------------------------------- statystyki z wyposażenia ---
 
 func _bonus(key: String) -> float:
-	var gear := GameState.pet_gear(pet_id)
+	var gear := _gear()
 	if gear == "":
 		return 0.0
 	return float(ItemDB.stats_of(gear).get(key, 0.0))
 
 func _dmg() -> float:
-	return float(data.get("dmg", 5.0)) * (1.0 + _bonus("pet_dmg")) * maxf(1.0, GameState.stat("strength") * 0.8)
+	var st := s_strength if (server_peer != 0 or ghost) else GameState.stat("strength")
+	return float(data.get("dmg", 5.0)) * (1.0 + _bonus("pet_dmg")) * maxf(1.0, st * 0.8)
 
 func _cooldown() -> float:
 	var base := float(data.get("cd", 1.2)) / (1.0 + _bonus("pet_speed"))

@@ -314,7 +314,7 @@ func _on_go() -> void:
 		return
 	GameState.set_slot(_slot)
 	Net.my_class = _cls
-	Net.my_name = String(CharacterDB.get_data(_char).get("title", _char))
+	Net.my_name = GameState.nick()
 	Audio.play("confirm")
 	if _mode == "host":
 		_status.text = "Tworzę pokój online…" if online else "Tworzę pokój…"
@@ -371,7 +371,7 @@ func _on_joined_ok() -> void:
 	Net.send_client_info({
 		"char": _char,
 		"class": _cls,
-		"name": String(CharacterDB.get_data(_char).get("title", _char)),
+		"name": GameState.nick(),
 		"stats": lo["stats"],
 		"gear": lo["gear"],
 	})

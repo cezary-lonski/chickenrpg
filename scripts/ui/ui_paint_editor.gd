@@ -523,6 +523,8 @@ func _close() -> void:
 	on_close.emit()
 	if back_to == "creator":
 		Flow.goto("creator", {"then": then_screen})
+	elif back_to == "mmo_connect":
+		Flow.goto("mmo_connect")
 	else:
 		Flow.goto("menu")
 

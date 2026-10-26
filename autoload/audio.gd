@@ -72,8 +72,9 @@ func _ready() -> void:
 	_music_player.volume_db = -13.0
 	add_child(_music_player)
 	_build_sfx()
-	_warm_thread = Thread.new()
-	_warm_thread.start(_warm_music)
+	if not ServerMode.is_active():
+		_warm_thread = Thread.new()
+		_warm_thread.start(_warm_music)
 
 func play(name: String, pitch: float = 1.0, volume_db: float = 0.0) -> void:
 	if not GameState.setting("sfx"):
@@ -102,6 +103,8 @@ func _exit_tree() -> void:
 		_warm_thread.wait_to_finish()
 
 func play_music(track: String) -> void:
+	if ServerMode.is_active():
+		return  # aplikacja serwerowa nie gra muzyki
 	if _current_track == track and _music_player.playing:
 		return
 	_current_track = track

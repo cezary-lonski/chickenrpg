@@ -98,7 +98,7 @@ const CAVES := {
 		"levers": [Vector2(230, 330), Vector2(2000, 700), Vector2(1100, 1380)],
 		"entrance": Vector2(1100, 205),
 		"pet": "sowka_uzdrowicielka",
-		"reward": {"items": {"buty_wichru": 1, "obroza_polowania": 1, "sztabka_kurczalu": 2}, "gold": 360, "xp": 320},
+		"reward": {"items": {"buty_wichru": 1, "obroza_polowania": 1, "luk_cienia_kruka": 1, "sztabka_kurczalu": 2}, "gold": 360, "xp": 320},
 		"waves": [
 			{"enemies": [["jastrzab", 3], ["sokol", 3]], "name": "Cienie gaju", "elite": true},
 			{"enemies": [["orzel_szarak", 2], ["jastrzab", 3]], "name": "Strażnicy korzeni", "elite": true},
@@ -110,7 +110,7 @@ const CAVES := {
 		"levers": [Vector2(260, 300), Vector2(1950, 330), Vector2(1100, 1380)],
 		"entrance": Vector2(1100, 225),
 		"pet": "",
-		"reward": {"items": {"wzorzec_zakaz": 1, "szpon_burzy": 1, "sztabka_kurczalu": 3, "eliksir_mocy": 2}, "gold": 420, "xp": 380},
+		"reward": {"items": {"wzorzec_zakaz": 1, "szpon_burzy": 1, "luk_burzowy": 1, "sztabka_kurczalu": 3, "eliksir_mocy": 2}, "gold": 420, "xp": 380},
 		"waves": [
 			{"enemies": [["kruk", 4], ["orzel_szarak", 2]], "name": "Gwardia skarbca", "elite": true},
 			{"enemies": [["bocian_gruby", 2], ["krol_krukow", 1]], "name": "Skarbnik Kruków", "elite": true},
@@ -134,7 +134,7 @@ const CAVES := {
 		"levers": [Vector2(300, 400), Vector2(1980, 450), Vector2(1100, 1360)],
 		"entrance": Vector2(1100, 215),
 		"pet": "zolw_tarczownik",
-		"reward": {"items": {"wzorzec_kurza": 1, "amulet_feniksa": 1, "sztabka_kurczalium": 2}, "gold": 520, "xp": 520},
+		"reward": {"items": {"wzorzec_kurza": 1, "amulet_feniksa": 1, "luk_zlotego_skowronka": 1, "sztabka_kurczalium": 2}, "gold": 520, "xp": 520},
 		"waves": [
 			{"enemies": [["sep", 3], ["kruk", 3]], "name": "Piaskowi łowcy", "elite": true},
 			{"enemies": [["sep", 3], ["bocian_gruby", 2]], "name": "Strażnicy grobowca", "elite": true},
@@ -146,7 +146,7 @@ const CAVES := {
 		"levers": [Vector2(250, 330), Vector2(1950, 330), Vector2(1100, 1390)],
 		"entrance": Vector2(1100, 210),
 		"pet": "",
-		"reward": {"items": {"wzorzec_czarka": 1, "sztabka_kurczalium": 2, "eliksir_mocy": 3, "obroza_polowania": 1}, "gold": 640, "xp": 620},
+		"reward": {"items": {"wzorzec_czarka": 1, "sztabka_kurczalium": 2, "eliksir_mocy": 3, "obroza_polowania": 1, "luk_z_kurczalium": 1, "luk_wschodzacego_slonca": 1}, "gold": 640, "xp": 620},
 		"waves": [
 			{"enemies": [["sep", 3], ["orzel_szarak", 3]], "name": "Burzowe skrzydła", "elite": true},
 			{"enemies": [["sowa", 2], ["sep", 3]], "name": "Oko burzy", "elite": true},

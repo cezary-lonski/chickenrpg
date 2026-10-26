@@ -171,7 +171,7 @@ func start_intro() -> void:
 	_hurt_circle(global_position, 200.0, _dmg(0.6), 520.0, true)
 	await get_tree().create_timer(0.8, false).timeout
 	var lines: Array = bdata.get("intro", [])
-	if not lines.is_empty():
+	if not lines.is_empty() and not server_mode:
 		var d := UiDialog.new()
 		d.setup(lines, Color(0.85, 0.35, 0.9))
 		Flow.open_dialog(d)
@@ -455,7 +455,10 @@ func _atk_summon() -> void:
 		e.aggro = 3000.0
 		get_parent().add_child(e)
 		e.global_position = pos2
-		e.set_bounds_rect(arena_center.x - arena_radius, arena_center.x + arena_radius, arena_center.y - arena_radius, arena_center.y + arena_radius)
+		var org := (get_parent() as Node2D).global_position
+		e.server_mode = server_mode
+		e.net_id = "%s_a%d" % [net_id, Time.get_ticks_msec() % 100000 + i]
+		e.set_bounds_rect(arena_center.x - arena_radius - org.x, arena_center.x + arena_radius - org.x, arena_center.y - arena_radius - org.y, arena_center.y + arena_radius - org.y)
 		Fx.burst(pos2 + Vector2(0, -20), Color(0.7, 0.3, 1.0), 14, 220.0, 3.0, 0.4)
 	await _wait(0.6)
 	await _recover(0.6)
@@ -675,6 +678,14 @@ func _run_death(info: Dictionary) -> void:
 	Fx.shake(18.0, 0.8)
 	Fx.burst(global_position + Vector2(0, -30), Color(1.0, 0.8, 0.9), 50, 600.0, 4.0, 0.9)
 	await get_tree().create_timer(1.0, false).timeout
+	if server_mode:
+		var ksrc = info.get("source")
+		last_killer = ksrc if (ksrc and is_instance_valid(ksrc) and ksrc is Player) else null
+		died.emit(self)
+		death_finished.emit()
+		await get_tree().create_timer(1.5, false).timeout
+		queue_free()
+		return
 	var lines: Array = bdata.get("death", [])
 	if not lines.is_empty():
 		var d := UiDialog.new()

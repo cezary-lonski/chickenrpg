@@ -314,7 +314,7 @@ const RARITY_COLORS := {
 }
 
 ## Scalona baza: przedmioty bazowe + dodatki (kuźnia, legendarne, pety).
-static var LIST: Dictionary = _armorize(BASE_LIST.merged(ItemsExtra.LIST).merged(RuneDB.pattern_items()).merged(ItemsHard.LIST).merged(SideDB.ITEMS).merged(PalaceDB.ITEMS))
+static var LIST: Dictionary = _armorize(BASE_LIST.merged(ItemsExtra.LIST).merged(RuneDB.pattern_items()).merged(ItemsHard.LIST).merged(SideDB.ITEMS).merged(PalaceDB.ITEMS).merged(BowDB.LIST))
 
 ## Zbroja nie dodaje życia — zmniejsza obrażenia: obrona zbroi zamienia się na procent
 ## mniejszych obrażeń (30% wartości obrony), a bonus do życia zbroi znika.
@@ -386,6 +386,21 @@ static func stack_of(id: String) -> int:
 	return int(LIST.get(id, {}).get("stack", 99))
 
 ## Czy przedmiot można założyć w danym slocie wyposażenia (amulet2 przyjmuje amulety).
+## Dlaczego klasa nie może nosić tej broni (pusty tekst = może). Mag nie nosi broni wcale,
+## łucznik tylko łuków, reszta klas wszystkiego poza łukami.
+static func class_block(id: String, cls: String) -> String:
+	var d: Dictionary = LIST.get(id, {})
+	if String(d.get("slot", "")) != "weapon":
+		return ""
+	var bow := bool(d.get("bow", false))
+	if cls == "mag":
+		return "Mag nie nosi broni — walczy zaklęciami (klawisze 1-9)."
+	if cls == "lucznik" and not bow:
+		return "Łucznik walczy tylko łukiem."
+	if cls != "lucznik" and bow:
+		return "Łuki są tylko dla łucznika."
+	return ""
+
 static func fits_slot(id: String, slot: String) -> bool:
 	var s := String(LIST.get(id, {}).get("slot", ""))
 	if slot == "amulet2":

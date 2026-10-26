@@ -41,6 +41,14 @@ const LIST := {
 		"skills": ["uzdrowienie", "tarcza", "oszolomienie"],
 		"female_only": true,
 	},
+	# Tymczasowa klasa administratora (ChickenSerwer): wszystkie przedmioty, umiejętności i komendy.
+	"admin": {
+		"title": "Admin",
+		"desc": "Tylko na serwerze. Wszystkie przedmioty (Creative), wszystkie umiejętności i komendy.",
+		"col": Color(1.0, 0.25, 0.9),
+		"skills": ["szal_bojowy", "potezny_zamach", "headshot", "trojszot", "piruet", "krag_antypotworowy", "kula_ognia", "lodowa_lanca", "uzdrowienie"],
+		"server_only": true,
+	},
 }
 
 static func has(id: String) -> bool:
@@ -58,11 +66,19 @@ static func for_character(char_id: String) -> Array:
 	var out: Array = []
 	for id in LIST:
 		var d: Dictionary = LIST[id]
+		if bool(d.get("server_only", false)):
+			continue
 		if bool(d.get("female_only", false)) and role != "lady":
 			continue
 		if id == "wojownik" and role == "lady":
 			continue
 		out.append(id)
+	return out
+
+## Klasy wybieralne na serwerze (zwykłe + admin).
+static func for_server(char_id: String) -> Array:
+	var out := for_character(char_id)
+	out.append("admin")
 	return out
 
 ## Domyślne sloty (6) z sygnaturowymi umiejętnościami klasy.

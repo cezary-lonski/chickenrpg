@@ -32,7 +32,7 @@ const TIER_RARITY := {
 ## Obrysy run (znormalizowane 0..1, y w dół): lista linii łamanych.
 const GLYPHS := {
 	"U": [[Vector2(0.2, 1.0), Vector2(0.2, 0.15), Vector2(0.8, 0.15), Vector2(0.8, 1.0)]],
-	"K": [[Vector2(0.45, 0.0), Vector2(0.45, 1.0)], [Vector2(0.45, 0.5), Vector2(0.9, 0.15)], [Vector2(0.45, 0.55), Vector2(0.9, 0.95)]],
+	"K": [[Vector2(0.3, 0.0), Vector2(0.3, 1.0)], [Vector2(0.3, 0.0), Vector2(0.14, 0.12)], [Vector2(0.3, 0.45), Vector2(0.5, 0.3), Vector2(0.72, 0.4), Vector2(0.78, 0.7), Vector2(0.72, 1.0)]],
 	"C": [[Vector2(0.3, 0.0), Vector2(0.3, 1.0)], [Vector2(0.3, 0.1), Vector2(0.85, 0.65)]],
 	"Z": [[Vector2(0.5, 0.0), Vector2(0.5, 1.0)], [Vector2(0.12, 0.75), Vector2(0.5, 0.4), Vector2(0.88, 0.75)]],
 	"R": [[Vector2(0.25, 1.0), Vector2(0.25, 0.0), Vector2(0.8, 0.25), Vector2(0.25, 0.5), Vector2(0.8, 1.0)]],
