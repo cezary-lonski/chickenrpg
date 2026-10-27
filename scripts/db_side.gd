@@ -9,6 +9,10 @@ const ITEMS := {
 		"name": "Paczka listów", "slot": "material", "tier": 1, "price": 0, "icon": "list", "stack": 5,
 		"desc": "Zapieczętowana przesyłka z tablicy ogłoszeń. Doręcz ją adresatowi.", "stats": {}, "tint": Color(0.95, 0.9, 0.7),
 	},
+	"lutnia_kukuryka": {
+		"name": "Lutnia Kukuryka", "slot": "material", "tier": 1, "price": 0, "icon": "list", "stack": 1,
+		"desc": "Ulubiona lutnia barda, skonfiskowana przez ludzi kanclerza. Zanieś ją bardowi.", "stats": {}, "tint": Color(0.9, 0.6, 0.3),
+	},
 }
 
 const TITLES := {

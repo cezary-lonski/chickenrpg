@@ -40,6 +40,7 @@ const BASE_NPCS := {
 	"rybak": {"name": "Rybak Burzy", "title": "Mieszkaniec gniazda", "species": "kurczak", "scale": 1.4, "pos": Vector2(560, 1000), "accent": Color(0.6, 0.8, 0.9), "role": "lore"},
 	"szamanka": {"name": "Szamanka Wichura", "title": "Wieszczka", "species": "kwoka", "scale": 1.5, "pos": Vector2(1560, 1020), "accent": Color(0.75, 0.7, 0.95), "role": "lore"},
 	"gwardzista": {"name": "Gwardzista Świtu", "title": "Strażnik", "species": "kogut", "scale": 1.5, "pos": Vector2(560, 1000), "accent": Color(1.0, 0.8, 0.5), "role": "lore"},
+	"bard": {"name": "Bard Kukuryk", "title": "Wędrowny pieśniarz", "species": "kogut", "scale": 1.4, "pos": Vector2(860, 1090), "accent": Color(0.95, 0.6, 0.8), "role": "lore"},
 	"zakladnik": {"name": "Zakładniczka Aurelia", "title": "Królowa", "species": "kwoka", "scale": 1.5, "pos": Vector2(1560, 1060), "accent": Color(1.0, 0.85, 0.5), "role": "lore"},
 }
 
@@ -330,7 +331,122 @@ const BASE_EXTRAS := {
 # ------------------------------------------------------------------ pomocnicze ---
 
 static var NPCS: Dictionary = BASE_NPCS.merged(Act2DB.NPCS).merged(PalaceDB.NPCS)
-static var EXTRAS: Dictionary = PalaceDB.patch_extras(BASE_EXTRAS.merged(Act2DB.EXTRAS)).merged(PalaceDB.EXTRAS)
+static var EXTRAS: Dictionary = PalaceDB.patch_extras(_with_bard(BASE_EXTRAS).merged(Act2DB.EXTRAS)).merged(PalaceDB.EXTRAS)
+
+## Wędrowny bard Kukuryk śpiewa w kolejnych rozdziałach jedną długą „Pieśń o Pierwszym Kogucie”.
+## Rozmowa z nim jest dobrowolna (nagroda za wysłuchanie), a w ostatnim rozdziale pieśń kończy się wyborem.
+const BARD_TALES := {
+	"obrona_wioski": [
+		["Bard Kukuryk", "Cóż to za pióra w tej wsi! Ja, Kukuryk, wędrowny bard, zbieram opowieści o odwadze. Posłuchaj pierwszej zwrotki."],
+		["Bard Kukuryk", "„Dawno temu, gdy świat był tylko jednym wielkim kurnikiem, wstał Pierwszy Kogut i zapiał tak głośno, że noc uciekła za góry.”"],
+		["Bard Kukuryk", "Pieśni jest dwanaście zwrotek. Znajdziesz mnie w każdym miejscu, w którym będzie coś do opowiedzenia."],
+	],
+	"droga_do_stolicy": [
+		["Bard Kukuryk", "Och, znowu ty! Szedłem tym traktem za tobą, ale ty biegasz szybciej, niż piszę wiersze."],
+		["Bard Kukuryk", "„Pierwszy Kogut miał grzebień z czerwonego złota. Ptaki z całego świata przychodziły się nim ogrzać.”"],
+		["Bard Kukuryk", "„Lecz złoto budzi zazdrość. Pewien młody kruk zapragnął grzebienia tylko dla siebie.”"],
+	],
+	"atak_na_stolice": [
+		["Bard Kukuryk", "Przyznam, że śpiewałem w piwnicy, ale ludzie... to znaczy ptaki, klaskały. Trzecia zwrotka!"],
+		["Bard Kukuryk", "„Kruk poprosił Koguta o jedno pióro. Kogut dał dwa. Kruk poprosił o trzecie, a Kogut roześmiał się i odmówił.”"],
+		["Bard Kukuryk", "„I wtedy po raz pierwszy w kurniku zrobiło się cicho.”"],
+	],
+	"uwolnij_krolowa": [
+		["Bard Kukuryk", "Wieża to dobre miejsce na pieśń — dźwięk niesie się aż do chmur. Czwarta zwrotka, jeśli pozwolisz."],
+		["Bard Kukuryk", "„Aurelia, pierwsza królowa, była córką Koguta. Gdy ojciec zniknął, objęła tron i zapaliła na wieży latarnię.”"],
+		["Bard Kukuryk", "„Póki latarnia płonie, mówiła, ojciec znajdzie drogę do domu.”"],
+	],
+	"trojka_prob": [
+		["Bard Kukuryk", "Gaj! Nigdzie nie śpiewa się tak czysto. Posłuchaj, tu zwrotka o trzech kamieniach."],
+		["Bard Kukuryk", "„Odwaga, Mądrość i Współczucie leżały w gnieździe Koguta. Kruk ukradł je i rozsypał po świecie.”"],
+		["Bard Kukuryk", "„Kto zbierze wszystkie trzy, ten usłyszy, dokąd odszedł Pierwszy Kogut.”"],
+	],
+	"marsz_na_forteca": [
+		["Bard Kukuryk", "Obóz wojenny pachnie zupą i strachem. Zaśpiewam coś na otuchę — szósta zwrotka."],
+		["Bard Kukuryk", "„Kruk zbudował fortecę na skale, by nikt nie dosięgnął jego łupów. Zapomniał tylko, że skały też mają szczeliny.”"],
+		["Bard Kukuryk", "„Przez szczelinę wpadło światło. Przez światło wszedł ktoś, kto się nie bał.”"],
+	],
+	"krol_i_kruk": [
+		["Bard Kukuryk", "Siódma zwrotka jest smutna. Obiecaj, że nie będziesz płakać w pióra."],
+		["Bard Kukuryk", "„Kruk nie urodził się zły. Zazdrość wzrastała w nim jak chwast, aż zagłuszyła wszystko, co dobre.”"],
+		["Bard Kukuryk", "„A gdy był już wielki, spojrzał w lustro i zobaczył tylko czarne pióra. Wtedy zrozumiał, że za późno.”"],
+	],
+	"cien_w_popiele": [
+		["Bard Kukuryk", "Zgliszcza... Dobre miejsce, by pomyśleć o tym, co przeminęło. Ósma zwrotka."],
+		["Bard Kukuryk", "„Cień Kruka nie chciał zemsty. Chciał, by ktoś wreszcie go zrozumiał.”"],
+		["Bard Kukuryk", "„Lecz nikt nie słuchał cieni, więc ten stał się głośniejszy od burzy.”"],
+	],
+	"zdrada_w_koronie": [
+		["Bard Kukuryk", "Kancelarie, księgi, pieczątki! Dziewiąta zwrotka opowiada o tym, że zdrada najczęściej nosi garnitur."],
+		["Bard Kukuryk", "„Kanclerz uśmiechał się do wszystkich i liczył cudze monety. Ptaki ufały mu, bo miał miły głos.”"],
+		["Bard Kukuryk", "„Miły głos to najlepsze przebranie dla fałszu.”"],
+	],
+	"pustynny_trakt": [
+		["Bard Kukuryk", "Piasek w dziobie, ale pieśń gotowa! Dziesiąta zwrotka, na dwa głosy: mój i wiatru."],
+		["Bard Kukuryk", "„Pierwszy Kogut wędrował przez pustynię trzy dni i trzy noce. Czwartego dnia usłyszał echo własnego piania.”"],
+		["Bard Kukuryk", "„Wtedy pojął, że nie jest sam — że gdzieś daleko ktoś odpowiada.”"],
+	],
+	"gniazdo_nad_burza": [
+		["Bard Kukuryk", "Burza! Idealna oprawa dla jedenastej zwrotki. Krzycz, jeśli nie słyszysz."],
+		["Bard Kukuryk", "„Wieszczka Sowa widziała przyszłość, ale nie widziała, jak ją zmienić. Dlatego bała się wszystkiego.”"],
+		["Bard Kukuryk", "„Przyszłość, mówił Kogut, nie jest wyryta w kamieniu. Jest pisana piórem — i każdy ma własne.”"],
+	],
+	"ostatni_swit": [
+		["Bard Kukuryk", "Ostatnia zwrotka. Chyba jeszcze nigdy tak się nie denerwowałem. Pozwól, że zaśpiewam."],
+		["Bard Kukuryk", "„Gdy nad zamkiem wstał świt, Pierwszy Kogut zapiał po raz ostatni. Nie z żalu — z radości, że kurnik znów ma obrońców.”"],
+		["Bard Kukuryk", "„A obrońcą może być każdy, kto nie odwróci wzroku, gdy robi się ciemno.” Koniec pieśni."],
+	],
+}
+
+static func _with_bard(base: Dictionary) -> Dictionary:
+	var src: Dictionary = base.duplicate(true)
+	var ids: Array = BARD_TALES.keys()
+	for n in ids.size():
+		var zid: String = ids[n]
+		if not src.has(zid):
+			continue
+		var ex: Dictionary = src[zid]
+		var npcs: Array = ex.get("npcs", [])
+		if "bard" not in npcs:
+			npcs.append("bard")
+		ex["npcs"] = npcs
+		var dialogs: Dictionary = ex.get("dialogs", {})
+		var d := {
+			"pre": BARD_TALES[zid],
+			"post": [["Bard Kukuryk", "Zwrotka %d z 12 zapisana. Pieśń rośnie, a ty razem z nią." % (n + 1)]],
+		}
+		if zid == "ostatni_swit":
+			d["choice"] = {"prompt": "Kukuryk pyta: jak ma się kończyć pieśń o Pierwszym Kogucie?", "options": [
+				{"text": "O tym, kto zapiał pierwszy.", "flag": "bard_kogut", "reply": "„Piękne. Pierwszy Kogut będzie żył w każdym świcie.”", "final": {"gold": 250}},
+				{"text": "O tym, kto nie odwrócił wzroku.", "flag": "bard_ty", "reply": "„Odważnie! W pieśni zapiszę twoje imię zaraz obok jego.”", "final": {"items": {"sztabka_kurczalium": 1}}},
+			]}
+		dialogs["bard"] = d
+		ex["dialogs"] = dialogs
+		var objs: Array = ex.get("objectives", [])
+		objs.append({"id": "bard", "phase": "pre", "type": "talk", "npcs": ["bard"], "text": "Wysłuchaj zwrotki barda Kukuryka (opcjonalnie)", "required": false,
+			"reward": {"gold": 40 + 15 * n, "xp": 30 + 15 * n}})
+		ex["objectives"] = objs
+	# Włamanie: w kancelarii kanclerza strażnicy skonfiskowali bardowi lutnię.
+	var heist: Dictionary = src["zdrada_w_koronie"]
+	(heist["objectives"] as Array).append(HEIST)
+	return src
+
+## Zadanie skradankowe: przemknij obok strażników (stożki wzroku), zwędź lutnię i zanieś ją bardowi.
+## Zauważenie wraca gracza na start. Cel liczy się dopiero po oddaniu lutni (flaga indeksu 0).
+const HEIST := {
+	"id": "lutnia", "phase": "pre", "type": "heist", "required": false,
+	"text": "Zwędź lutnię Kukuryka z gabinetu kanclerza i zanieś ją bardowi (opcjonalnie)",
+	"label": "Zwędź lutnię", "start": Vector2(300, 1300), "pos": Vector2(1900, 380),
+	"guards": [
+		{"path": [Vector2(520, 1180), Vector2(1100, 1180)], "range": 260.0},
+		{"path": [Vector2(1500, 1250), Vector2(1500, 800)], "range": 250.0},
+		{"path": [Vector2(900, 700), Vector2(1500, 700), Vector2(1500, 560), Vector2(900, 560)], "range": 230.0},
+		{"path": [Vector2(1750, 520), Vector2(2050, 520)], "range": 220.0},
+	],
+	"intro": [["", "Przez okno gabinetu widać lutnię Kukuryka. Strażnicy patrolują dziedziniec — mają stożki wzroku. Skradaj się za ich plecami."]],
+	"thanks": [["Bard Kukuryk", "Moja lutnia! Mój złoty, drewniany skarb! Ukradłeś ją spod nosa strażników?"], ["Bard Kukuryk", "Teraz pieśń zabrzmi jak trzeba. Weź to — i zapamiętaj: nie każdy bohater walczy mieczem."]],
+	"reward": {"gold": 220, "xp": 220, "items": {"mikstura_miodu": 2}},
+}
 
 static func has(zone_id: String) -> bool:
 	return EXTRAS.has(zone_id)

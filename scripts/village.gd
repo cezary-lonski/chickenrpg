@@ -1798,7 +1798,65 @@ func _build_extras() -> void:
 					e.global_position = o.get("pos", Vector2(1100, 1000))
 					e.set_bounds_rect(MARGIN, VILLAGE.x - MARGIN, MARGIN, VILLAGE.y - MARGIN)
 					e.died.connect(func(_x): _obj_complete_flag(o, 0))
+			"heist":
+				_build_heist(o)
 	_reveal_post_objectives()
+
+## Włamanie (skradanka): strażnicy ze stożkiem wzroku, lutnia do zwędzenia; zauważenie cofa na start.
+var _heist_guards: Array = []
+
+func _build_heist(o: Dictionary) -> void:
+	if _net_client or ChapterExtras.is_done(quest_id, o):
+		return
+	var taken := GameState.story_flag("heist_taken:" + quest_id) or GameState.item_count("lutnia_kukuryka") > 0
+	for g in o.get("guards", []):
+		var sg := StealthGuard.new()
+		sg.setup(g["path"], float(g.get("range", 250.0)))
+		entities.add_child(sg)
+		sg.spotted.connect(func(): _heist_spotted(o))
+		_heist_guards.append(sg)
+	var it := Interactable.new()
+	it.setup("document", String(o.get("label", "Zwędź")), "heist:" + quest_id)
+	it.done = taken
+	it.accent = Color(1.0, 0.7, 0.35)
+	_spot(it, o["pos"])
+	it.activated.connect(func(_w):
+		it.done = true
+		GameState.set_story_flag("heist_taken:" + quest_id)
+		GameState.add_item("lutnia_kukuryka", 1)
+		Audio.play("confirm", 1.2, -2.0)
+		for sg2 in _heist_guards:
+			if is_instance_valid(sg2):
+				sg2.active = false
+		GameState.toast.emit("Zwędzono lutnię! Wymknij się i zanieś ją bardowi.", UiKit.GOOD)
+		GameState.save_game())
+	if not taken and not GameState.story_flag("heist_intro:" + quest_id):
+		GameState.set_story_flag("heist_intro:" + quest_id)
+		_open_dialog(o.get("intro", []), UiKit.ACCENT2)
+
+func _heist_spotted(o: Dictionary) -> void:
+	if player == null or not is_instance_valid(player) or GameState.item_count("lutnia_kukuryka") > 0:
+		return
+	Audio.play("hit_heavy", 0.7, -4.0)
+	Fx.shake(6.0, 0.3)
+	player.global_position = o.get("start", spawn)
+	for sg in _heist_guards:
+		if is_instance_valid(sg):
+			sg.reset()
+	GameState.toast.emit("Zauważono cię! Strażnicy odprowadzili cię na start.", UiKit.BAD)
+
+## Bard odbiera lutnię: dialog z podziękowaniem i nagroda za cel „włamanie”.
+func _bard_heist_turn_in() -> bool:
+	for obj in ChapterExtras.objectives(quest_id):
+		if String(obj.get("type", "")) != "heist" or ChapterExtras.is_done(quest_id, obj):
+			continue
+		if GameState.item_count("lutnia_kukuryka") <= 0:
+			return false
+		GameState.remove_item("lutnia_kukuryka", 1)
+		var accent: Color = NpcDB.get_data("bard").get("accent", UiKit.ACCENT)
+		_open_dialog(obj.get("thanks", []), accent, func(): _obj_complete_flag(obj, 0))
+		return true
+	return false
 
 func _reveal_post_objectives() -> void:
 	if GameState.story_step() > waves.size():
@@ -1845,6 +1903,8 @@ func _check_obj_reward(o: Dictionary) -> void:
 	GameState.save_game()
 
 func _talk_extra(id: String) -> void:
+	if id == "bard" and _bard_heist_turn_in():
+		return
 	var d := ChapterExtras.dialog(quest_id, id)
 	var accent: Color = NpcDB.get_data(id).get("accent", UiKit.ACCENT)
 	var step := GameState.story_step()
