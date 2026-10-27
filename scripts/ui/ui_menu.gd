@@ -97,13 +97,7 @@ func _on_continue() -> void:
 	GameState.set_slot(last)
 	Flow._slot_is_new = false
 	# kontynuacja: od razu do gry, z zapisaną postacią, jej klasą i poziomem trudności
-	var hc := Flow.pick_hero()
-	var hero := String(hc[0])
-	var cls := String(hc[1])
-	Flow.pending_replay = -1
-	GameState.start_rpg_run("solo", hero, "", false)
-	GameState.set_class(cls)
-	Flow.goto("game", {"stage": int(GameState.run.get("stage_index", 0))})
+	Flow.continue_game()
 
 func _on_waves() -> void:
 	Audio.play("confirm")

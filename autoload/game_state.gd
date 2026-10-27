@@ -1063,6 +1063,42 @@ func select_slot(slot: int, create_new: bool) -> void:
 	else:
 		load_game()
 
+## Postacie ze wszystkich zapisów, które mają już klasę — można je zabrać do nowego świata.
+func saved_characters() -> Array:
+	var out: Array = []
+	for s in range(1, SLOT_COUNT + 1):
+		if not slot_exists(s):
+			continue
+		var f := FileAccess.open(slot_path(s), FileAccess.READ)
+		if f == null:
+			continue
+		var data = JSON.parse_string(f.get_as_text())
+		f.close()
+		if typeof(data) != TYPE_DICTIONARY:
+			continue
+		var chars = data.get("characters", {})
+		if typeof(chars) != TYPE_DICTIONARY:
+			continue
+		for id in chars:
+			var cp = chars[id]
+			if typeof(cp) != TYPE_DICTIONARY or String(cp.get("class", "")) == "":
+				continue
+			out.append({"slot": s, "id": String(id), "level": int(cp.get("level", 1)), "class": String(cp["class"]),
+				"profile": cp, "appearance": data.get("appearance", {})})
+	return out
+
+## Przenosi wybraną postać (z `saved_characters`) do bieżącego, świeżego świata.
+func adopt_character(entry: Dictionary) -> void:
+	if entry.is_empty() or not (entry.get("profile") is Dictionary):
+		return
+	char_profile(String(entry["id"]))
+	profile["characters"][String(entry["id"])] = (entry["profile"] as Dictionary).duplicate(true)
+	var ap = entry.get("appearance", {})
+	if ap is Dictionary and not (ap as Dictionary).is_empty():
+		profile["appearance"] = (ap as Dictionary).duplicate(true)
+		profile["seen_creator"] = true
+	save_game()
+
 func slot_info(slot: int) -> Dictionary:
 	if not slot_exists(slot): return {"exists": false}
 	var f := FileAccess.open(slot_path(slot), FileAccess.READ)

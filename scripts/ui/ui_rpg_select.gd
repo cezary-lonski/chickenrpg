@@ -12,7 +12,58 @@ var _p2_box: VBoxContainer
 var _class_box: VBoxContainer
 var _class_pick := "p1"
 
+## Krok 1 nowego świata: wybierz postać z innych zapisów albo załóż nową (kreator, klasa).
+func _build_character_stage() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	UiKit.full(self)
+	add_child(UiKit.bg_texture(Color(0.06, 0.08, 0.12)))
+	add_child(UiKit.dim(Color(0.02, 0.02, 0.04, 0.35)))
+	var root := UiKit.vbox(10)
+	root.alignment = BoxContainer.ALIGNMENT_CENTER
+	UiKit.full(root)
+	add_child(root)
+	root.add_child(UiKit.title("WYBIERZ POSTAĆ", 42))
+	root.add_child(UiKit.label("Zabierz bohatera z innego zapisu (klasa zostaje) albo stwórz nową postać", 16, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	var grid := HFlowContainer.new()
+	grid.alignment = FlowContainer.ALIGNMENT_CENTER
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 12)
+	grid.custom_minimum_size = Vector2(900, 0)
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	root.add_child(grid)
+	for entry in Flow.carry_pool:
+		var e: Dictionary = entry
+		var cls := ClassDatabase.get_data(String(e["class"]))
+		var b := UiKit.button("%s\nPoziom %d · %s\nZapis %d" % [String(CharacterDB.get_data(String(e["id"])).get("title", e["id"])), int(e["level"]), String(cls.get("title", e["class"])), int(e["slot"])], 18, cls.get("col", UiKit.ACCENT))
+		b.custom_minimum_size = Vector2(230, 100)
+		b.pressed.connect(func():
+			Audio.play("confirm")
+			Flow.carry_char = e
+			Flow.char_stage_done = true
+			Flow.goto("rpg_select"))
+		grid.add_child(b)
+	var fresh := UiKit.button("＋ Nowa postać\n(wygląd, animacje, klasa)", 18, UiKit.GOOD)
+	fresh.custom_minimum_size = Vector2(230, 100)
+	fresh.pressed.connect(func():
+		Audio.play("confirm")
+		Flow.carry_char = {}
+		Flow.char_stage_done = true
+		Flow.goto("creator", {"then": "rpg_select"}))
+	grid.add_child(fresh)
+	root.add_child(UiKit.sep(8))
+	var back := UiKit.button("Wstecz", 20)
+	back.custom_minimum_size = Vector2(200, 44)
+	back.pressed.connect(func(): Audio.play("back"); Flow.goto("slots"))
+	var brow := UiKit.hbox(12)
+	brow.alignment = BoxContainer.ALIGNMENT_CENTER
+	brow.add_child(back)
+	root.add_child(brow)
+	fresh.grab_focus()
+
 func _ready() -> void:
+	if Flow._slot_is_new and not Flow.char_stage_done:
+		_build_character_stage()
+		return
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	UiKit.full(self)
 	add_child(UiKit.bg_texture(Color(0.06, 0.08, 0.12)))
@@ -23,7 +74,7 @@ func _ready() -> void:
 	add_child(outer)
 	var root := outer
 	root.add_child(UiKit.title("NOWA GRA RPG", 42))
-	root.add_child(UiKit.label("Tryb, bohaterowie i klasa", 16, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	root.add_child(UiKit.label("Postać z zapisu — wybierz poziom trudności" if not Flow.carry_char.is_empty() else "Tryb, bohaterowie i klasa", 16, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
 
 	var rowm := UiKit.hbox(10)
 	rowm.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -46,6 +97,12 @@ func _ready() -> void:
 	var b1_lady := UiKit.button("Lady", 20)
 	b1_lady.pressed.connect(func(): _p1="lady"; _class_pick="p1"; _refresh())
 	r1.add_child(b1_lady)
+	if not Flow.carry_char.is_empty():
+		# bohater przyszedł z innego zapisu: tożsamości i klasy nie zmieniamy
+		_p1 = String(Flow.carry_char["id"])
+		b1_lord.visible = false
+		b1_lady.visible = false
+		r1.add_child(UiKit.label(String(CharacterDB.get_data(_p1).get("title", _p1)), 22, UiKit.TEXT, HORIZONTAL_ALIGNMENT_CENTER))
 
 	_p2_box = UiKit.vbox(8)
 	root.add_child(_p2_box)
@@ -154,9 +211,12 @@ func _refresh() -> void:
 	var avail := ClassDatabase.for_character(cid)
 	# kontynuacja gry: klasa postaci jest na stałe, nie można jej zmienić
 	var locked_cls := ""
-	if not _slot_new():
+	if not Flow.carry_char.is_empty():
+		locked_cls = String(Flow.carry_char.get("class", ""))
+	elif not _slot_new():
 		locked_cls = String(GameState.char_profile(cid).get("class", ""))
-		if locked_cls != "" and avail.has(locked_cls):
+	if locked_cls != "":
+		if avail.has(locked_cls):
 			_cls = locked_cls
 		else:
 			locked_cls = ""

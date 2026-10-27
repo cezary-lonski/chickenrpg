@@ -295,6 +295,10 @@ func _on_waves_start(config: Dictionary, hero: String) -> void:
 	goto("game", {"stage": 0})
 
 func _on_rpg_start(mode: String, p1: String, p2: String, cls: String) -> void:
+	if _slot_is_new and not carry_char.is_empty():
+		GameState.adopt_character(carry_char)
+	carry_char = {}
+	char_stage_done = false
 	GameState.start_rpg_run(mode, p1, p2, _slot_is_new)
 	GameState.set_class(cls)
 	if pending_replay >= 0:
@@ -306,13 +310,35 @@ func _on_rpg_start(mode: String, p1: String, p2: String, cls: String) -> void:
 var _slot_is_new := true
 
 ## Start z ekranu wyboru slotu: wybierz slot, potem ekran trybu/klasy (rpg_select).
+## Postacie z innych zapisów do wyboru przy tworzeniu nowego świata oraz wybór użytkownika.
+var carry_pool: Array = []
+var carry_char: Dictionary = {}
+var char_stage_done := false
+
 func _on_slot_start(slot: int, create_new: bool) -> void:
-	GameState.select_slot(slot, create_new)
-	_slot_is_new = create_new
+	carry_char = {}
 	if create_new:
-		goto("creator", {"then": "rpg_select"})
+		# lista postaci musi powstać przed wyczyszczeniem slotu
+		carry_pool = GameState.saved_characters()
+		GameState.select_slot(slot, true)
+		_slot_is_new = true
+		char_stage_done = carry_pool.is_empty()
+		if carry_pool.is_empty():
+			goto("creator", {"then": "rpg_select"})
+		else:
+			goto("rpg_select")
 	else:
-		goto("rpg_select")
+		GameState.select_slot(slot, false)
+		_slot_is_new = false
+		continue_game()
+
+## Kontynuacja zapisu: od razu do gry, z zapisaną postacią, jej klasą i poziomem trudności.
+func continue_game() -> void:
+	var hc := pick_hero()
+	pending_replay = -1
+	GameState.start_rpg_run("solo", String(hc[0]), "", false)
+	GameState.set_class(String(hc[1]))
+	goto("game", {"stage": int(GameState.run.get("stage_index", 0))})
 
 var _arena_next := false
 
