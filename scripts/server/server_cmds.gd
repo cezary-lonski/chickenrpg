@@ -4,7 +4,7 @@ extends RefCounted
 
 const PLAYER_HELP := "Komendy: /help /list /w <gracz> <tekst> /me <tekst> /pos /stats /skills /skill <slot 1-9> <id|-> /attr <statystyka> [ile] /swiat /kampania /quest /wyzwanie /arena <gracz> /wyjdz /ranking /wlasne (edytor fal: klawisz B)"
 const ADMIN_HELP := "Admin: /tp /tphere /give /heal /god /creative /survival /kill /kick /ban /unban /spawn /killall /xp /setlevel /gold /say /op /deop /class /items /save /backup /stop /rozdzial <nr> /kia <ally N|pet> /boss [id] /bosses /event raid"
-const ADMIN_CMDS := ["tp", "tphere", "give", "heal", "god", "creative", "survival", "kill", "kick", "ban", "unban", "spawn", "killall", "xp", "setlevel", "gold",
+const ADMIN_CMDS := ["update", "tp", "tphere", "give", "heal", "god", "creative", "survival", "kill", "kick", "ban", "unban", "spawn", "killall", "xp", "setlevel", "gold",
 		"say", "op", "deop", "class", "items", "save", "backup", "stop", "rozdzial", "kia", "boss", "bosses", "event"]
 
 ## Opisy komend do podpowiedzi w czacie (klient pokazuje je po wpisaniu "/", Tab uzupełnia).
@@ -53,6 +53,8 @@ const INFO := {
 	"save": "/save — zapisz postacie [admin]",
 	"backup": "/backup — kopia zapasowa danych serwera [admin]",
 	"stop": "/stop — zatrzymaj serwer [admin]",
+	"update": "/update — sprawdź i zainstaluj aktualizację serwera (restart) [admin]",
+	"version": "/version — wersja serwera i dostępna aktualizacja",
 	"rozdzial": "/rozdzial <nr> — skocz do rozdziału [admin]",
 	"kia": "/kia <ally N|pet> — zabij towarzysza [admin]",
 	"boss": "/boss [id] — przywołaj bossa [admin]",
@@ -490,6 +492,15 @@ Cel: %s" % [String(QuestDB.get_data(String(story["quest"])).get("label", "")), S
 				srv.reply(id, "Nie udało się utworzyć kopii zapasowej.", "error")
 			else:
 				srv.reply(id, "Kopia zapasowa: %s/backups/%s" % [ServerChars.dir(), stamp])
+		"version":
+			var up := srv.updater
+			srv.reply(id, "Wersja serwera: %s%s" % [UiUpdater.current_version(), ("  (dostępna %s — /update)" % up.tag) if up != null and up.available() else ""])
+		"update":
+			if srv.updater == null:
+				srv.reply(id, "Aktualizacje niedostępne.", "error")
+			else:
+				srv.reply(id, "Sprawdzam aktualizacje… (wynik w logu serwera)")
+				srv.updater.check(true)
 		"stop":
 			srv.reply(id, "Zatrzymuję serwer…")
 			srv.stop.call_deferred()

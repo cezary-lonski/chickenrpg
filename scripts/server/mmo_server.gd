@@ -19,7 +19,7 @@ const SELL_RATIO := 0.4
 
 var cfg := {
 	"name": "ChickenSerwer", "port": Mmo.DEFAULT_PORT, "max_players": 16, "motd": "Witaj na serwerze! T = czat, E = rozmowa, /help = komendy.",
-	"allow_admin_class": true, "admins": [], "banned": [],
+	"allow_admin_class": true, "admins": [], "banned": [], "auto_update": true,
 }
 var chars := ServerChars.new()
 var running := false
@@ -27,6 +27,7 @@ var peers: Dictionary = {}          # peer id -> dane gracza (patrz on_login)
 var instances: Dictionary = {}      # klucz strefy -> ZoneInstance
 var info := {"local_ip": "", "external_ip": "", "mapped": false, "upnp": "", "busy": false}
 var cmds := ServerCmds.new()
+var updater: ServerUpdater = null
 
 var _snap_acc := 0.0
 var _save_acc := 0.0

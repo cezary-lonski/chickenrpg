@@ -1,8 +1,9 @@
 class_name UiUpdater
 extends PanelContainer
 ## Auto-aktualizacja: przy starcie menu sprawdza najnowsze wydanie na GitHubie. Jeśli jest nowsze niż
-## wersja gry (application/config/version), pokazuje pasek z przyciskiem „Aktualizuj". Na Windows pobiera
-## paczkę .zip, podmienia ChickenRPG.exe (skrypt pomocniczy działa po zamknięciu gry) i uruchamia nową wersję.
+## wersja gry (application/config/version), pokazuje pasek z przyciskiem „Aktualizuj". Windows i Linux: pobiera paczkę
+## (.zip / .tar.gz), podmienia program (skrypt pomocniczy działa po zamknięciu) i uruchamia nową wersję.
+## Android: otwiera pobieranie .apk. Te same funkcje statyczne używa serwer (ServerUpdater).
 
 const REPO := "cezary-lonski/chickenrpg"
 const API := "https://api.github.com/repos/%s/releases?per_page=10" % REPO
@@ -75,50 +76,61 @@ func _ready() -> void:
 static func auto_enabled() -> bool:
 	return true
 
-func _on_list(result: int, code: int, _h: PackedStringArray, body: PackedByteArray) -> void:
-	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
-		return
-	var data = JSON.parse_string(body.get_string_from_utf8())
+## Paczka pasująca do systemu: Windows — .zip, Linux — .tar.gz, Android — .apk (serwer ma własny .apk).
+static func asset_url(assets: Array) -> String:
+	var os_name := OS.get_name()
+	for a in assets:
+		var n := String(a.get("name", "")).to_lower()
+		var ok := false
+		match os_name:
+			"Windows":
+				ok = n.ends_with(".zip") and n.begins_with("chickenrpg")
+			"Linux":
+				ok = n.ends_with("linux.tar.gz") and n.begins_with("chickenrpg")
+			"Android":
+				ok = n.ends_with(".apk") and n.begins_with("chickenserwer" if ServerMode.is_active() else "chickenrpg")
+		if ok:
+			return String(a.get("browser_download_url", ""))
+	return ""
+
+## Najnowsze wydanie z paczką dla tego systemu: {"tag", "url"} albo {} gdy brak.
+static func pick_release(data: Variant) -> Dictionary:
 	if not (data is Array):
-		return
+		return {}
 	var best_tag := ""
 	var best_url := ""
 	for rel in data:
 		if not (rel is Dictionary) or bool(rel.get("draft", false)):
 			continue
 		var tag := String(rel.get("tag_name", ""))
-		var url := ""
-		for a in rel.get("assets", []):
-			var n := String(a.get("name", "")).to_lower()
-			if n.ends_with(".zip") and n.begins_with("chickenrpg"):
-				url = String(a.get("browser_download_url", ""))
-				break
+		var url := asset_url(rel.get("assets", []))
 		if url == "":
 			continue
 		if best_tag == "" or UiUpdater.is_newer(tag, best_tag):
 			best_tag = tag
 			best_url = url
-	if best_tag == "" or not UiUpdater.is_newer(best_tag, current_version()):
+	return {} if best_tag == "" else {"tag": best_tag, "url": best_url}
+
+func _on_list(result: int, code: int, _h: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		return
-	_tag = best_tag
-	_asset_url = best_url
+	var best := UiUpdater.pick_release(JSON.parse_string(body.get_string_from_utf8()))
+	if best.is_empty() or not UiUpdater.is_newer(String(best["tag"]), current_version()):
+		return
+	_tag = String(best["tag"])
+	_asset_url = String(best["url"])
 	_label.text = "Dostępna nowa wersja: %s (masz %s)" % [_tag, current_version()]
 	visible = true
 
 func _on_update() -> void:
-	if OS.get_name() != "Windows" or _asset_url == "":
-		OS.shell_open(PAGE)
+	if _asset_url == "" or OS.get_name() not in ["Windows", "Linux"]:
+		# Android: przeglądarka pobiera .apk, a system pyta o instalację; inne systemy — strona wydań
+		OS.shell_open(_asset_url if OS.get_name() == "Android" and _asset_url != "" else PAGE)
 		return
 	_btn.disabled = true
 	_bar.visible = true
 	_label.text = "Pobieram %s…" % _tag
-	var dir := OS.get_executable_path().get_base_dir()
-	_zip_path = dir.path_join("ChickenRPG-update.zip")
-	var f := FileAccess.open(_zip_path, FileAccess.WRITE)
-	if f == null:
-		_zip_path = ProjectSettings.globalize_path("user://ChickenRPG-update.zip")
-	else:
-		f.close()
+	_zip_path = UiUpdater.download_path()
 	var dl := HTTPRequest.new()
 	dl.download_file = _zip_path
 	dl.timeout = 0.0
@@ -145,40 +157,101 @@ func _fail(msg: String) -> void:
 	_btn.pressed.connect(func(): OS.shell_open(PAGE))
 	_bar.visible = false
 
-## Skrypt .bat: czeka na zamknięcie gry, rozpakowuje paczkę, podmienia exe, uruchamia nową wersję i sam się usuwa.
-static func build_script(exe_path: String, zip_path: String) -> String:
+## Gdzie zapisać pobraną paczkę: obok programu (a jeśli się nie da, w danych użytkownika).
+static func download_path() -> String:
+	var ext := ".tar.gz" if OS.get_name() == "Linux" else ".zip"
+	var path := OS.get_executable_path().get_base_dir().path_join("ChickenRPG-update" + ext)
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f == null:
+		return ProjectSettings.globalize_path("user://ChickenRPG-update" + ext)
+	f.close()
+	return path
+
+## Argumenty uruchomienia (np. --headless -- --server), żeby po aktualizacji program wystartował tak samo.
+static func restart_args() -> PackedStringArray:
+	var out := PackedStringArray(OS.get_cmdline_args())
+	var user := PackedStringArray(OS.get_cmdline_user_args())
+	if ServerMode.is_active() and "--autostart" not in user:
+		user.append("--autostart")      # serwer po aktualizacji od razu wstaje, bez klikania
+	if not user.is_empty():
+		out.append("--")
+		out.append_array(user)
+	return out
+
+static func _q(s: String) -> String:
+	return "\"%s\"" % s
+
+## Skrypt .bat: czeka na zamknięcie programu, rozpakowuje paczkę, podmienia exe (ChickenRPG.exe albo ChickenSerwer.exe),
+## uruchamia nową wersję z tymi samymi argumentami i sam się usuwa.
+static func build_script(exe_path: String, zip_path: String, args: PackedStringArray = PackedStringArray()) -> String:
 	var exe := exe_path.replace("/", "\\")
 	var zip := zip_path.replace("/", "\\")
 	var tmp := exe.get_base_dir().path_join("ChickenRPG-update-tmp").replace("/", "\\")
+	var quoted: Array = []
+	for a in args:
+		quoted.append(_q(String(a)))
+	var arg_s := " ".join(quoted)
 	var lines := PackedStringArray([
 		"@echo off",
 		"timeout /t 2 /nobreak >nul",
 		"powershell -NoProfile -Command \"Expand-Archive -LiteralPath '%s' -DestinationPath '%s' -Force\"" % [zip, tmp],
 		"for /l %%i in (1,1,30) do (",
-		"  move /Y \"%s\\ChickenRPG.exe\" \"%s\" >nul 2>&1 && goto done" % [tmp, exe],
+		"  move /Y \"%s\\%s\" \"%s\" >nul 2>&1 && goto done" % [tmp, exe.get_file(), exe],
 		"  timeout /t 1 /nobreak >nul",
 		")",
 		":done",
 		"del \"%s\" >nul 2>&1" % zip,
 		"rmdir /s /q \"%s\" >nul 2>&1" % tmp,
-		"start \"\" \"%s\"" % exe,
+		"start \"\" \"%s\" %s" % [exe, arg_s],
 		"del \"%~f0\"",
 	])
 	return "\r\n".join(lines) + "\r\n"
+
+## Skrypt .sh (Linux): czeka na zamknięcie, rozpakowuje tar.gz, podmienia plik wykonywalny i uruchamia go ponownie.
+static func build_script_linux(exe_path: String, tar_path: String, args: PackedStringArray = PackedStringArray()) -> String:
+	var tmp := exe_path.get_base_dir().path_join("ChickenRPG-update-tmp")
+	var quoted: Array = []
+	for a in args:
+		quoted.append("'%s'" % String(a).replace("'", "'\\''"))
+	var arg_s := " ".join(quoted)
+	var lines := PackedStringArray([
+		"#!/bin/sh",
+		"sleep 2",
+		"mkdir -p '%s'" % tmp,
+		"tar xzf '%s' -C '%s'" % [tar_path, tmp],
+		"NEW=$(find '%s' -name '%s' | head -n 1)" % [tmp, exe_path.get_file()],
+		"if [ -n \"$NEW\" ]; then cp -f \"$NEW\" '%s' && chmod +x '%s'; fi" % [exe_path, exe_path],
+		"rm -rf '%s' '%s'" % [tmp, tar_path],
+		"cd '%s'" % exe_path.get_base_dir(),
+		"nohup '%s' %s >/dev/null 2>&1 &" % [exe_path, arg_s],
+		"rm -- \"$0\"",
+	])
+	return "\n".join(lines) + "\n"
+
+## Zapisuje skrypt aktualizacji i uruchamia go; po udanym wywołaniu wołający MUSI zamknąć program. Zwraca "" albo błąd.
+static func launch_update(pack_path: String) -> String:
+	var exe := OS.get_executable_path()
+	var win := OS.get_name() == "Windows"
+	var script_path := exe.get_base_dir().path_join("ChickenRPG-update.bat" if win else "ChickenRPG-update.sh")
+	var script := build_script(exe, pack_path, restart_args()) if win else build_script_linux(exe, pack_path, restart_args())
+	var f := FileAccess.open(script_path, FileAccess.WRITE)
+	if f == null:
+		return "Brak uprawnień do zapisu w folderze programu."
+	f.store_string(script)
+	f.close()
+	if win:
+		OS.create_process("cmd.exe", ["/c", script_path.replace("/", "\\")])
+	else:
+		OS.create_process("sh", [script_path])
+	return ""
 
 func _on_downloaded(result: int, code: int, _h: PackedStringArray, _b: PackedByteArray) -> void:
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		_fail("Pobieranie nie powiodło się (%d)." % code)
 		return
-	_label.text = "Instaluję… gra uruchomi się ponownie."
-	var exe := OS.get_executable_path().replace("/", "\\")
-	var bat := exe.get_base_dir().path_join("ChickenRPG-update.bat").replace("/", "\\")
-	var script := UiUpdater.build_script(exe, _zip_path)
-	var f := FileAccess.open(bat, FileAccess.WRITE)
-	if f == null:
-		_fail("Brak uprawnień do zapisu w folderze gry.")
+	_label.text = "Instaluję… program uruchomi się ponownie."
+	var err := UiUpdater.launch_update(_zip_path)
+	if err != "":
+		_fail(err)
 		return
-	f.store_string(script)
-	f.close()
-	OS.create_process("cmd.exe", ["/c", bat])
 	get_tree().quit()

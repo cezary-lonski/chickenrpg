@@ -35,6 +35,10 @@ func _ready() -> void:
 	add_child(srv)
 	srv.load_config()
 	srv.log_line.connect(_on_log)
+	var upd := ServerUpdater.new()
+	upd.srv = srv
+	srv.updater = upd
+	add_child(upd)
 	srv.players_changed.connect(_refresh)
 	srv.info_changed.connect(_refresh)
 	srv.stopped.connect(func():
