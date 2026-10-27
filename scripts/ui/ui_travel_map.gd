@@ -102,7 +102,7 @@ func _teleport() -> void:
 	on_teleport.emit(_sel)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_pressed() and (event.is_action_pressed("ui_cancel") or (event is InputEventKey and (event as InputEventKey).keycode == KEY_M)):
+	if event.is_pressed() and (event.is_action_pressed("ui_cancel") or event.is_action_pressed("world_map")):
 		get_viewport().set_input_as_handled()
 		on_close.emit()
 

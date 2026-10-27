@@ -15,7 +15,7 @@ const ACTION_NAMES := {
 	"jump": "Skok (tryb platformowy)", "light_attack": "Atak 1 (lekki)", "heavy_attack": "Atak 2 (ciężki)",
 	"dash": "Unik", "block": "Blok", "throw_item": "Rzut przedmiotem",
 	"special": "Furia", "sprint": "Sprint (stamina)", "pause": "Pauza", "equipment": "Ekwipunek / interakcja",
-	"quest_log": "Dziennik zadań", "skill_tree": "Drzewko umiejętności",
+	"quest_log": "Dziennik zadań", "skill_tree": "Drzewko umiejętności", "world_map": "Mapa świata",
 	"skill_1": "Skill 1", "skill_2": "Skill 2", "skill_3": "Skill 3",
 	"skill_4": "Skill 4", "skill_5": "Skill 5", "skill_6": "Skill 6",
 	"skill_7": "Skill 7", "skill_8": "Skill 8", "skill_9": "Skill 9",
@@ -79,6 +79,24 @@ func _ready() -> void:
 		gb.text = "Jakość grafiki: %s" % GFX_NAMES[GameState.gfx_quality()]
 		Audio.play("select"))
 	lv.add_child(gb)
+	var rb2 := UiKit.button("", 18)
+	rb2.custom_minimum_size = Vector2(320, 40)
+	var _res_text := func() -> String:
+		return "Rozdzielczość: %s" % ("nie zmieniaj" if GameState.display_idx() < 0 else GameState.RES_NAMES[GameState.display_idx()])
+	rb2.text = _res_text.call()
+	rb2.pressed.connect(func():
+		GameState.set_display((GameState.display_idx() + 1) % GameState.RES_NAMES.size())
+		rb2.text = _res_text.call()
+		Audio.play("select"))
+	lv.add_child(rb2)
+	var vb := UiKit.button("", 18)
+	vb.custom_minimum_size = Vector2(320, 40)
+	vb.text = "Pole widzenia (RPG/online): %s" % GameState.VIEW_NAMES[GameState.view_idx()]
+	vb.pressed.connect(func():
+		GameState.set_view((GameState.view_idx() + 1) % GameState.VIEW_NAMES.size())
+		vb.text = "Pole widzenia (RPG/online): %s" % GameState.VIEW_NAMES[GameState.view_idx()]
+		Audio.play("select"))
+	lv.add_child(vb)
 	var hint := UiKit.label("Niska = płynniej na słabszym sprzęcie i telefonach. Pogoda zmienia się od następnego etapu.", 13, UiKit.DIM)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size = Vector2(320, 0)

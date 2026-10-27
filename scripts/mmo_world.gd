@@ -400,6 +400,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif key == KEY_B and not hud.is_blocking():
 		hud.open_overlay("waves", {})
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("world_map") and not hud.is_blocking():
+		hud.open_world_map()
+		get_viewport().set_input_as_handled()
 	elif key == KEY_P and not hud.is_blocking():
 		hud.open_overlay("pets", {})
 		get_viewport().set_input_as_handled()

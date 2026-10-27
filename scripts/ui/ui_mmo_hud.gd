@@ -245,7 +245,7 @@ func _build_exit_panel(root: Control) -> void:
 	_pause_btn(v, "Atrybuty", Callable(), UiKit.ACCENT, true)
 	_pause_btn(v, "Umiejętności", Callable(), UiKit.ACCENT, true)
 	_pause_btn(v, "Towarzysze (P)", func(): _exit_panel.visible = false; open_overlay("pets", {}))
-	_pause_btn(v, "Mapa świata", func(): _exit_panel.visible = false; Mmo.send_chat_text("/mapa"))
+	_pause_btn(v, "Mapa świata (M)", func(): _exit_panel.visible = false; open_world_map())
 	var sp := Control.new()
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(sp)
@@ -300,6 +300,15 @@ func _build_exit_panel(root: Control) -> void:
 			elif key == "sfx":
 				Audio.play("confirm"))
 		orow.add_child(b)
+
+## Mapa świata (klawisz „Mapa świata” z Ustawień): między misjami Aktu II to wybór wioski, poza tym szybka podróż.
+func open_world_map() -> void:
+	if is_blocking():
+		return
+	if Mmo.my_info.get("act2_choice", false):
+		Mmo.send_chat_text("/mapa")
+	else:
+		open_overlay("travel", {})
 
 var _settings: UiSettings = null
 
@@ -389,6 +398,7 @@ func open_overlay(kind: String, data: Dictionary) -> void:
 			"pets": _overlay = UiMmoPets.new()
 			"waves": _overlay = UiMmoWaves.new()
 			"worldmap": _overlay = UiMmoMap.new()
+			"travel": _overlay = UiMmoTravel.new()
 			_: return
 		_overlay_kind = kind
 		_overlay.apply_state(data)

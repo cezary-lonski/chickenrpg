@@ -1165,7 +1165,7 @@ func reset_save() -> void:
 
 const BIND_ACTIONS := [
 	"move_left", "move_right", "move_up", "move_down", "jump", "light_attack", "heavy_attack",
-	"dash", "block", "throw_item", "special", "sprint", "pause", "equipment", "quest_log", "skill_tree",
+	"dash", "block", "throw_item", "special", "sprint", "pause", "equipment", "quest_log", "skill_tree", "world_map",
 	"skill_1", "skill_2", "skill_3", "skill_4", "skill_5", "skill_6", "skill_7", "skill_8", "skill_9",
 ]
 
@@ -1174,7 +1174,7 @@ const DEFAULT_KEYS := {
 	"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN], "jump": [KEY_SPACE],
 	"light_attack": [KEY_J], "heavy_attack": [KEY_K], "dash": [KEY_L], "block": [KEY_U],
 	"throw_item": [KEY_I], "special": [KEY_O], "sprint": [KEY_SHIFT], "pause": [KEY_ESCAPE],
-	"equipment": [KEY_E], "quest_log": [KEY_Q], "skill_tree": [KEY_T],
+	"equipment": [KEY_E], "quest_log": [KEY_Q], "skill_tree": [KEY_T], "world_map": [KEY_M],
 	"skill_1": [KEY_1], "skill_2": [KEY_2], "skill_3": [KEY_3],
 	"skill_4": [KEY_4], "skill_5": [KEY_5], "skill_6": [KEY_6],
 	"skill_7": [KEY_7], "skill_8": [KEY_8], "skill_9": [KEY_9],
@@ -1189,6 +1189,49 @@ func _register_default_actions() -> void:
 func setting(key: String) -> bool:
 	# spowolnienie przy ataku jest domyślnie wyłączone (dawało efekt „lagu”), reszta opcji — włączona
 	return bool(profile.get("settings", {}).get(key, key != "hitstop"))
+
+## Rozdzielczość okna i pole widzenia (ile świata widać w trybie RPG / online).
+const RES_PRESETS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)]
+const RES_NAMES := ["1280×720", "1600×900", "1920×1080", "2560×1440", "Pełny ekran"]
+const VIEW_ZOOMS := [1.0, 0.85, 0.7, 0.55]
+const VIEW_NAMES := ["Normalne", "Szersze", "Szerokie", "Najszersze"]
+
+func display_idx() -> int:
+	return clampi(int(profile.get("settings", {}).get("res", -1)), -1, RES_NAMES.size() - 1)
+
+func view_idx() -> int:
+	return clampi(int(profile.get("settings", {}).get("view", 0)), 0, VIEW_ZOOMS.size() - 1)
+
+func view_zoom() -> float:
+	return float(VIEW_ZOOMS[view_idx()])
+
+func set_display(i: int) -> void:
+	if not profile.has("settings"): profile["settings"] = {}
+	profile["settings"]["res"] = clampi(i, 0, RES_NAMES.size() - 1)
+	apply_display()
+	save_game()
+
+func set_view(i: int) -> void:
+	if not profile.has("settings"): profile["settings"] = {}
+	profile["settings"]["view"] = clampi(i, 0, VIEW_ZOOMS.size() - 1)
+	var cam: Camera2D = Engine.get_main_loop().root.get_viewport().get_camera_2d()
+	if cam != null and (is_topdown() or Flow.current_screen == "mmo"):
+		cam.zoom = Vector2.ONE * view_zoom()
+	save_game()
+
+## Ustawia okno wg zapisanej rozdziałki (nic nie robi, dopóki gracz jej nie wybrał, na telefonie i w serwerze).
+func apply_display() -> void:
+	var i := display_idx()
+	if i < 0 or OS.has_feature("mobile") or ServerMode.is_active():
+		return
+	var w: Window = Engine.get_main_loop().root
+	if i >= RES_PRESETS.size():
+		w.mode = Window.MODE_FULLSCREEN
+		return
+	w.mode = Window.MODE_WINDOWED
+	w.size = RES_PRESETS[i]
+	var scr := DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen())
+	w.position = scr.position + (scr.size - Vector2i(w.size)) / 2
 
 ## Jakość grafiki: 0 niska, 1 średnia, 2 wysoka, 3 bez cząsteczek (domyślnie niska na telefonie).
 func gfx_quality() -> int:

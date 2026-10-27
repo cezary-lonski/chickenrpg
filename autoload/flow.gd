@@ -47,7 +47,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			toggle_pause()
 			get_viewport().set_input_as_handled()
 		return
-	if event is InputEventKey and (event as InputEventKey).keycode == KEY_M and overlay == null and not _busy and current_screen not in ["mmo", "server", "mmo_connect"]:
+	if event.is_action_pressed("world_map") and overlay == null and not _busy and current_screen not in ["mmo", "server", "mmo_connect"]:
 		open_travel_map()
 		get_viewport().set_input_as_handled()
 		return
@@ -147,8 +147,12 @@ func quit_game() -> void:
 # ------------------------------------------------------------------ budowa ---
 
 func _build(screen: String, args: Dictionary) -> void:
+	# tryb RPG/online: szersze okno pokazuje WIĘCEJ świata zamiast czarnych pasów; reszta ekranów zostaje w 16:9
+	var wide := screen == "mmo" or (screen == "game" and GameState.is_topdown())
+	get_tree().root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND if wide else Window.CONTENT_SCALE_ASPECT_KEEP
 	match screen:
 		"menu":
+			GameState.apply_display()
 			current = UiMainMenu.new()
 			Audio.play_music("menu")
 		"select":

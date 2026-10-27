@@ -256,6 +256,7 @@ static func story_of(rec: Dictionary) -> Dictionary:
 		s["flags"] = {}
 	if not rec.has("zone"):
 		rec["zone"] = "story"
+	s["best"] = maxi(int(s.get("best", 0)), int(s.get("chapter", 0)))
 	return s
 
 static func _first_playable(from_index: int) -> int:
@@ -315,6 +316,32 @@ func open_map(id: int) -> void:
 	var pl = peers.get(id)
 	if pl != null:
 		send_ev(id, "worldmap", map_state(pl["rec"]))
+
+## Mapa świata (M): podróż do osiągniętego już rozdziału (powtórka); dalsza fabuła idzie od niego po kolei.
+func _travel(id: int, index: int) -> void:
+	var pl = peers.get(id)
+	if pl == null:
+		return
+	var rec: Dictionary = pl["rec"]
+	var inst: ZoneInstance = pl["inst"]
+	if inst != null and inst.kind not in ["story", "swiat"]:
+		_say_to(id, "Najpierw zakończ walkę (/wyjdz).", "error")
+		return
+	var story := story_of(rec)
+	if index < 0 or index >= QuestDB.count() or index > int(story["best"]):
+		_say_to(id, "To miejsce jest jeszcze zablokowane.", "error")
+		return
+	var qid := String(QuestDB.chapter(index).get("id", ""))
+	if not ZoneDB.has(qid):
+		_say_to(id, "Do tego miejsca nie da się podróżować z mapy (użyj wyboru wioski, /mapa).", "error")
+		return
+	if index == int(story["chapter"]) and rec.get("zone", "story") == "story" and inst != null and inst.kind == "story":
+		return
+	story["chapter"] = index
+	story["quest"] = qid
+	rec["zone"] = "story"
+	chars.mark_dirty()
+	enter_zone(id, qid)
 
 func _act2_pick(id: int, mission: String) -> void:
 	var pl = peers.get(id)
@@ -1050,6 +1077,8 @@ func on_act(id: int, kind: String, data: Dictionary) -> void:
 			peers[id]["panel"] = ""
 		"act2_pick":
 			_act2_pick(id, String(data.get("id", "")))
+		"travel":
+			_travel(id, int(data.get("index", -1)))
 		"act2_started":
 			act2_state(peers[id]["rec"])["started"] = true
 			chars.mark_dirty()
@@ -1227,7 +1256,7 @@ func me_info(id: int) -> Dictionary:
 		"attrs": rec["attrs"], "equip": rec["equip"], "equip_q": rec["equip_q"], "equip_m": rec["equip_m"], "inv": rec["inv"], "skills": rec["skills"],
 		"known_skills": rec["known_skills"], "admin": is_admin_rec(rec), "pets": SupportOps.pets_of(rec), "custom_waves": rec.get("custom_waves", UiWaveEditor.default_config()),
 		"stats": {"max_health": st["max_health"], "strength": st["strength"], "defense": st["defense"], "speed": st["speed"], "crit": st["crit"]},
-		"server": String(cfg["name"]),
+		"server": String(cfg["name"]), "act2_choice": act2_needs_choice(rec), "chapter": int(story_of(rec)["chapter"]), "best": int(story_of(rec)["best"]),
 	}
 
 func _push_me(id: int) -> void:
