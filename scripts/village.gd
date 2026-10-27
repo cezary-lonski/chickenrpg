@@ -1666,6 +1666,7 @@ func _spawn_cave_ambush() -> void:
 			e.net_id = "e%d" % _net_enemy_seq
 			_net_enemy_seq += 1
 			e.dormant = true
+			e.aggro = minf(e.aggro, 460.0)
 			entities.add_child(e)
 			e.global_position = (centers[n] as Vector2) + Vector2(rng.randf_range(-110.0, 110.0), rng.randf_range(-90.0, 90.0))
 			e.set_bounds_rect(MARGIN, VILLAGE.x - MARGIN, MARGIN, VILLAGE.y - MARGIN)

@@ -703,7 +703,7 @@ func _spawn_ambush() -> void:
 			var e := spawn_mob(String(entry[0]), at, bool(wave.get("elite", false)) or (entry.size() > 2 and bool(entry[2])), mods, String(entry[3]) if entry.size() > 3 else "")
 			if e != null:
 				e.dormant = true
-				e.aggro = 520.0
+				e.aggro = 460.0
 	wave_i = waves.size()
 	set_step(wave_i)
 	wave_active = true

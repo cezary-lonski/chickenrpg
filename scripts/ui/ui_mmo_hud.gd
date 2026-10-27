@@ -249,7 +249,7 @@ func _build_exit_panel(root: Control) -> void:
 	var sp := Control.new()
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(sp)
-	_pause_btn(v, "Ustawienia", Callable(), UiKit.ACCENT, true)
+	_pause_btn(v, "Ustawienia", func(): _exit_panel.visible = false; _open_settings())
 	_pause_btn(v, "Wyjdź do menu", func(): exit_requested.emit(), UiKit.BAD)
 	var right := UiKit.vbox(14)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -301,6 +301,19 @@ func _build_exit_panel(root: Control) -> void:
 				Audio.play("confirm"))
 		orow.add_child(b)
 
+var _settings: UiSettings = null
+
+func _open_settings() -> void:
+	if _settings != null and is_instance_valid(_settings):
+		return
+	_settings = UiSettings.new()
+	_settings.setup("mmo")
+	_settings.on_close.connect(func():
+		if is_instance_valid(_settings):
+			_settings.queue_free()
+		_settings = null)
+	_root.add_child(_settings)
+
 func _pause_row(parent: Control) -> HBoxContainer:
 	var h := UiKit.hbox(8)
 	parent.add_child(h)
@@ -329,7 +342,7 @@ func is_dialog_open() -> bool:
 	return _dialog != null and is_instance_valid(_dialog)
 
 func is_blocking() -> bool:
-	return _input.visible or inv_panel.visible or _exit_panel.visible or shop_panel.visible or is_dialog_open() or (forge_panel != null and is_instance_valid(forge_panel)) or has_overlay()
+	return _input.visible or inv_panel.visible or _exit_panel.visible or shop_panel.visible or is_dialog_open() or (forge_panel != null and is_instance_valid(forge_panel)) or has_overlay() or (_settings != null and is_instance_valid(_settings))
 
 func open_dialog(token: int, lines: Array, accent: Color) -> void:
 	if is_dialog_open():
@@ -558,6 +571,8 @@ func _center(c: Control) -> void:
 func handle_escape() -> void:
 	if _input.visible:
 		close_chat()
+	elif _settings != null and is_instance_valid(_settings):
+		_settings.on_close.emit()
 	elif has_overlay():
 		if _overlay.cancel_or_close():
 			close_overlay()
