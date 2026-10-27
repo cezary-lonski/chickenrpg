@@ -38,6 +38,8 @@ static func usable(rec: Dictionary, inst: ZoneInstance, peer: int, o: Dictionary
 			if String(o.get("phase", "pre")) == "post" and inst.step <= inst.waves.size():
 				return false
 			return not bool(flags.get(String(o["uid"]), false))
+		"heist":
+			return not heist_off(rec, inst.quest_id, inst.heist)
 		"chest":
 			return String(o["uid"]) not in (secrets_of(rec).get("chests", []) as Array)
 		"lever":
@@ -78,6 +80,7 @@ static func activate(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionar
 		"cavechest": _cave_chest(srv, peer, inst)
 		"portal": srv.enter_zone(peer, srv.zone_key_for(srv.peers[peer]["rec"]))
 		"side": _side(srv, peer, inst, o)
+		"heist": _heist_take(srv, peer, inst)
 		"hospital": SupportOps.open_hospital(srv, peer)
 		"stash": SupportOps.open_stash(srv, peer)
 		"lab": SupportOps.open_lab(srv, peer)
@@ -122,6 +125,46 @@ static func check_obj_reward(srv: MmoServer, peer: int, quest: String, obj: Dict
 	var lines: Array = res["result"]
 	srv.say(peer, "Cel ukończony: %s%s" % [String(obj["text"]), (" — " + ", ".join(lines)) if not lines.is_empty() else ""])
 	srv.after_ctx(peer, int(res["levels"]))
+
+# ------------------------------------------------------------ skradanka (lutnia) ---
+
+static func _item_count(rec: Dictionary, id: String) -> int:
+	var n := 0
+	for e in rec["inv"]:
+		if String(e["id"]) == id:
+			n += int(e["n"])
+	return n
+
+## Skradanka nie dotyczy gracza, który już zwędził lutnię (ma ją albo oddał barda).
+static func heist_off(rec: Dictionary, quest: String, o: Dictionary) -> bool:
+	if o.is_empty():
+		return true
+	var fl := flags_of(rec)
+	return bool(fl.get("heist_taken:" + quest, false)) or _item_count(rec, "lutnia_kukuryka") > 0 or ChapterExtras.is_done(quest, o, fl)
+
+static func _heist_take(srv: MmoServer, peer: int, inst: ZoneInstance) -> void:
+	var rec: Dictionary = srv.peers[peer]["rec"]
+	flags_of(rec)["heist_taken:" + inst.quest_id] = true
+	ServerChars.inv_add(rec, "lutnia_kukuryka", 1)
+	srv.say(peer, "Zwędzono lutnię! Wymknij się i zanieś ją bardowi.")
+	srv.chars.mark_dirty()
+	srv.push_prog(peer)
+	srv._push_me(peer)
+
+## Bard odbiera lutnię: dialog z podziękowaniem i nagroda za cel „włamanie”.
+static func _bard_turn_in(srv: MmoServer, peer: int, inst: ZoneInstance) -> bool:
+	var rec: Dictionary = srv.peers[peer]["rec"]
+	var o := inst.heist
+	if o.is_empty() or ChapterExtras.is_done(inst.quest_id, o, flags_of(rec)) or _item_count(rec, "lutnia_kukuryka") <= 0:
+		return false
+	ServerChars.inv_remove(rec, "lutnia_kukuryka", 1)
+	flags_of(rec)[ChapterExtras.flag(inst.quest_id, String(o["id"]), 0)] = true
+	srv._open_dialog(peer, o.get("thanks", []), NpcDB.get_data("bard").get("accent", UiKit.ACCENT), "")
+	check_obj_reward(srv, peer, inst.quest_id, o)
+	srv.chars.mark_dirty()
+	srv.push_prog(peer)
+	srv._push_me(peer)
+	return true
 
 static func mark_talked(srv: MmoServer, peer: int, quest: String, npc: String) -> void:
 	var rec: Dictionary = srv.peers[peer]["rec"]
@@ -295,6 +338,8 @@ static func choice_pick(srv: MmoServer, peer: int, data: Dictionary, i: int) -> 
 
 static func talk_extra(srv: MmoServer, peer: int, inst: ZoneInstance, npc: String) -> void:
 	var rec: Dictionary = srv.peers[peer]["rec"]
+	if npc == "bard" and _bard_turn_in(srv, peer, inst):
+		return
 	var d := ChapterExtras.dialog(inst.quest_id, npc)
 	var accent: Color = NpcDB.get_data(npc).get("accent", UiKit.ACCENT)
 	var post: bool = inst.step > inst.waves.size()

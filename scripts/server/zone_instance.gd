@@ -64,6 +64,10 @@ var _boss_t := 150.0           # Pustkowie: czas do kolejnego bossa świata
 var _raid_t := 240.0           # Pustkowie: czas do najazdu elit
 var _raid_mobs: Array = []
 var hunts: Dictionary = {}     # id zlecenia -> wróg łowcy nagród
+var heist: Dictionary = {}     # cel skradankowy rozdziału (strażnicy ze stożkiem wzroku)
+var _clock := 0.0              # zegar patroli strażników (klienci rysują ich z tego samego czasu)
+var _heist_alert: Dictionary = {}   # peer -> pasek wykrycia
+var _heist_send := 0.0
 
 func setup(p_srv: MmoServer, p_key: String, p_slot: int) -> void:
 	srv = p_srv
@@ -170,7 +174,8 @@ func zone_info() -> Dictionary:
 	var banner: Array = zone.get("intro_banner", ["", ""])
 	return {"key": key, "kind": kind, "terrain": terrain, "size": size, "spawn": spawn, "npcs": npc_list,
 		"quest": quest_id, "title": zone_title(), "waves_n": waves.size(),
-		"banner": banner, "boss_pos": BossDB.ARENA_CENTER, "boss_radius": BossDB.ARENA_RADIUS, "objs": objs + extra_objs, "buildings": buildings}
+		"banner": banner, "boss_pos": BossDB.ARENA_CENTER, "boss_radius": BossDB.ARENA_RADIUS, "objs": objs + extra_objs, "buildings": buildings,
+		"heist": {} if heist.is_empty() else {"guards": heist["guards"], "t": _clock, "id": String(heist["id"])}}
 
 # ---------------------------------------------------------------- obiekty ---
 
@@ -187,6 +192,10 @@ func _build_objects() -> void:
 					objs.append({"uid": ChapterExtras.flag(quest_id, String(o["id"]), i), "kind": String(o.get("kind", "document")),
 						"label": String(o.get("label", "Użyj")), "pos": positions[i], "type": "obj", "obj": String(o["id"]), "idx": i,
 						"phase": String(o.get("phase", "pre"))})
+	for obj2 in ChapterExtras.objectives(quest_id):
+		if String(obj2.get("type", "")) == "heist":
+			heist = obj2
+			objs.append({"uid": "heist:" + quest_id, "kind": "document", "label": String(obj2.get("label", "Zwędź")), "pos": obj2["pos"], "type": "heist"})
 	for c in SecretDB.chests_for(quest_id):
 		objs.append({"uid": "%s:%s" % [quest_id, String(c["id"])], "kind": "chest", "label": "Otwórz skrzynię", "pos": c["pos"],
 			"type": "chest", "hidden": bool(c.get("hidden", false)), "chest": String(c["id"])})
@@ -310,6 +319,7 @@ func add_player(peer: int, rec: Dictionary) -> Player:
 
 func remove_player(peer: int) -> void:
 	peer_ids.erase(peer)
+	_heist_alert.erase(peer)
 
 func is_empty() -> bool:
 	return peer_ids.is_empty()
@@ -374,7 +384,44 @@ func _edge_spawn() -> Vector2:
 
 # ----------------------------------------------------------------- pętla ---
 
+## Skradanka: serwer liczy wykrycie każdego gracza. Zauważony wraca na start, a pasek wykrycia
+## trafia do jego klienta (rysuje czerwienienie stożka).
+func _tick_heist(delta: float) -> void:
+	_clock += delta
+	if heist.is_empty():
+		return
+	_heist_send -= delta
+	for peer in peer_ids:
+		var pl = srv.peers.get(peer)
+		if pl == null:
+			continue
+		var node = pl.get("node")
+		if node == null or not is_instance_valid(node) or StoryActions.heist_off(pl["rec"], quest_id, heist):
+			if _heist_alert.erase(peer):
+				srv.send_ev(peer, "heist_alert", {"a": 0.0, "hit": false})
+			continue
+		var best := 0.0
+		for g in heist["guards"]:
+			var s := StealthGuard.state_at(g["path"], _clock)
+			best = maxf(best, StealthGuard.sees(s["pos"], s["dir"], float(g.get("range", 250.0)), (node as Node2D).position))
+		var a := float(_heist_alert.get(peer, 0.0))
+		a = a + delta * (0.9 + 1.6 * best) if best > 0.0 else maxf(0.0, a - delta * 0.7)
+		if a >= 1.0:
+			_heist_alert.erase(peer)
+			(node as Node2D).position = heist.get("start", spawn)
+			if "velocity" in node:
+				node.velocity = Vector2.ZERO
+			srv.say(peer, "Zauważono cię! Strażnicy odprowadzili cię na start.")
+			srv.send_ev(peer, "heist_alert", {"a": 0.0, "hit": true})
+			continue
+		_heist_alert[peer] = a
+		if _heist_send <= 0.0 and (a > 0.0 or best > 0.0):
+			srv.send_ev(peer, "heist_alert", {"a": a, "hit": false})
+	if _heist_send <= 0.0:
+		_heist_send = 0.2
+
 func tick(delta: float) -> void:
+	_tick_heist(delta)
 	if kind == "swiat":
 		_tick_world(delta)
 		return

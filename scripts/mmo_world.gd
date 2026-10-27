@@ -39,6 +39,7 @@ var _marks: Dictionary = {}
 var _prog: Dictionary = {}
 var _objs: Dictionary = {}        # uid -> {node, data}
 var _side: Dictionary = {}        # uid -> Interactable (zlecenia poboczne)
+var _guards: Array = []           # strażnicy skradanki (tylko rysowani; wykrycie liczy serwer)
 var _z: Dictionary = {}
 var _my_cd: Array = []
 var _sup: Dictionary = {}         # id towarzysza -> duch Ally/Pet
@@ -108,6 +109,7 @@ func _on_zone(info: Dictionary) -> void:
 	_npcs.clear()
 	_objs.clear()
 	_side.clear()
+	_guards.clear()
 	_sup.clear()
 	_prog = {}
 	_z = {}
@@ -146,6 +148,15 @@ func _on_zone(info: Dictionary) -> void:
 		_make_object(o)
 	for b in info.get("buildings", []):
 		_make_building(String(b["kind"]), b["pos"])
+	var hz: Dictionary = info.get("heist", {})
+	for g in hz.get("guards", []):
+		var sg := StealthGuard.new()
+		sg.detect = false
+		sg.clock = float(hz.get("t", 0.0))
+		sg.setup(g["path"], float(g.get("range", 250.0)))
+		entities.add_child(sg)
+		_guards.append(sg)
+	_refresh_guards()
 	hud.set_zone_title(String(info.get("title", "")))
 	_on_roster(Mmo.roster)
 
@@ -269,8 +280,43 @@ func _refresh_objects() -> void:
 				it.done = String(uid) in chests
 			"lever":
 				it.done = bool(flags.get(String(uid), false)) or int(o["idx"]) in (lv.get(q, []) as Array)
+			"heist":
+				it.done = _heist_off()
 			"entrance":
 				it.visible = _levers_done(int(o.get("levers", 3))) >= int(o.get("levers", 3))
+
+## Skradanka nie dotyczy gracza, który zwędził lutnię albo już ją oddał (strażnicy znikają z mapy).
+func _heist_off() -> bool:
+	var hz: Dictionary = zone.get("heist", {})
+	if hz.is_empty():
+		return true
+	var q := String(zone.get("quest", ""))
+	var fl := _flags()
+	return bool(fl.get("heist_taken:" + q, false)) or bool(fl.get(ChapterExtras.flag(q, String(hz.get("id", "")), 0), false))
+
+func _refresh_guards() -> void:
+	var off := _heist_off()
+	for g in _guards:
+		if is_instance_valid(g):
+			g.active = not off
+			g.visible = not off
+
+## Pasek wykrycia gracza z serwera: zaczerwienia stożek strażnika, który patrzy na niego najmocniej.
+func _heist_alert(a: float) -> void:
+	var me: Player = _ghosts.get(Mmo.my_peer)
+	var best: StealthGuard = null
+	var best_s := -1.0
+	for g in _guards:
+		if not is_instance_valid(g):
+			continue
+		g.alert = 0.0
+		if me != null:
+			var s := StealthGuard.sees(g.position, g.facing, g.view_range, me.position)
+			if s > best_s:
+				best_s = s
+				best = g
+	if best != null:
+		best.alert = a
 
 func _set_side(list: Array) -> void:
 	for uid in _side.keys():
@@ -308,7 +354,13 @@ func _on_event(kind: String, data: Dictionary) -> void:
 		"prog":
 			_prog = data
 			_refresh_objects()
+			_refresh_guards()
 			_refresh_tracker()
+		"heist_alert":
+			_heist_alert(float(data.get("a", 0.0)))
+			if bool(data.get("hit", false)):
+				Audio.play("hit_heavy", 0.7, -4.0)
+				Fx.shake(6.0, 0.3)
 		"objs_add":
 			for o in data.get("objs", []):
 				_make_object(o)
