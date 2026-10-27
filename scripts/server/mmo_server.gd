@@ -87,6 +87,12 @@ func start() -> int:
 	info_changed.emit()
 	return OK
 
+## Zamknięcie okna serwera (X) nie woła stop() — zapisujemy postacie, żeby nic nie przepadło.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
+		if running:
+			chars.save_all(true)
+
 func stop() -> void:
 	if not running:
 		return
@@ -964,6 +970,7 @@ func on_login(id: int, proto: int, player_name: String, password: String, pack: 
 			return
 		rec = chars.create(nm, password, pack, bool(cfg["allow_admin_class"]))
 		log_msg("Nowa postać na serwerze: %s (poz. %d, %s)." % [nm, int(rec["level"]), rec["class"]])
+		chars.save_all(true)  # nowa postać od razu na dysk, nie czekamy na autozapis
 	ServerChars.normalize(rec)
 	ServerChars.refresh_class(rec)
 	story_of(rec)
@@ -1101,6 +1108,29 @@ func on_inv(id: int, op: String, a: String, b: String) -> void:
 				(rec["inv"] as Array).remove_at(di)
 			else:
 				err = "Nie masz tego."
+		"swap":
+			var inv_a: Array = rec["inv"]
+			var si := int(a)
+			var di2 := int(b)
+			if si < 0 or si >= inv_a.size() or di2 < 0 or di2 >= GameState.INV_SIZE or si == di2:
+				err = "Zły slot."
+			elif di2 >= inv_a.size():
+				inv_a.append(inv_a.pop_at(si))
+			else:
+				var tmp: Variant = inv_a[si]
+				inv_a[si] = inv_a[di2]
+				inv_a[di2] = tmp
+		"sort":
+			(rec["inv"] as Array).sort_custom(func(x, y):
+				var sx := String(ItemDB.get_data(String(x["id"])).get("slot", ""))
+				var sy := String(ItemDB.get_data(String(y["id"])).get("slot", ""))
+				if sx != sy:
+					return sx < sy
+				var rx := ItemDB.RARITIES.find(ItemDB.rarity_of(String(x["id"])))
+				var ry := ItemDB.RARITIES.find(ItemDB.rarity_of(String(y["id"])))
+				if rx != ry:
+					return rx > ry
+				return String(x["id"]) < String(y["id"]))
 		"give":
 			if not is_admin(id):
 				err = "Tylko admin."
@@ -1224,6 +1254,7 @@ func _drop_player(id: int, announce: bool) -> void:
 		inst.on_peer_left(id)
 		inst.remove_player(id)
 	peers.erase(id)
+	chars.save_all(true)  # wylogowanie = zapis postępu
 	if inst != null and is_instance_valid(inst):
 		_cleanup_instance(inst)
 	chars.mark_dirty()
@@ -1258,14 +1289,6 @@ func _on_player_died(id: int) -> void:
 		inst.custom_fail()
 		return
 	pl["respawn"] = RESPAWN_SECS
-	broadcast_chat("system", "", "%s poległ." % pl["name"])
-
-# --------------------------------------------------------------------- czat ---
-
-func broadcast_chat(kind: String, from: String, text: String) -> void:
-	Mmo.broadcast_chat(peers.keys(), kind, from, text)
-
-func broadcast_zone_chat(inst: ZoneInstance, kind: String, from: String, text: String) -> void:
 	pl["scroll"] = false
 	var rec: Dictionary = pl["rec"]
 	if _count_of(rec, "zwoj_wskrzeszenia") > 0 and ServerChars.inv_remove(rec, "zwoj_wskrzeszenia", 1):
@@ -1274,6 +1297,14 @@ func broadcast_zone_chat(inst: ZoneInstance, kind: String, from: String, text: S
 		chars.mark_dirty()
 		_push_me(id)
 		_say_to(id, "Zwój Wskrzeszenia rozpada się — za chwilę wstaniesz w tym samym miejscu.")
+	broadcast_chat("system", "", "%s poległ." % pl["name"])
+
+# --------------------------------------------------------------------- czat ---
+
+func broadcast_chat(kind: String, from: String, text: String) -> void:
+	Mmo.broadcast_chat(peers.keys(), kind, from, text)
+
+func broadcast_zone_chat(inst: ZoneInstance, kind: String, from: String, text: String) -> void:
 	Mmo.broadcast_chat(inst.peer_ids, kind, from, text)
 
 func broadcast_zone_ev(inst: ZoneInstance, kind: String, data: Dictionary) -> void:
