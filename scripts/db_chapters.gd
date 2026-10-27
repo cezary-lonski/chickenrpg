@@ -445,7 +445,7 @@ const HEIST := {
 	],
 	"intro": [["", "Przez okno gabinetu widać lutnię Kukuryka. Strażnicy patrolują dziedziniec — mają stożki wzroku. Skradaj się za ich plecami."]],
 	"thanks": [["Bard Kukuryk", "Moja lutnia! Mój złoty, drewniany skarb! Ukradłeś ją spod nosa strażników?"], ["Bard Kukuryk", "Teraz pieśń zabrzmi jak trzeba. Weź to — i zapamiętaj: nie każdy bohater walczy mieczem."]],
-	"reward": {"gold": 220, "xp": 220, "items": {"mikstura_miodu": 2}},
+	"reward": {"gold": 220, "xp": 220, "items": {"mikstura_miodu": 2, "zwoj_wskrzeszenia": 1}},
 }
 
 static func has(zone_id: String) -> bool:

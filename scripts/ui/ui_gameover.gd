@@ -22,6 +22,8 @@ func _ready() -> void:
 	center.add_child(t)
 	center.add_child(UiKit.label("Twoje pióra spadły na ziemię…", 22, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
 	center.add_child(UiKit.sep(26))
+	center.add_child(UiKit.label("Wskrzesić może cię tylko Zwój Wskrzeszenia — nagroda za duże zadania poboczne (np. lutnia barda).", 16, UiKit.ACCENT, HORIZONTAL_ALIGNMENT_CENTER))
+	center.add_child(UiKit.sep(14))
 	var row := UiKit.hbox(14)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.add_child(row)

@@ -1266,6 +1266,14 @@ func broadcast_chat(kind: String, from: String, text: String) -> void:
 	Mmo.broadcast_chat(peers.keys(), kind, from, text)
 
 func broadcast_zone_chat(inst: ZoneInstance, kind: String, from: String, text: String) -> void:
+	pl["scroll"] = false
+	var rec: Dictionary = pl["rec"]
+	if _count_of(rec, "zwoj_wskrzeszenia") > 0 and ServerChars.inv_remove(rec, "zwoj_wskrzeszenia", 1):
+		pl["respawn"] = 1.5
+		pl["scroll"] = true
+		chars.mark_dirty()
+		_push_me(id)
+		_say_to(id, "Zwój Wskrzeszenia rozpada się — za chwilę wstaniesz w tym samym miejscu.")
 	Mmo.broadcast_chat(inst.peer_ids, kind, from, text)
 
 func broadcast_zone_ev(inst: ZoneInstance, kind: String, data: Dictionary) -> void:
@@ -1312,7 +1320,9 @@ func _physics_process(delta: float) -> void:
 		if node.state == Player.S.DEAD:
 			pl["respawn"] = float(pl["respawn"]) - delta
 			if float(pl["respawn"]) <= 0.0 and inst != null and inst.kind not in ["arena", "challenge", "custom"]:
-				node.position = inst.spawn + Vector2(randf_range(-80.0, 80.0), randf_range(-60.0, 60.0))
+				if not bool(pl.get("scroll", false)):
+					node.position = inst.spawn + Vector2(randf_range(-80.0, 80.0), randf_range(-60.0, 60.0))
+				pl["scroll"] = false
 				node.celebrate()
 				node.energy = node.max_energy
 	for k in instances.keys():

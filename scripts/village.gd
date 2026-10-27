@@ -947,6 +947,8 @@ func _on_player_died() -> void:
 	if challenge_mode:
 		_challenge_over()
 		return
+	if GameState.try_scroll_revive(player):
+		return
 	finished = true
 	player_died.emit()
 

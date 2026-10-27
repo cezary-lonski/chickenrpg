@@ -314,7 +314,7 @@ const EXTRAS := {
 			{"id": "dzwony", "phase": "pre", "type": "sabotage", "kind": "crate", "label": "Rozbij dzwon alarmowy", "count": 3, "positions": [Vector2(1650, 400), Vector2(1250, 1130), Vector2(900, 1260)], "text": "Zniszcz dzwony alarmowe", "required": true,
 				"reward": {"gold": 200, "items": {"sztabka_kurczalu": 1}, "xp": 160}},
 			{"id": "jency", "phase": "pre", "type": "free", "kind": "cage", "label": "Uwolnij jeńca", "count": 2, "positions": [Vector2(260, 1390), Vector2(2000, 1380)], "text": "Uwolnij wieśniaków z klatek (opcjonalnie)", "required": false,
-				"reward": {"gold": 220, "items": {"mikstura_miodu": 2}, "xp": 180}},
+				"reward": {"gold": 220, "items": {"mikstura_miodu": 2, "zwoj_wskrzeszenia": 1}, "xp": 180}},
 		],
 	},
 	"akt2_mlynowka": {

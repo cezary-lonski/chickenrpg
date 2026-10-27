@@ -708,6 +708,18 @@ func add_gear(id: String, q: float = 1.0) -> void:
 	add_item(id, 1, q)
 	save_game()
 
+## Zwój Wskrzeszenia: jedyny sposób, by po śmierci wstać w tym samym miejscu zamiast przegrać walkę.
+func try_scroll_revive(p: Node) -> bool:
+	if p == null or not is_instance_valid(p) or item_count("zwoj_wskrzeszenia") <= 0:
+		return false
+	remove_item("zwoj_wskrzeszenia", 1)
+	p.celebrate()
+	run_set("health", float(p.max_hp))
+	toast.emit("Zwój Wskrzeszenia rozpada się — wstajesz! (zostało: %d)" % item_count("zwoj_wskrzeszenia"), Color(1.0, 0.85, 0.35))
+	Fx.burst(p.global_position + Vector2(0, -30), Color(1.0, 0.9, 0.4), 24, 280.0, 3.5, 0.6)
+	save_game()
+	return true
+
 func item_count(id: String) -> int:
 	var total := 0
 	for e in inv():
