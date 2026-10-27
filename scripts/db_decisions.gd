@@ -39,6 +39,14 @@ const EFFECTS := {
 	"swit_korona": {"strength": 0.10},
 	"bard_kogut": {"xp_mult": 0.05},
 	"bard_ty": {"crit": 0.03, "luck": 0.03},
+	"mlynarz_zaliczka": {"gold_mult": 0.06},
+	"mlynarz_bez": {"luck": 0.05, "max_health": 8.0},
+	"babcia_kosz": {"max_health": 10.0, "speed": -0.01},
+	"babcia_dla_wnuczki": {"defense": 0.04},
+	"hasan_amulet": {"dmg_reduction": 0.03},
+	"hasan_dla_leili": {"max_energy": 10.0, "luck": 0.03},
+	"burzan_okulary": {"crit": 0.04, "defense": -0.02},
+	"burzan_zostaw": {"xp_mult": 0.05},
 }
 
 ## Dodaje do słownika statystyk efekty wszystkich podjętych decyzji. `flags` — flagi fabuły gracza.
