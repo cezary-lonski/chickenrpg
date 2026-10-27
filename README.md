@@ -1,8 +1,17 @@
 # Chicken RPG (Chicken Brawl)
 
-## 👉 [**POBIERZ GRĘ — Windows (.exe), beta 0.1**](https://github.com/cezary-lonski/chickenrpg/releases/download/v0.1.0-beta/ChickenRPG-0.1-beta-win64.zip)
+## 👉 Pobierz — beta 0.2.1
 
-Rozpakuj archiwum i uruchom `ChickenRPG.exe` (bez instalacji). Wszystkie wersje: [Releases](https://github.com/cezary-lonski/chickenrpg/releases).
+| | Windows | Linux | Android (telefon) |
+|---|---|---|---|
+| **Gra** | [ChickenRPG (.zip)](https://github.com/cezary-lonski/chickenrpg/releases/download/v0.2.1-beta/ChickenRPG-0.2.1-beta.zip) | [ChickenRPG (.tar.gz)](https://github.com/cezary-lonski/chickenrpg/releases/download/v0.2.1-beta/ChickenRPG-0.2.1-beta-linux.tar.gz) | [ChickenRPG.apk](https://github.com/cezary-lonski/chickenrpg/releases/download/v0.2.1-beta/ChickenRPG-0.2.1-beta-android.apk) |
+| **Serwer (ChickenSerwer)** | w tym samym zipie (`ChickenSerwer.exe`) | w tej samej paczce (`start-server.sh`) | [ChickenSerwer.apk](https://github.com/cezary-lonski/chickenrpg/releases/download/v0.2.1-beta/ChickenSerwer-0.2.1-beta-android.apk) |
+
+**Windows:** rozpakuj zip i uruchom `ChickenRPG.exe` (bez instalacji).
+**Linux:** `tar xzf ChickenRPG-0.2.1-beta-linux.tar.gz`, potem `./start-game.sh` lub `./start-server.sh`.
+**Android:** pobierz `.apk` na telefon, otwórz go i zezwól na instalację z nieznanych źródeł (telefony 64-bitowe, gra w poziomie).
+
+Wszystkie wersje: [Releases](https://github.com/cezary-lonski/chickenrpg/releases).
 Jeśli Windows pokaże ostrzeżenie SmartScreen: „Więcej informacji” → „Uruchom mimo to” (plik nie jest podpisany).
 
 Kurczak kontra ptasia armia Czarniego Kruka. Gra akcyjna 2D w Godot 4.7 z trybem
