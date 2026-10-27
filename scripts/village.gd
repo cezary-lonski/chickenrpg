@@ -874,6 +874,7 @@ func _spawn_players() -> void:
 	if _net_client:
 		var ghost1 := _make_player(p1, at1, true, false)
 		var ghost2 := _make_player(p2, at2, true, false)
+		ghost2.local_view = true   # to postać gościa: obiekty reagują na jej bliskość (podpowiedź [E], ukryte skrzynie)
 		_net_players = {"p1": ghost1, "p2": ghost2}
 		player = ghost2
 		return
@@ -1990,7 +1991,7 @@ func _build_lab() -> void:
 
 ## Budynek szpitala: za złoto leczy rannych strażników i peta oraz wypisuje poległych.
 func _build_hospital() -> void:
-	if cave_mode or march_mode or _net_client or arena_mode or challenge_mode:
+	if cave_mode or march_mode or arena_mode or challenge_mode:
 		return
 	var taken: Array = []
 	if _board != null:
@@ -2137,12 +2138,15 @@ func _grant_rewards_local(qid: String) -> void:
 var _board: Interactable = null
 
 func _build_side() -> void:
-	if cave_mode or march_mode or _net_client:
+	# gość LAN też dostaje tablicę (żeby układ budynków był taki sam jak u hosta), ale bez obiektów zleceń
+	if cave_mode or march_mode:
 		return
 	_board = Interactable.new()
 	_board.setup("board", "Tablica zleceń")
 	_spot(_board, _free_spot([Vector2(300, -100), Vector2(-300, -100), Vector2(440, -60), Vector2(-440, -60), Vector2(260, -240), Vector2(-260, -240), Vector2(0, -300), Vector2(560, -180), Vector2(-560, -180)], []))
 	_board.activated.connect(func(_w): _open_board())
+	if _net_client:
+		return
 	for q in SideDB.active():
 		if String(q["zone"]) == quest_id and not SideDB.is_complete(q):
 			_spawn_side_objects(q)
@@ -2224,6 +2228,9 @@ func _try_deliver_package(npc_id: String) -> bool:
 func _open_board() -> void:
 	if _dialog_open or finished:
 		return
+	if _net_client:
+		GameState.toast.emit("Zlecenia poboczne przyjmuje host.", UiKit.ACCENT2)
+		return
 	var opts: Array = []
 	var acts: Array = []
 	for q in SideDB.active():
@@ -2293,7 +2300,7 @@ func _build_decor() -> void:
 
 ## Sekretne komnaty arystokratów: wejście jest dobrowolne, w środku czeka scenka.
 func _build_rooms() -> void:
-	if cave_mode or march_mode or _net_client:
+	if cave_mode or march_mode:
 		return
 	for r in PalaceDB.ROOMS.get(quest_id, []):
 		var rd: Dictionary = r
@@ -2349,7 +2356,7 @@ func _begin_stairs_floor() -> void:
 
 ## Skrytka jak w Diablo 2 Resurrected: wspólna dla wszystkich postaci, stoi obok miejsca startu.
 func _build_stash() -> void:
-	if cave_mode or march_mode or arena_mode or _net_client:
+	if cave_mode or march_mode or arena_mode:
 		return
 	var it := Interactable.new()
 	it.setup("stash", "Otwórz skrytkę")
