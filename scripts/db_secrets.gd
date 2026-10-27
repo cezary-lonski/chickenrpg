@@ -152,6 +152,17 @@ const CAVES := {
 			{"enemies": [["sowa", 2], ["sep", 3]], "name": "Oko burzy", "elite": true},
 		],
 	},
+	"zamek_1": {
+		"id": "lochy_kruka", "name": "Lochy Zamku Kruka", "repeatable": true,
+		"hint": "Żelazna krata, a na niej tabliczka: „Lochy. Wstęp wzbroniony, wyjście też.” Spod ziemi dobiega ciche łkanie.",
+		"levers": [],
+		"entrance": Vector2(320, 1180),
+		"reward": {"items": {"zbroja_switu": 1, "sztabka_kurczalium": 3, "eliksir_mocy": 2}, "gold": 700, "xp": 700},
+		"waves": [
+			{"enemies": [["kruk", 4, false, "straz"], ["wronszek", 3, false, "wlocznik"]], "name": "Klawisze"},
+			{"enemies": [["orzel_szarak", 2, false, "ciezki"], ["krol_krukow", 1, true, "general"]], "name": "Naczelnik lochów", "elite": true},
+		],
+	},
 	"akt2_zielonka": {
 		"id": "piwnica_spichlerza", "name": "Piwnica Spichlerza",
 		"hint": "Na ścianie stodoły wyskrobano pazurem: „Trzy zardzewiałe dźwignie, jedno ukryte przejście. Kruk o nim nie wie.”",
@@ -285,6 +296,7 @@ static func cave_zone(cave_id: String) -> Dictionary:
 		"cave": true,
 		"cave_id": cave_id,
 		"waves": c["waves"],
+		"prisoners": SpecialDB.prisoners() if cave_id == "lochy_kruka" else [],
 		"intro_banner": ["SEKRETNA JASKINIA", String(c["name"])],
 		"outro_banner": ["JASKINIA OCZYSZCZONA", String(c["name"])],
 	}

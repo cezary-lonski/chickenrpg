@@ -964,6 +964,7 @@ func _setup_camera() -> void:
 	camera.limit_right = int(VILLAGE.x)
 	camera.limit_bottom = int(VILLAGE.y)
 	camera.position = spawn
+	camera.zoom = Vector2.ONE * GameState.view_zoom()
 	add_child(camera)
 
 func _physics_process(_delta: float) -> void:
@@ -1554,7 +1555,7 @@ func _build_secrets() -> void:
 		var cd: Dictionary = c
 		ch.activated.connect(func(_w): _open_chest(ch, cd))
 	var cave := SecretDB.cave_for(quest_id)
-	if cave.is_empty() or SecretDB.cave_done(String(cave["id"])):
+	if cave.is_empty() or (SecretDB.cave_done(String(cave["id"])) and not bool(cave.get("repeatable", false))):
 		return
 	var sgn := Interactable.new()
 	sgn.setup("sign", "Przeczytaj")
@@ -1644,6 +1645,35 @@ func _begin_cave() -> void:
 		_spawn_wave()
 	else:
 		_spawn_cave_ambush()
+		_build_prisoners()
+
+## Więźniowie w celach (lochy zamku Kruka): klatki do otwarcia, z nagrodą i podziękowaniem.
+func _build_prisoners() -> void:
+	for p in zone.get("prisoners", []):
+		var pr: Dictionary = p
+		var uid := "pris:" + String(pr["id"])
+		var it := Interactable.new()
+		it.setup("cage", String(pr.get("label", "Uwolnij więźnia")), uid)
+		it.done = GameState.story_flag(uid)
+		it.accent = Color(0.7, 0.9, 1.0)
+		_spot(it, pr["pos"])
+		it.activated.connect(func(_w): _free_prisoner(pr, it))
+
+func _free_prisoner(pr: Dictionary, it: Interactable) -> void:
+	if it.done or _dialog_open:
+		return
+	it.done = true
+	GameState.set_story_flag(it.uid)
+	var knows := not bool(pr.get("tosia", false)) or GameState.story_flag(SpecialDB.TOSIA_FLAG)
+	var rw: Dictionary = pr["reward"] if knows else pr.get("reward_plain", pr["reward"])
+	var thanks: Array = pr["thanks"] if knows else pr.get("thanks_plain", pr["thanks"])
+	Audio.play("confirm", 1.2, -2.0)
+	Fx.burst(it.global_position + Vector2(0, -24), Color(0.8, 0.95, 1.0), 14, 220.0, 3.0, 0.4)
+	_open_dialog(thanks, UiKit.ACCENT2, func():
+		var lines := SecretDB.grant({"items": rw.get("items", {}), "gold": int(rw.get("gold", 0)), "xp": int(rw.get("xp", 0))})
+		GameState.toast.emit("Uwolniono: %s — %s" % [String(pr.get("name", "więzień")), ", ".join(lines)], UiKit.GOOD)
+		Audio.play("levelup", 1.3, -6.0)
+		GameState.save_game())
 
 ## Sekretna jaskinia nie ma fal: wszystkie potwory czekają w mroku i atakują dopiero, gdy podejdziesz.
 func _spawn_cave_ambush() -> void:
@@ -1777,7 +1807,7 @@ func _spawn_boss(bid: String, wave: Dictionary = {}) -> void:
 			tw.tween_property(p, "global_position", inside + Vector2(randf_range(-60.0, 60.0), 0.0), 0.5)
 	if camera:
 		var tz := create_tween()
-		tz.tween_property(camera, "zoom", Vector2(0.78, 0.78), 1.2)
+		tz.tween_property(camera, "zoom", Vector2(0.78, 0.78) * GameState.view_zoom(), 1.2)
 	var bd := BossDB.get_data(bid)
 	if bid == "czarny_kruk_odrodzony" and Act2DB.rep() >= 3:
 		b.max_health *= 0.9
@@ -1794,7 +1824,7 @@ func _on_boss_died(_e: Enemy) -> void:
 	_arena = null
 	if camera:
 		var tz := create_tween()
-		tz.tween_property(camera, "zoom", Vector2.ONE, 1.0)
+		tz.tween_property(camera, "zoom", Vector2.ONE * GameState.view_zoom(), 1.0)
 	Audio.play_music("victory")
 
 # ------------------------------------------------ rozbudowa rozdziałów (cele) ---
@@ -1843,13 +1873,16 @@ var _heist_guards: Array = []
 func _build_heist(o: Dictionary) -> void:
 	if _net_client or ChapterExtras.is_done(quest_id, o):
 		return
-	var taken := GameState.story_flag("heist_taken:" + quest_id) or GameState.item_count("lutnia_kukuryka") > 0
+	var item := ChapterExtras.heist_item(o)
+	var taken := GameState.story_flag("heist_taken:" + quest_id) or GameState.item_count(item) > 0
+	_heist_obj = o
 	for g in o.get("guards", []):
 		var sg := StealthGuard.new()
 		sg.setup(g["path"], float(g.get("range", 250.0)))
 		entities.add_child(sg)
 		sg.spotted.connect(func(): _heist_spotted(o))
 		_heist_guards.append(sg)
+	_refresh_heist_guards()
 	var it := Interactable.new()
 	it.setup("document", String(o.get("label", "Zwędź")), "heist:" + quest_id)
 	it.done = taken
@@ -1858,19 +1891,30 @@ func _build_heist(o: Dictionary) -> void:
 	it.activated.connect(func(_w):
 		it.done = true
 		GameState.set_story_flag("heist_taken:" + quest_id)
-		GameState.add_item("lutnia_kukuryka", 1)
+		GameState.add_item(item, 1)
 		Audio.play("confirm", 1.2, -2.0)
-		for sg2 in _heist_guards:
-			if is_instance_valid(sg2):
-				sg2.active = false
-		GameState.toast.emit("Zwędzono lutnię! Wymknij się i zanieś ją bardowi.", UiKit.GOOD)
+		_refresh_heist_guards()
+		GameState.toast.emit(String(o.get("take_msg", "Zwędzono lutnię! Wymknij się i zanieś ją bardowi.")), UiKit.GOOD)
 		GameState.save_game())
 	if not taken and not GameState.story_flag("heist_intro:" + quest_id):
 		GameState.set_story_flag("heist_intro:" + quest_id)
 		_open_dialog(o.get("intro", []), UiKit.ACCENT2)
 
+var _heist_obj: Dictionary = {}
+
+## Strażnicy znikają, gdy gracz ma już łup albo pokonał wroga-naczelnika z pola `disarm`.
+func _refresh_heist_guards() -> void:
+	if _heist_obj.is_empty():
+		return
+	var off := GameState.story_flag("heist_taken:" + quest_id) or GameState.item_count(ChapterExtras.heist_item(_heist_obj)) > 0 \
+		or ChapterExtras.heist_disarmed(quest_id, _heist_obj)
+	for sg in _heist_guards:
+		if is_instance_valid(sg):
+			sg.active = not off
+			sg.visible = not off
+
 func _heist_spotted(o: Dictionary) -> void:
-	if player == null or not is_instance_valid(player) or GameState.item_count("lutnia_kukuryka") > 0:
+	if player == null or not is_instance_valid(player) or GameState.item_count(ChapterExtras.heist_item(o)) > 0:
 		return
 	Audio.play("hit_heavy", 0.7, -4.0)
 	Fx.shake(6.0, 0.3)
@@ -1880,15 +1924,16 @@ func _heist_spotted(o: Dictionary) -> void:
 			sg.reset()
 	GameState.toast.emit("Zauważono cię! Strażnicy odprowadzili cię na start.", UiKit.BAD)
 
-## Bard odbiera lutnię: dialog z podziękowaniem i nagroda za cel „włamanie”.
-func _bard_heist_turn_in() -> bool:
+## NPC-odbiorca (bard z lutnią, ojciec z uwolnionym dzieckiem): dialog z podziękowaniem i nagroda za cel.
+func _heist_turn_in(npc: String) -> bool:
 	for obj in ChapterExtras.objectives(quest_id):
-		if String(obj.get("type", "")) != "heist" or ChapterExtras.is_done(quest_id, obj):
+		if String(obj.get("type", "")) != "heist" or ChapterExtras.is_done(quest_id, obj) or ChapterExtras.heist_npc(obj) != npc:
 			continue
-		if GameState.item_count("lutnia_kukuryka") <= 0:
+		var item := ChapterExtras.heist_item(obj)
+		if GameState.item_count(item) <= 0:
 			return false
-		GameState.remove_item("lutnia_kukuryka", 1)
-		var accent: Color = NpcDB.get_data("bard").get("accent", UiKit.ACCENT)
+		GameState.remove_item(item, 1)
+		var accent: Color = NpcDB.get_data(npc).get("accent", UiKit.ACCENT)
 		_open_dialog(obj.get("thanks", []), accent, func(): _obj_complete_flag(obj, 0))
 		return true
 	return false
@@ -1922,6 +1967,7 @@ func _obj_activate(o: Dictionary, idx: int, it: Interactable) -> void:
 
 func _obj_complete_flag(o: Dictionary, i: int) -> void:
 	GameState.set_story_flag(ChapterExtras.flag(quest_id, String(o["id"]), i))
+	_refresh_heist_guards()
 	_check_obj_reward(o)
 
 func _check_obj_reward(o: Dictionary) -> void:
@@ -1938,7 +1984,7 @@ func _check_obj_reward(o: Dictionary) -> void:
 	GameState.save_game()
 
 func _talk_extra(id: String) -> void:
-	if id == "bard" and _bard_heist_turn_in():
+	if _heist_turn_in(id):
 		return
 	var d := ChapterExtras.dialog(quest_id, id)
 	var accent: Color = NpcDB.get_data(id).get("accent", UiKit.ACCENT)

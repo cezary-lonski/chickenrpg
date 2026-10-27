@@ -175,7 +175,7 @@ func zone_info() -> Dictionary:
 	return {"key": key, "kind": kind, "terrain": terrain, "size": size, "spawn": spawn, "npcs": npc_list,
 		"quest": quest_id, "title": zone_title(), "waves_n": waves.size(),
 		"banner": banner, "boss_pos": BossDB.ARENA_CENTER, "boss_radius": BossDB.ARENA_RADIUS, "objs": objs + extra_objs, "buildings": buildings,
-		"heist": {} if heist.is_empty() else {"guards": heist["guards"], "t": _clock, "id": String(heist["id"])}}
+		"heist": {} if heist.is_empty() else {"guards": heist["guards"], "t": _clock, "id": String(heist["id"]), "disarm": String(heist.get("disarm", ""))}}
 
 # ---------------------------------------------------------------- obiekty ---
 
@@ -396,7 +396,7 @@ func _tick_heist(delta: float) -> void:
 		if pl == null:
 			continue
 		var node = pl.get("node")
-		if node == null or not is_instance_valid(node) or StoryActions.heist_off(pl["rec"], quest_id, heist):
+		if node == null or not is_instance_valid(node) or StoryActions.guards_off(pl["rec"], quest_id, heist):
 			if _heist_alert.erase(peer):
 				srv.send_ev(peer, "heist_alert", {"a": 0.0, "hit": false})
 			continue
@@ -707,6 +707,8 @@ func _spawn_ambush() -> void:
 	wave_i = waves.size()
 	set_step(wave_i)
 	wave_active = true
+	for p in zone.get("prisoners", []):
+		add_extra_obj({"uid": "pris:" + String(p["id"]), "kind": "cage", "label": String(p.get("label", "Uwolnij więźnia")), "pos": p["pos"], "type": "prisoner", "pid": String(p["id"])})
 	srv.broadcast_zone_chat(self, "system", "", "Potwory czekają w mroku — atakują, gdy podejdziesz zbyt blisko.")
 
 func _spawn_boss(bid: String, wave: Dictionary, center: Vector2 = BossDB.ARENA_CENTER, pull_players: bool = true) -> void:

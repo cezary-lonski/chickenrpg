@@ -51,6 +51,8 @@ static func usable(rec: Dictionary, inst: ZoneInstance, peer: int, o: Dictionary
 			return levers_pulled(rec, inst.quest_id, int(o.get("levers", 3))) >= int(o.get("levers", 3))
 		"cavechest":
 			return not inst.opened.has(peer)
+		"prisoner":
+			return not bool(flags.get(String(o["uid"]), false))
 		_:
 			return true
 
@@ -78,6 +80,7 @@ static func activate(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionar
 		"entrance": srv.enter_cave(peer, String(o["cave"]))
 		"board": open_board(srv, peer, inst)
 		"cavechest": _cave_chest(srv, peer, inst)
+		"prisoner": _prisoner(srv, peer, inst, o)
 		"portal": srv.enter_zone(peer, srv.zone_key_for(srv.peers[peer]["rec"]))
 		"side": _side(srv, peer, inst, o)
 		"heist": _heist_take(srv, peer, inst)
@@ -140,26 +143,30 @@ static func heist_off(rec: Dictionary, quest: String, o: Dictionary) -> bool:
 	if o.is_empty():
 		return true
 	var fl := flags_of(rec)
-	return bool(fl.get("heist_taken:" + quest, false)) or _item_count(rec, "lutnia_kukuryka") > 0 or ChapterExtras.is_done(quest, o, fl)
+	return bool(fl.get("heist_taken:" + quest, false)) or _item_count(rec, ChapterExtras.heist_item(o)) > 0 or ChapterExtras.is_done(quest, o, fl)
+
+## Strażnicy nie widzą gracza, który ma łup, oddał go albo pokonał naczelnika obozu.
+static func guards_off(rec: Dictionary, quest: String, o: Dictionary) -> bool:
+	return heist_off(rec, quest, o) or ChapterExtras.heist_disarmed(quest, o, flags_of(rec))
 
 static func _heist_take(srv: MmoServer, peer: int, inst: ZoneInstance) -> void:
 	var rec: Dictionary = srv.peers[peer]["rec"]
 	flags_of(rec)["heist_taken:" + inst.quest_id] = true
-	ServerChars.inv_add(rec, "lutnia_kukuryka", 1)
-	srv.say(peer, "Zwędzono lutnię! Wymknij się i zanieś ją bardowi.")
+	ServerChars.inv_add(rec, ChapterExtras.heist_item(inst.heist), 1)
+	srv.say(peer, String(inst.heist.get("take_msg", "Zwędzono lutnię! Wymknij się i zanieś ją bardowi.")))
 	srv.chars.mark_dirty()
 	srv.push_prog(peer)
 	srv._push_me(peer)
 
-## Bard odbiera lutnię: dialog z podziękowaniem i nagroda za cel „włamanie”.
-static func _bard_turn_in(srv: MmoServer, peer: int, inst: ZoneInstance) -> bool:
+## NPC-odbiorca (bard z lutnią, ojciec z uwolnionym dzieckiem): dialog z podziękowaniem i nagroda za cel.
+static func _heist_turn_in(srv: MmoServer, peer: int, inst: ZoneInstance, npc: String) -> bool:
 	var rec: Dictionary = srv.peers[peer]["rec"]
 	var o := inst.heist
-	if o.is_empty() or ChapterExtras.is_done(inst.quest_id, o, flags_of(rec)) or _item_count(rec, "lutnia_kukuryka") <= 0:
+	if o.is_empty() or ChapterExtras.heist_npc(o) != npc or ChapterExtras.is_done(inst.quest_id, o, flags_of(rec)) or _item_count(rec, ChapterExtras.heist_item(o)) <= 0:
 		return false
-	ServerChars.inv_remove(rec, "lutnia_kukuryka", 1)
+	ServerChars.inv_remove(rec, ChapterExtras.heist_item(o), 1)
 	flags_of(rec)[ChapterExtras.flag(inst.quest_id, String(o["id"]), 0)] = true
-	srv._open_dialog(peer, o.get("thanks", []), NpcDB.get_data("bard").get("accent", UiKit.ACCENT), "")
+	srv._open_dialog(peer, o.get("thanks", []), NpcDB.get_data(npc).get("accent", UiKit.ACCENT), "")
 	check_obj_reward(srv, peer, inst.quest_id, o)
 	srv.chars.mark_dirty()
 	srv.push_prog(peer)
@@ -218,6 +225,32 @@ static func _lever(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary)
 		srv.say(peer, "Dźwignia pociągnięta (%d / %d)" % [pulled, total])
 	srv.chars.mark_dirty()
 	srv.push_prog(peer)
+
+## Więzień w celi (lochy zamku Kruka): nagroda i podziękowanie; Tosia zna cię z prośby młynarza Mariana.
+static func _prisoner(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary) -> void:
+	var rec: Dictionary = srv.peers[peer]["rec"]
+	var fl := flags_of(rec)
+	var uid := String(o["uid"])
+	if bool(fl.get(uid, false)):
+		return
+	var pr := {}
+	for p in inst.zone.get("prisoners", []):
+		if String(p["id"]) == String(o.get("pid", "")):
+			pr = p
+	if pr.is_empty():
+		return
+	fl[uid] = true
+	var knows := not bool(pr.get("tosia", false)) or bool(fl.get(SpecialDB.TOSIA_FLAG, false))
+	var rw: Dictionary = pr["reward"] if knows else pr.get("reward_plain", pr["reward"])
+	var thanks: Array = pr["thanks"] if knows else pr.get("thanks_plain", pr["thanks"])
+	srv._open_dialog(peer, thanks, UiKit.ACCENT2, "")
+	var res := ServerCtx.run(rec, func(): return SecretDB.grant({"items": rw.get("items", {}), "gold": int(rw.get("gold", 0)), "xp": int(rw.get("xp", 0))}))
+	var lines: Array = res["result"]
+	srv.say(peer, "Uwolniono: %s — %s" % [String(pr.get("name", "więzień")), ", ".join(lines)])
+	srv.after_ctx(peer, int(res["levels"]))
+	srv.chars.mark_dirty()
+	srv.push_prog(peer)
+	srv._push_me(peer)
 
 static func _cave_chest(srv: MmoServer, peer: int, inst: ZoneInstance) -> void:
 	var rec: Dictionary = srv.peers[peer]["rec"]
@@ -342,7 +375,7 @@ static func choice_pick(srv: MmoServer, peer: int, data: Dictionary, i: int) -> 
 
 static func talk_extra(srv: MmoServer, peer: int, inst: ZoneInstance, npc: String) -> void:
 	var rec: Dictionary = srv.peers[peer]["rec"]
-	if npc == "bard" and _bard_turn_in(srv, peer, inst):
+	if _heist_turn_in(srv, peer, inst, npc):
 		return
 	var d := ChapterExtras.dialog(inst.quest_id, npc)
 	var accent: Color = NpcDB.get_data(npc).get("accent", UiKit.ACCENT)

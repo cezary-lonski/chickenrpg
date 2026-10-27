@@ -283,6 +283,8 @@ func _refresh_objects() -> void:
 			"heist":
 				it.done = _heist_off()
 			"entrance":
+			"prisoner":
+				it.done = bool(flags.get(String(uid), false))
 				it.visible = _levers_done(int(o.get("levers", 3))) >= int(o.get("levers", 3))
 
 ## Skradanka nie dotyczy gracza, który zwędził lutnię albo już ją oddał (strażnicy znikają z mapy).
@@ -295,7 +297,15 @@ func _heist_off() -> bool:
 	return bool(fl.get("heist_taken:" + q, false)) or bool(fl.get(ChapterExtras.flag(q, String(hz.get("id", "")), 0), false))
 
 func _refresh_guards() -> void:
-	var off := _heist_off()
+## Strażnicy znikają też po pokonaniu naczelnika obozu (cel z pola `disarm`).
+func _guards_off() -> bool:
+	if _heist_off():
+		return true
+	var hz: Dictionary = zone.get("heist", {})
+	var did := String(hz.get("disarm", ""))
+	return did != "" and bool(_flags().get(ChapterExtras.flag(String(zone.get("quest", "")), did, 0), false))
+
+	var off := _guards_off()
 	for g in _guards:
 		if is_instance_valid(g):
 			g.active = not off

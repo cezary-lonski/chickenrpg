@@ -448,6 +448,23 @@ const HEIST := {
 	"reward": {"gold": 220, "xp": 220, "items": {"mikstura_miodu": 2, "zwoj_wskrzeszenia": 1}},
 }
 
+## Skradanka bywa też ratunkiem jeńca: przedmiot do zwędzenia, NPC-odbiorca i wróg, którego pokonanie
+## odsyła strażników (wartości domyślne to lutnia i bard).
+static func heist_item(o: Dictionary) -> String:
+	return String(o.get("item", "lutnia_kukuryka"))
+
+static func heist_npc(o: Dictionary) -> String:
+	return String(o.get("npc", "bard"))
+
+static func heist_disarmed(zone_id: String, o: Dictionary, fl = null) -> bool:
+	var did := String(o.get("disarm", ""))
+	if did == "":
+		return false
+	for x in objectives(zone_id):
+		if String(x["id"]) == did:
+			return is_done(zone_id, x, fl)
+	return false
+
 static func has(zone_id: String) -> bool:
 	return EXTRAS.has(zone_id)
 

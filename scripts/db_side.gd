@@ -13,6 +13,18 @@ const ITEMS := {
 		"name": "Lutnia Kukuryka", "slot": "material", "tier": 1, "price": 0, "icon": "list", "stack": 1,
 		"desc": "Ulubiona lutnia barda, skonfiskowana przez ludzi kanclerza. Zanieś ją bardowi.", "stats": {}, "tint": Color(0.9, 0.6, 0.3),
 	},
+	"jeniec_pisklaczka": {
+		"name": "Pisklaczka (pod opieką)", "slot": "material", "tier": 1, "price": 0, "icon": "list", "stack": 1,
+		"desc": "Uwolniona z obozu jeńców i idzie za tobą. Zaprowadź ją do babci Kokoszki.", "stats": {}, "tint": Color(0.95, 0.85, 0.6),
+	},
+	"jeniec_leila": {
+		"name": "Leila (pod opieką)", "slot": "material", "tier": 1, "price": 0, "icon": "list", "stack": 1,
+		"desc": "Uwolniona z obozu niewolników i idzie za tobą. Zaprowadź ją do ojca, karawaniarza Hasana.", "stats": {}, "tint": Color(0.95, 0.75, 0.4),
+	},
+	"jeniec_iskierka": {
+		"name": "Iskierka (pod opieką)", "slot": "material", "tier": 1, "price": 0, "icon": "list", "stack": 1,
+		"desc": "Uwolniona spod latarni i idzie za tobą. Zaprowadź ją do ojca, latarnika Burzana.", "stats": {}, "tint": Color(0.6, 0.8, 0.95),
+	},
 	"zwoj_wskrzeszenia": {
 		"name": "Zwój Wskrzeszenia", "slot": "material", "tier": 3, "price": 0, "icon": "list", "stack": 3,
 		"desc": "Rozpada się w chwili śmierci i stawia cię na nogi w tym samym miejscu. Nagroda za duże zadania poboczne.", "stats": {}, "tint": Color(1.0, 0.85, 0.35),
