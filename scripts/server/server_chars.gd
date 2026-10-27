@@ -389,6 +389,7 @@ static func compute_stats(rec: Dictionary) -> Dictionary:
 		s["regen"] = 30.0
 	for k in s.keys():
 		s[k] = clampf(float(s[k]), -50.0, 100000.0)
+	DecisionDB.apply(s, MmoServer.story_of(rec).get("flags", {}))
 	return s
 
 static func xp_needed(level: int) -> int:

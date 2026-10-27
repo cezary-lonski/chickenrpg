@@ -321,6 +321,10 @@ static func choice_pick(srv: MmoServer, peer: int, data: Dictionary, i: int) -> 
 				if srv.count_of(rec, String(tk)) < int(opt["take"][tk]):
 					return
 			flags_of(rec)[String(opt["flag"])] = true
+			var eff := DecisionDB.describe(String(opt["flag"]))
+			if eff != "":
+				srv.say(peer, "Decyzja ma skutki: %s" % eff)
+				srv.refresh_loadout(peer)
 			if int(opt.get("rep", 0)) > 0:
 				var rp := int(opt["rep"])
 				ServerCtx.run(rec, func(): Act2DB.add_rep(rp))

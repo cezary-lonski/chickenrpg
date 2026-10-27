@@ -1955,6 +1955,10 @@ func _open_choice(choice: Dictionary, accent: Color, after: Callable = Callable(
 	ui.chosen.connect(func(i: int):
 		var opt: Dictionary = (choice["options"] as Array)[i]
 		GameState.set_story_flag(String(opt["flag"]))
+		GameState.refresh_stats()
+		var eff := DecisionDB.describe(String(opt["flag"]))
+		if eff != "":
+			GameState.toast.emit("Decyzja ma skutki: %s" % eff, UiKit.ACCENT)
 		if int(opt.get("rep", 0)) > 0:
 			Act2DB.add_rep(int(opt["rep"]))
 		if int(opt.get("cost", 0)) > 0:

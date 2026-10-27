@@ -374,6 +374,7 @@ func compute_stats() -> Dictionary:
 		if key2 == "health": key2 = "max_health"
 		elif key2 == "energy": key2 = "max_energy"
 		s[key2] = float(s.get(key2, 0.0)) + attr_bonus(String(k))
+	DecisionDB.apply(s, story().get("flags", {}))
 	return s
 
 const _STAT_DEFAULTS := {"strength": 1.0, "defense": 1.0, "speed": 1.0, "crit": 0.06, "fury_rate": 1.0, "luck": 1.0, "throw_power": 1.0}

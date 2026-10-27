@@ -331,7 +331,7 @@ const BASE_EXTRAS := {
 # ------------------------------------------------------------------ pomocnicze ---
 
 static var NPCS: Dictionary = BASE_NPCS.merged(Act2DB.NPCS).merged(PalaceDB.NPCS)
-static var EXTRAS: Dictionary = PalaceDB.patch_extras(_with_bard(BASE_EXTRAS).merged(Act2DB.EXTRAS)).merged(PalaceDB.EXTRAS)
+static var EXTRAS: Dictionary = DecisionDB.annotate(PalaceDB.patch_extras(_with_bard(BASE_EXTRAS).merged(Act2DB.EXTRAS)).merged(PalaceDB.EXTRAS).duplicate(true))
 
 ## Wędrowny bard Kukuryk śpiewa w kolejnych rozdziałach jedną długą „Pieśń o Pierwszym Kogucie”.
 ## Rozmowa z nim jest dobrowolna (nagroda za wysłuchanie), a w ostatnim rozdziale pieśń kończy się wyborem.
