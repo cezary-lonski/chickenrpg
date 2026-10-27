@@ -495,6 +495,33 @@ func run_add(key: String, amount) -> void:
 func add_xp(v: int) -> void:
 	grant_xp(v)
 
+## Seria zabójstw: kolejne zabicia w odstępie do STREAK_WINDOW sekund podbijają mnożnik XP i złota.
+const STREAK_WINDOW := 6.0
+var streak := 0
+var _streak_ms := 0
+
+func streak_left() -> float:
+	if streak <= 0:
+		return 0.0
+	return maxf(0.0, STREAK_WINDOW - float(Time.get_ticks_msec() - _streak_ms) / 1000.0)
+
+func streak_mult(n: int = -1) -> float:
+	var k := streak if n < 0 else n
+	return 1.0 + minf(1.0, 0.04 * float(maxi(0, k - 1)))
+
+func streak_reset() -> void:
+	streak = 0
+
+## Wołane przy zabiciu wroga przez gracza; zwraca mnożnik nagród (1.0 = brak premii).
+func streak_kill() -> float:
+	if streak_left() <= 0.0:
+		streak = 0
+	streak += 1
+	_streak_ms = Time.get_ticks_msec()
+	if streak % 5 == 0:
+		toast.emit("SERIA ×%d!  nagrody x%.2f" % [streak, streak_mult()], Color(1.0, 0.8, 0.3))
+	return streak_mult()
+
 func start_run(id: String, stage_index: int = 0) -> void:
 	rpg = {}
 	select_char(id, stage_index)

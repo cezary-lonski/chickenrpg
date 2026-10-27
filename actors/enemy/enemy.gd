@@ -709,11 +709,12 @@ func _die(info: Dictionary = {}) -> void:
 		return
 	if src and is_instance_valid(src) and src is Player:
 		var luck := GameState.stat("luck")
-		GameState.add_xp(int(round(float(xp_value) * luck)))
+		var streak_m := GameState.streak_kill()
+		GameState.add_xp(int(round(float(xp_value) * luck * streak_m)))
 		GameState.run_add("kills", 1)
 		if randf() < 0.55 + 0.15 * luck:
 			_spawn_drop()
-		if randf() < 0.7:
+		if randf() < 0.7 or (streak_m >= 1.4 and randf() < 0.5):
 			_spawn_gold()
 		_maybe_pattern_drop()
 		_maybe_gear_drop()

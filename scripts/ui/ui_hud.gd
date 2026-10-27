@@ -34,6 +34,10 @@ var toast_box: VBoxContainer
 var _boss: Node = null
 var _toasts: Array = []
 var _xp_value
+var streak_box: VBoxContainer
+var streak_label: Label
+var streak_bar: UiBar
+var _streak_shown := 0
 
 func _ready() -> void:
 	layer = 10
@@ -180,6 +184,16 @@ func _build() -> void:
 	combo_label.modulate.a = 0.0
 	root.add_child(combo_label)
 
+	# --- seria zabójstw: licznik i pasek czasu do jej utraty
+	streak_box = UiKit.vbox(2)
+	streak_box.position = Vector2(40, 318)
+	streak_box.modulate.a = 0.0
+	root.add_child(streak_box)
+	streak_label = UiKit.label("", 22, Color(1.0, 0.8, 0.3), HORIZONTAL_ALIGNMENT_LEFT)
+	streak_box.add_child(streak_label)
+	streak_bar = _bar(130, 6, Color(1.0, 0.8, 0.3))
+	streak_box.add_child(streak_bar)
+
 	# --- umiejętności: wachlarz jajek na dole
 	_skill_fan = UiSkillFan.new()
 	_skill_fan.position = Vector2(640.0 - _skill_fan.size.x * 0.5, 612)
@@ -317,6 +331,22 @@ func _on_combo(n: int) -> void:
 	var tw := create_tween()
 	tw.tween_property(combo_label, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
+func _update_streak() -> void:
+	var left := GameState.streak_left()
+	var n := GameState.streak if left > 0.0 else 0
+	if n < 2:
+		streak_box.modulate.a = move_toward(streak_box.modulate.a, 0.0, 0.1)
+		_streak_shown = 0
+		return
+	streak_box.modulate.a = 1.0
+	streak_bar.set_value(left / GameState.STREAK_WINDOW)
+	if n != _streak_shown:
+		_streak_shown = n
+		streak_label.text = "SERIA ×%d  (x%.2f)" % [n, GameState.streak_mult(n)]
+		streak_box.pivot_offset = Vector2.ZERO
+		streak_box.scale = Vector2(1.25, 1.25)
+		create_tween().tween_property(streak_box, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
 func _update_wave() -> void:
 	if stage == null:
 		return
@@ -340,6 +370,7 @@ func _process(delta: float) -> void:
 	_update_effects()
 	_update_wave()
 	_update_quest()
+	_update_streak()
 	_process_boss(delta)
 	for t in _toasts.duplicate():
 		t["t"] = float(t["t"]) - delta

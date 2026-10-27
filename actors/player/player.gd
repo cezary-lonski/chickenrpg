@@ -1218,6 +1218,8 @@ func _st_downed(delta: float) -> void:
 
 func _die(info: Dictionary = {}) -> void:
 	hp = 0.0
+	if not net_controlled:
+		GameState.streak_reset()
 	if _berserk_on:
 		_end_berserk()
 	health_changed.emit(hp, max_hp)
