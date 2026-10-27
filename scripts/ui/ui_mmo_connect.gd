@@ -71,7 +71,7 @@ func _ready() -> void:
 	_host_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_host_label.custom_minimum_size = Vector2(200, 0)
 	hr.add_child(_host_label)
-	var change := UiKit.button("Zmień serwer", 15)
+	var change := _wb("Zmień serwer", 15)
 	change.pressed.connect(func(): Audio.play("back"); s_server = {}; s_slot = 0; s_char = ""; Flow.goto("mmo_connect"))
 	hr.add_child(change)
 
@@ -81,24 +81,24 @@ func _ready() -> void:
 	outer.add_child(_slot_row)
 	for i in range(1, SLOTS + 1):
 		var info := GameState.slot_info(i)
-		var b := UiKit.button("Slot %d" % i if not bool(info.get("exists", false)) else "Slot %d · poz. %d" % [i, int(info.get("level", 1))], 15)
+		var b := _wb("Slot %d" % i if not bool(info.get("exists", false)) else "Slot %d · poz. %d" % [i, int(info.get("level", 1))], 15)
 		b.disabled = not bool(info.get("exists", false)) or bool(info.get("broken", false))
 		b.pressed.connect(_pick_slot.bind(i))
 		_slot_row.add_child(b)
 
-	var nb := UiKit.button("Utwórz nową postać (zapis na serwerze)", 16, UiKit.GOOD)
+	var nb := _wb("Utwórz nową postać (zapis na serwerze)", 16, UiKit.GOOD)
 	nb.pressed.connect(_pick_new)
 	outer.add_child(_center(nb))
-	var lb := UiKit.button("Wejdź na postać zapisaną na serwerze", 16, UiKit.ACCENT2)
+	var lb := _wb("Wejdź na postać zapisaną na serwerze", 16, UiKit.ACCENT2)
 	lb.pressed.connect(_pick_login)
 	outer.add_child(_center(lb))
 	var look_row := UiKit.hbox(10)
 	look_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	outer.add_child(look_row)
-	var b_look := UiKit.button("Wygląd, kolory i nick…", 16, UiKit.ACCENT2)
+	var b_look := _wb("Wygląd, kolory i nick…", 16, UiKit.ACCENT2)
 	b_look.pressed.connect(_to_look.bind(false))
 	look_row.add_child(b_look)
-	var b_anim := UiKit.button("Edytor animacji…", 16, UiKit.ACCENT2)
+	var b_anim := _wb("Edytor animacji…", 16, UiKit.ACCENT2)
 	b_anim.pressed.connect(_to_look.bind(true))
 	look_row.add_child(b_anim)
 	outer.add_child(_center(UiKit.label("2. Postać", 18, UiKit.ACCENT)))
@@ -145,10 +145,10 @@ func _ready() -> void:
 	var row := UiKit.hbox(12)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	outer.add_child(row)
-	var back := UiKit.button("Wstecz", 20)
+	var back := _wb("Wstecz", 20)
 	back.pressed.connect(func(): Audio.play("back"); Mmo.stop(); Flow.goto("menu"))
 	row.add_child(back)
-	_join_btn = UiKit.button("Dołącz", 22, UiKit.GOOD)
+	_join_btn = _wb("Dołącz", 22, UiKit.GOOD)
 	_join_btn.disabled = true
 	_join_btn.pressed.connect(_on_join)
 	row.add_child(_join_btn)
@@ -202,7 +202,7 @@ func _build_server_list(outer: VBoxContainer) -> void:
 		h.add_child(col)
 		col.add_child(UiKit.label(String(s["name"]), 18, UiKit.TEXT))
 		col.add_child(UiKit.label("%s:%d" % [String(s["ip"]), int(s["port"])], 13, UiKit.DIM))
-		var join := UiKit.button("Dołącz", 18, UiKit.GOOD)
+		var join := _wb("Dołącz", 18, UiKit.GOOD)
 		join.pressed.connect(func():
 			Audio.play("confirm")
 			s_server = (_servers[i] as Dictionary).duplicate()
@@ -210,18 +210,18 @@ func _build_server_list(outer: VBoxContainer) -> void:
 			s_char = ""
 			Flow.goto("mmo_connect"))
 		h.add_child(join)
-		var del := UiKit.button("✕", 16, UiKit.BAD)
+		var del := _wb("✕", 16, UiKit.BAD)
 		del.pressed.connect(func():
 			Audio.play("back")
 			_servers.remove_at(i)
 			_save_servers()
 			Flow.goto("mmo_connect"))
 		h.add_child(del)
-	var add := UiKit.button("+  Dodaj serwer", 20, UiKit.ACCENT)
+	var add := _wb("+  Dodaj serwer", 20, UiKit.ACCENT)
 	_add_btn = add
 	add.pressed.connect(func(): Audio.play("select"); _show_add_form(outer, add))
 	outer.add_child(_center(add))
-	var back := UiKit.button("Wstecz", 20)
+	var back := _wb("Wstecz", 20)
 	back.pressed.connect(func(): Audio.play("back"); Mmo.stop(); Flow.goto("menu"))
 	outer.add_child(_center(back))
 
@@ -253,7 +253,7 @@ func _show_add_form(outer: VBoxContainer, add_btn: Button) -> void:
 	ip_e.placeholder_text = "np. 83.12.45.7 lub moj.serwer.pl"
 	ip_e.custom_minimum_size = Vector2(200, 38)
 	g.add_child(ip_e)
-	var save := UiKit.button("Zapisz", 18, UiKit.GOOD)
+	var save := _wb("Zapisz", 18, UiKit.GOOD)
 	g.add_child(save)
 	var msg := UiKit.label("", 14, UiKit.BAD)
 	g.add_child(msg)
@@ -344,7 +344,7 @@ func _pick_slot(slot: int) -> void:
 	_char_box.add_child(row)
 	for id in ids:
 		var cp: Dictionary = chars[id]
-		var b := UiKit.button("%s — poz. %d" % [String(CharacterDB.get_data(id).get("title", id)), int(cp.get("level", 1))], 16)
+		var b := _wb("%s — poz. %d" % [String(CharacterDB.get_data(id).get("title", id)), int(cp.get("level", 1))], 16)
 		b.pressed.connect(_pick_char.bind(id))
 		row.add_child(b)
 	if ids.size() == 1:
@@ -491,3 +491,33 @@ func _on_login(ok: bool, msg: String, _info: Dictionary) -> void:
 	_status.text = msg
 	Audio.play("deny")
 	Mmo.stop()
+
+## Drewniane przyciski jak w menu głównym gry.
+func _wb(text: String, size: int = 22, accent: Color = UiKit.ACCENT) -> Button:
+	var b := UiKit.button(text, size, accent)
+	var base := Color(0.35, 0.24, 0.13)
+	if accent == UiKit.GOOD:
+		base = Color(0.72, 0.38, 0.16)
+	b.add_theme_color_override("font_color", Color(0.97, 0.93, 0.84))
+	b.add_theme_color_override("font_hover_color", Color(1.0, 0.86, 0.45))
+	b.add_theme_color_override("font_focus_color", Color(1.0, 0.86, 0.45))
+	b.add_theme_stylebox_override("normal", _wood_sb(base, Color(0.17, 0.11, 0.06)))
+	b.add_theme_stylebox_override("hover", _wood_sb(base.lightened(0.14), Color(0.95, 0.75, 0.3)))
+	b.add_theme_stylebox_override("pressed", _wood_sb(base.darkened(0.15), Color(0.17, 0.11, 0.06)))
+	b.add_theme_stylebox_override("focus", _wood_sb(base.lightened(0.08), Color(0.95, 0.75, 0.3)))
+	b.add_theme_stylebox_override("disabled", _wood_sb(Color(0.25, 0.19, 0.13, 0.55), Color(0.17, 0.11, 0.06, 0.6)))
+	return b
+
+func _wood_sb(bgc: Color, border: Color) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bgc
+	s.border_color = border
+	s.set_border_width_all(3)
+	s.border_width_top = 4
+	s.set_corner_radius_all(3)
+	s.anti_aliasing = false
+	s.shadow_color = Color(0, 0, 0, 0.35)
+	s.shadow_offset = Vector2(0, 3)
+	s.content_margin_left = 10
+	s.content_margin_right = 10
+	return s
