@@ -220,50 +220,73 @@ func _bar(parent: Control, col: Color, h: int = 14) -> ProgressBar:
 	return b
 
 func _build_exit_panel(root: Control) -> void:
-	# menu Esc wygląda jak PAUZA w normalnej grze: lewa kolumna z przyciskami, prawa ze sterowaniem i opcjami
-	_exit_panel = UiKit.panel(UiKit.BG, 14)
+	# menu Esc ma ten sam układ co PAUZA w normalnej grze; funkcje, których serwer nie obsługuje z menu, są wyszarzone
+	_exit_panel = UiKit.panel(Color(0, 0, 0, 0), 0)
 	_exit_panel.visible = false
 	root.add_child(_exit_panel)
 	var wrap := UiKit.hbox(14)
 	_exit_panel.add_child(wrap)
-	var left := UiKit.vbox(6)
-	left.custom_minimum_size = Vector2(340, 0)
-	wrap.add_child(left)
-	left.add_child(UiKit.label("PAUZA", 36, UiKit.ACCENT))
-	left.add_child(UiKit.label("Serwer online — gra toczy się dalej", 14, UiKit.DIM))
-	left.add_child(UiKit.sep(6))
+	var panel := UiKit.panel(UiKit.BG, 14)
+	panel.custom_minimum_size = Vector2(400, 0)
+	wrap.add_child(panel)
+	var v := UiKit.vbox(6)
+	panel.add_child(v)
+	v.add_child(UiKit.label("PAUZA", 36, UiKit.ACCENT))
+	v.add_child(UiKit.label("Serwer online · gra toczy się dalej", 14, UiKit.DIM))
+	v.add_child(UiKit.sep(6))
 	var first := UiKit.button("Wracaj do walki", 22)
 	first.custom_minimum_size = Vector2(0, 54)
 	first.add_theme_stylebox_override("normal", UiKit.sb(Color(0.72, 0.38, 0.16), 6))
 	first.add_theme_stylebox_override("focus", UiKit.sb(Color(0.8, 0.45, 0.2), 6, 3, UiKit.ACCENT))
 	first.add_theme_stylebox_override("hover", UiKit.sb(Color(0.8, 0.45, 0.2), 6, 3, UiKit.ACCENT))
 	first.pressed.connect(func(): Audio.play("confirm"); _exit_panel.visible = false)
-	left.add_child(first)
-	_pause_btn(left, "Ekwipunek (I)", func(): _exit_panel.visible = false; toggle_inventory())
-	_pause_btn(left, "Towarzysze (P)", func(): _exit_panel.visible = false; open_overlay("pets", {}))
-	_pause_btn(left, "Własne fale (B)", func(): _exit_panel.visible = false; open_overlay("waves", {}))
+	v.add_child(first)
+	_pause_btn(v, "Ekwipunek (I)", func(): _exit_panel.visible = false; toggle_inventory())
+	_pause_btn(v, "Atrybuty", Callable(), UiKit.ACCENT, true)
+	_pause_btn(v, "Umiejętności", Callable(), UiKit.ACCENT, true)
+	_pause_btn(v, "Towarzysze (P)", func(): _exit_panel.visible = false; open_overlay("pets", {}))
+	_pause_btn(v, "Mapa świata", func(): _exit_panel.visible = false; Mmo.send_chat_text("/mapa"))
 	var sp := Control.new()
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left.add_child(sp)
-	_pause_btn(left, "Wyjdź z serwera", func(): exit_requested.emit(), UiKit.BAD)
-	var right := UiKit.panel(UiKit.BG, 14)
-	right.custom_minimum_size = Vector2(430, 0)
+	v.add_child(sp)
+	_pause_btn(v, "Ustawienia", Callable(), UiKit.ACCENT, true)
+	_pause_btn(v, "Wyjdź do menu", func(): exit_requested.emit(), UiKit.BAD)
+	var right := UiKit.vbox(14)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	wrap.add_child(right)
-	var rv := UiKit.vbox(6)
-	right.add_child(rv)
-	rv.add_child(UiKit.label("STEROWANIE", 13, UiKit.ACCENT))
-	rv.add_child(UiKit.label("WASD ruch · Shift sprint · J lekki · K ciężki · L unik · U blok · O furia
+	var top := UiKit.panel(UiKit.BG, 14)
+	right.add_child(top)
+	var tv := UiKit.vbox(6)
+	top.add_child(tv)
+	tv.add_child(UiKit.label("MIASTO I USŁUGI", 13, UiKit.ACCENT))
+	var g1 := _pause_row(tv)
+	_pause_btn(g1, "Szpital", Callable(), UiKit.GOOD, true)
+	_pause_btn(g1, "Skrytka", Callable(), UiKit.ACCENT, true)
+	_pause_btn(g1, "Osiągnięcia", Callable(), UiKit.ACCENT, true)
+	tv.add_child(UiKit.label("GRA WIELOOSOBOWA", 13, UiKit.ACCENT))
+	var g2 := _pause_row(tv)
+	_pause_btn(g2, "Multiplayer (LAN)", Callable(), UiKit.GOOD, true)
+	_pause_btn(g2, "Arena: zaproś gracza", Callable(), UiKit.BAD, true)
+	_pause_btn(g2, "Własne fale (B)", func(): _exit_panel.visible = false; open_overlay("waves", {}))
+	var g3 := _pause_row(tv)
+	_pause_btn(g3, "Od nowa", Callable(), UiKit.ACCENT, true)
+	_pause_btn(g3, "Usuń zapis", Callable(), UiKit.BAD, true)
+	var bottom := UiKit.panel(UiKit.BG, 14)
+	bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(bottom)
+	var v2 := UiKit.vbox(6)
+	bottom.add_child(v2)
+	v2.add_child(UiKit.label("STEROWANIE", 13, UiKit.ACCENT))
+	v2.add_child(UiKit.label("WASD ruch · Shift sprint · J lekki · K ciężki · L unik · U blok · O furia
 1-9 skile · E rozmowa/użycie · T czat · / komenda · I ekwipunek · P pety · B fale", 14, UiKit.DIM))
-	rv.add_child(UiKit.sep(6))
-	rv.add_child(UiKit.label("OPCJE", 13, UiKit.ACCENT))
-	var orow := UiKit.hbox(8)
-	rv.add_child(orow)
+	v2.add_child(UiKit.sep(6))
+	v2.add_child(UiKit.label("OPCJE", 13, UiKit.ACCENT))
+	var orow := _pause_row(v2)
 	var oi := 0
 	for entry in [["music", "Muzyka"], ["sfx", "Dźwięki"], ["shake", "Trzęsienie"], ["toasts", "Komunikaty"], ["hitstop", "Spowolnienie ataku"], ["animations", "Animacje"], ["auras", "Aury"]]:
 		var key := String(entry[0])
 		if oi > 0 and oi % 3 == 0:
-			orow = UiKit.hbox(8)
-			rv.add_child(orow)
+			orow = _pause_row(v2)
 		oi += 1
 		var b := UiKit.button("", 15)
 		b.text = "%s: %s" % [String(entry[1]), "TAK" if GameState.setting(key) else "NIE"]
@@ -278,13 +301,22 @@ func _build_exit_panel(root: Control) -> void:
 				Audio.play("confirm"))
 		orow.add_child(b)
 
-func _pause_btn(parent: Control, text: String, cb: Callable, col: Color = UiKit.ACCENT) -> Button:
+func _pause_row(parent: Control) -> HBoxContainer:
+	var h := UiKit.hbox(8)
+	parent.add_child(h)
+	return h
+
+func _pause_btn(parent: Control, text: String, cb: Callable, col: Color = UiKit.ACCENT, off: bool = false) -> Button:
 	var b := UiKit.button(text, 17, col)
 	b.custom_minimum_size = Vector2(0, 38)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.pressed.connect(func():
-		Audio.play("confirm")
-		cb.call())
+	if off:
+		b.disabled = true
+		b.tooltip_text = "Niedostępne na serwerze z menu (użyj w grze lub komendą)"
+	else:
+		b.pressed.connect(func():
+			Audio.play("confirm")
+			cb.call())
 	parent.add_child(b)
 	return b
 
