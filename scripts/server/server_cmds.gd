@@ -3,9 +3,9 @@ extends RefCounted
 ## Komendy czatu (/…) i konsoli serwera. Nadawca 0 = konsola serwera (prawa admina).
 
 const PLAYER_HELP := "Komendy: /help /list /w <gracz> <tekst> /me <tekst> /pos /stats /skills /skill <slot 1-9> <id|-> /attr <statystyka> [ile] /swiat /kampania /quest /wyzwanie /arena <gracz> /wyjdz /ranking /wlasne (edytor fal: klawisz B)"
-const ADMIN_HELP := "Admin: /tp /tphere /give /heal /god /kill /kick /ban /unban /spawn /killall /xp /setlevel /gold /say /op /deop /class /items /save /stop /rozdzial <nr> /kia <ally N|pet> /boss [id] /bosses /event raid"
-const ADMIN_CMDS := ["tp", "tphere", "give", "heal", "god", "kill", "kick", "ban", "unban", "spawn", "killall", "xp", "setlevel", "gold",
-		"say", "op", "deop", "class", "items", "save", "stop", "rozdzial", "kia", "boss", "bosses", "event"]
+const ADMIN_HELP := "Admin: /tp /tphere /give /heal /god /creative /survival /kill /kick /ban /unban /spawn /killall /xp /setlevel /gold /say /op /deop /class /items /save /backup /stop /rozdzial <nr> /kia <ally N|pet> /boss [id] /bosses /event raid"
+const ADMIN_CMDS := ["tp", "tphere", "give", "heal", "god", "creative", "survival", "kill", "kick", "ban", "unban", "spawn", "killall", "xp", "setlevel", "gold",
+		"say", "op", "deop", "class", "items", "save", "backup", "stop", "rozdzial", "kia", "boss", "bosses", "event"]
 
 ## Opisy komend do podpowiedzi w czacie (klient pokazuje je po wpisaniu "/", Tab uzupełnia).
 const INFO := {
@@ -34,6 +34,8 @@ const INFO := {
 	"give": "/give <gracz> <przedmiot|all> [ile] — daj przedmiot [admin]",
 	"heal": "/heal [gracz] — ulecz [admin]",
 	"god": "/god [gracz] — nieśmiertelność [admin]",
+	"creative": "/creative [gracz] — tryb creative: niezniszczalność [admin]",
+	"survival": "/survival [gracz] — tryb survival: normalnie zniszczalny [admin]",
 	"kill": "/kill <gracz> — zabij gracza [admin]",
 	"kick": "/kick <gracz> [powód] — wyrzuć z serwera [admin]",
 	"ban": "/ban <postać> [powód] — zbanuj [admin]",
@@ -49,6 +51,7 @@ const INFO := {
 	"class": "/class <gracz> <klasa> — zmień klasę [admin]",
 	"items": "/items [fraza] — lista przedmiotów [admin]",
 	"save": "/save — zapisz postacie [admin]",
+	"backup": "/backup — kopia zapasowa danych serwera [admin]",
 	"stop": "/stop — zatrzymaj serwer [admin]",
 	"rozdzial": "/rozdzial <nr> — skocz do rozdziału [admin]",
 	"kia": "/kia <ally N|pet> — zabij towarzysza [admin]",
@@ -59,7 +62,7 @@ const INFO := {
 
 ## Rodzaje argumentów komend (podpowiedzi jak w Minecrafcie): player = nick online, item = przedmiot z gry itd.
 const ARGS := {
-	"give": ["player", "item", "num"], "tp": ["player", "player"], "tphere": ["player"], "heal": ["player"], "god": ["player"],
+	"give": ["player", "item", "num"], "tp": ["player", "player"], "tphere": ["player"], "heal": ["player"], "god": ["player"], "creative": ["player"], "survival": ["player"],
 	"kill": ["player"], "kick": ["player"], "ban": ["player"], "w": ["player"], "msg": ["player"], "tell": ["player"], "arena": ["player"], "op": ["player"], "deop": ["player"],
 	"xp": ["player", "num"], "gold": ["player", "num"], "setlevel": ["player", "num"], "class": ["player", "class"],
 	"spawn": ["species", "num"], "boss": ["boss"], "items": ["item"], "rozdzial": ["chapter"], "skill": ["slot", "skill"], "attr": ["attr", "num"], "event": ["ev"], "kia": ["kia"],
@@ -291,6 +294,13 @@ func run(srv: MmoServer, id: int, line: String) -> void:
 				return
 			srv.peers[t2]["god"] = not bool(srv.peers[t2]["god"])
 			srv.reply(id, "Nieśmiertelność %s: %s" % ["włączona" if srv.peers[t2]["god"] else "wyłączona", srv.peers[t2]["name"]])
+		"creative", "survival":
+			var t4 := _target(srv, id, args, 0)
+			if t4 < 0:
+				return
+			var creative := cmd == "creative"
+			srv.peers[t4]["god"] = creative
+			srv.reply(id, "Tryb %s: %s" % ["creative (niezniszczalny)" if creative else "survival (zniszczalny)", srv.peers[t4]["name"]])
 		"kill":
 			if args.is_empty():
 				srv.reply(id, "Użycie: /kill <gracz>", "error")
@@ -474,6 +484,12 @@ Cel: %s" % [String(QuestDB.get_data(String(story["quest"])).get("label", "")), S
 		"save":
 			srv.chars.save_all(true)
 			srv.reply(id, "Zapisano postacie.")
+		"backup":
+			var stamp: String = srv.chars.backup()
+			if stamp == "":
+				srv.reply(id, "Nie udało się utworzyć kopii zapasowej.", "error")
+			else:
+				srv.reply(id, "Kopia zapasowa: %s/backups/%s" % [ServerChars.dir(), stamp])
 		"stop":
 			srv.reply(id, "Zatrzymuję serwer…")
 			srv.stop.call_deferred()

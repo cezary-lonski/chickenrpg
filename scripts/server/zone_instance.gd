@@ -682,6 +682,33 @@ func spawn_wave() -> void:
 		for i in int(entry[1]):
 			spawn_mob(id, _edge_spawn(), bool(wave.get("elite", false)) or (entry.size() > 2 and bool(entry[2])), mods, String(entry[3]) if entry.size() > 3 else "")
 
+## Sekretna jaskinia bez fal: potwory śpią w zasadzkach i budzą się, gdy ktoś podejdzie lub je zaatakuje.
+func _spawn_ambush() -> void:
+	var packs: Array = []
+	for w in waves:
+		for entry in w["enemies"]:
+			if not String(entry[0]).begins_with("BOSS:"):
+				packs.append([entry, w])
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var centers := SecretDB.ambush_centers(packs.size(), size, MARGIN, spawn, rng)
+	for n in packs.size():
+		var entry: Array = packs[n][0]
+		var wave: Dictionary = packs[n][1]
+		var mods := {}
+		if wave.has("hp"):
+			mods = {"hp": float(wave["hp"]), "dmg": float(wave.get("dmg", 1.0)), "xp": float(wave.get("xp", 1.0))}
+		for i in int(entry[1]):
+			var at: Vector2 = (centers[n] as Vector2) + Vector2(rng.randf_range(-110.0, 110.0), rng.randf_range(-90.0, 90.0))
+			var e := spawn_mob(String(entry[0]), at, bool(wave.get("elite", false)) or (entry.size() > 2 and bool(entry[2])), mods, String(entry[3]) if entry.size() > 3 else "")
+			if e != null:
+				e.dormant = true
+				e.aggro = 520.0
+	wave_i = waves.size()
+	set_step(wave_i)
+	wave_active = true
+	srv.broadcast_zone_chat(self, "system", "", "Potwory czekają w mroku — atakują, gdy podejdziesz zbyt blisko.")
+
 func _spawn_boss(bid: String, wave: Dictionary, center: Vector2 = BossDB.ARENA_CENTER, pull_players: bool = true) -> void:
 	if not BossDB.has(bid):
 		return
@@ -728,7 +755,10 @@ func _tick_cave(delta: float) -> void:
 			if kind == "cave":
 				srv.broadcast_zone_chat(self, "system", "", "Wyzwanie: oczyść jaskinię w 120 s, by dostać dodatkową nagrodę.")
 			waves_started = true
-			spawn_wave()
+			if kind == "cave":
+				_spawn_ambush()
+			else:
+				spawn_wave()
 		return
 	if kind == "cave" and cave_state == "fight":
 		cave_t += delta

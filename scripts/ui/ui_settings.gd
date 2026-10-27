@@ -69,6 +69,21 @@ func _ready() -> void:
 				Audio.play("confirm"))
 		lv.add_child(b)
 
+	const GFX_NAMES := ["Niska", "Średnia", "Wysoka", "Bez cząsteczek"]
+	const GFX_ORDER := [3, 0, 1, 2]
+	var gb := UiKit.button("", 18)
+	gb.custom_minimum_size = Vector2(320, 40)
+	gb.text = "Jakość grafiki: %s" % GFX_NAMES[GameState.gfx_quality()]
+	gb.pressed.connect(func():
+		GameState.set_gfx_quality(GFX_ORDER[(GFX_ORDER.find(GameState.gfx_quality()) + 1) % GFX_ORDER.size()])
+		gb.text = "Jakość grafiki: %s" % GFX_NAMES[GameState.gfx_quality()]
+		Audio.play("select"))
+	lv.add_child(gb)
+	var hint := UiKit.label("Niska = płynniej na słabszym sprzęcie i telefonach. Pogoda zmienia się od następnego etapu.", 13, UiKit.DIM)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size = Vector2(320, 0)
+	lv.add_child(hint)
+
 	# --- prawa: sterowanie
 	var right := UiKit.panel(UiKit.BG, 12)
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL

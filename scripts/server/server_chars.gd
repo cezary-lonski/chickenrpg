@@ -45,6 +45,19 @@ func save_all(force: bool = false) -> void:
 	DirAccess.rename_absolute(file() + ".tmp", file())
 	_dirty = false
 
+## Kopia plików danych serwera do `backups/<data_godzina>/`; zwraca nazwę katalogu kopii ("" przy błędzie).
+func backup() -> String:
+	save_all(true)
+	var d := Time.get_datetime_dict_from_system()
+	var stamp := "%04d-%02d-%02d_%02d-%02d-%02d" % [d.year, d.month, d.day, d.hour, d.minute, d.second]
+	var dst := dir() + "/backups/" + stamp
+	if DirAccess.make_dir_recursive_absolute(dst) != OK:
+		return ""
+	for fn in DirAccess.get_files_at(dir()):
+		if DirAccess.copy_absolute(dir() + "/" + fn, dst + "/" + fn) != OK:
+			return ""
+	return stamp
+
 func mark_dirty() -> void:
 	_dirty = true
 
@@ -376,20 +389,16 @@ static func compute_stats(rec: Dictionary) -> Dictionary:
 		if key2 == "health": key2 = "max_health"
 		elif key2 == "energy": key2 = "max_energy"
 		s[key2] = float(s.get(key2, 0.0)) + bonus
+	DecisionDB.apply(s, MmoServer.story_of(rec).get("flags", {}))
 	if String(rec.get("class", "")) == "admin":
-		s["max_health"] = float(s["max_health"]) + 9000.0
-		s["max_energy"] = float(s["max_energy"]) + 5000.0
 		s["strength"] = float(s["strength"]) + 25.0
 		s["defense"] = float(s["defense"]) + 25.0
 		s["speed"] = float(s["speed"]) + 0.3
 		s["crit"] = 0.5
 		s["skill_cdr"] = 0.6
 		s["skill_cost"] = 0.6
-		s["energy_regen"] = 60.0
-		s["regen"] = 30.0
 	for k in s.keys():
 		s[k] = clampf(float(s[k]), -50.0, 100000.0)
-	DecisionDB.apply(s, MmoServer.story_of(rec).get("flags", {}))
 	return s
 
 static func xp_needed(level: int) -> int:

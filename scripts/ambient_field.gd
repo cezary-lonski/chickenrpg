@@ -8,6 +8,7 @@ var bounds := Vector2(2200, 1500)
 var wind := Vector2(26, 0)
 var count := 140
 var _parts: Array = []
+var _configured := false
 var _rng := RandomNumberGenerator.new()
 var _lightning_t := 5.0
 var _bolt_t := 0.0
@@ -41,6 +42,8 @@ func setup(mode_name: String, p_bounds: Vector2, seed_i: int = 3) -> void:
 			mode = Mode.LEAVES
 			count = 90
 			wind = Vector2(30, 8)
+	count = 0 if Fx.particle_mul <= 0.0 else maxi(10, int(float(count) * Fx.particle_mul))
+	_configured = true
 	_parts.clear()
 	for i in count:
 		_parts.append(_new_part(true))
@@ -50,7 +53,7 @@ func setup(mode_name: String, p_bounds: Vector2, seed_i: int = 3) -> void:
 func _ready() -> void:
 	z_index = 40
 	z_as_relative = false
-	if _parts.is_empty():
+	if _parts.is_empty() and not _configured:
 		setup("leaves", bounds, 3)
 
 func _new_part(initial: bool = false) -> Dictionary:
@@ -167,9 +170,9 @@ func _draw() -> void:
 		var a: float = d["alpha"]
 		match mode:
 			Mode.RAIN:
-				draw_line(p, p + Vector2(wind.x * 0.045, s), Color(c.r, c.g, c.b, c.a * a), 1.1, true)
+				draw_line(p, p + Vector2(wind.x * 0.045, s), Color(c.r, c.g, c.b, c.a * a), 1.1, not Fx.low_end)
 			Mode.SAND, Mode.DUST:
-				draw_line(p, p + Vector2(s * 2.4, 0), Color(c.r, c.g, c.b, c.a * a), 1.0, true)
+				draw_line(p, p + Vector2(s * 2.4, 0), Color(c.r, c.g, c.b, c.a * a), 1.0, not Fx.low_end)
 			Mode.ASH:
 				draw_circle(p, s * 0.7, Color(c.r, c.g, c.b, c.a * a))
 			Mode.EMBERS:

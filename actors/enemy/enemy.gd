@@ -66,6 +66,8 @@ var atk_fired := false
 var cooldown := 1.0
 var strafe_dir := 1.0
 var aggro := 500.0
+## Śpiący wróg (zasadzka w jaskini): stoi w miejscu, aż gracz wejdzie w jego zasięg lub go zaatakuje.
+var dormant := false
 var keep_distance := 0.0
 var attack_range := 50.0
 var hit_count := 0
@@ -351,10 +353,24 @@ func _st_approach(delta: float) -> void:
 	# separacja od innych ptaków
 	_separate(delta)
 
+## Budzi wroga i resztę watahy stojącą w pobliżu.
+func wake() -> void:
+	if not dormant:
+		return
+	dormant = false
+	for o in get_tree().get_nodes_in_group("enemies"):
+		if o != self and is_instance_valid(o) and o.get("dormant") == true and global_position.distance_to(o.global_position) < 280.0:
+			o.dormant = false
+
 func _td_approach(delta: float, d: float, ai: String) -> void:
 	if not player or not is_instance_valid(player):
 		velocity = velocity.move_toward(Vector2.ZERO, 800.0 * delta)
 		return
+	if dormant:
+		if d > aggro:
+			velocity = velocity.move_toward(Vector2.ZERO, 900.0 * delta)
+			return
+		wake()
 	var to: Vector2 = player.global_position - global_position
 	var dir := to.normalized() if to.length() > 0.01 else Vector2(facing, 0.0)
 	if d > aggro:
@@ -627,6 +643,7 @@ func _try_parry(info: Dictionary) -> bool:
 	return true
 
 func apply_hit(info: Dictionary) -> bool:
+	wake()
 	if dead:
 		return false
 	if bool(data.get("duelist", false)) and _try_parry(info):

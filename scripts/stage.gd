@@ -335,6 +335,8 @@ func _hay(pos: Vector2) -> Node2D:
 
 func _ambient_particles(embers: bool) -> Node2D:
 	var n := Node2D.new()
+	if Fx.particle_mul <= 0.0:
+		return n
 	var p := CPUParticles2D.new()
 	p.amount = 40
 	p.lifetime = 6.0

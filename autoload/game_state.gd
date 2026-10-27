@@ -1154,6 +1154,17 @@ func setting(key: String) -> bool:
 	# spowolnienie przy ataku jest domyślnie wyłączone (dawało efekt „lagu”), reszta opcji — włączona
 	return bool(profile.get("settings", {}).get(key, key != "hitstop"))
 
+## Jakość grafiki: 0 niska, 1 średnia, 2 wysoka, 3 bez cząsteczek (domyślnie niska na telefonie).
+func gfx_quality() -> int:
+	var def := 0 if OS.has_feature("mobile") else 2
+	return clampi(int(profile.get("settings", {}).get("gfx", def)), 0, 3)
+
+func set_gfx_quality(q: int) -> void:
+	if not profile.has("settings"): profile["settings"] = {}
+	profile["settings"]["gfx"] = clampi(q, 0, 3)
+	Fx.apply_quality(gfx_quality())
+	save_game()
+
 func toggle_setting(key: String) -> bool:
 	if not profile.has("settings"): profile["settings"] = {}
 	var v := not setting(key)

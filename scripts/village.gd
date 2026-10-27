@@ -1640,7 +1640,39 @@ func _begin_cave() -> void:
 		return
 	_cave_clock = true
 	_waves_started = true
-	_spawn_wave()
+	if custom_mode:
+		_spawn_wave()
+	else:
+		_spawn_cave_ambush()
+
+## Sekretna jaskinia nie ma fal: wszystkie potwory czekają w mroku i atakują dopiero, gdy podejdziesz.
+func _spawn_cave_ambush() -> void:
+	var packs: Array = []
+	for w in waves:
+		for entry in w["enemies"]:
+			if not String(entry[0]).begins_with("BOSS:"):
+				packs.append([entry, w])
+	var centers := SecretDB.ambush_centers(packs.size(), VILLAGE, MARGIN, zone.get("spawn", Vector2(1100, 1280)), rng)
+	for n in packs.size():
+		var entry: Array = packs[n][0]
+		var wave: Dictionary = packs[n][1]
+		for i in int(entry[1]):
+			var e: Enemy = (ENEMY_SCENE as PackedScene).instantiate() as Enemy
+			if entry.size() > 3:
+				e.skin = String(entry[3])
+			e.setup(String(entry[0]), false, bool(wave.get("elite", false)) or (entry.size() > 2 and bool(entry[2])))
+			if wave.has("hp"):
+				e.apply_mods(float(wave["hp"]), float(wave.get("dmg", 1.0)), float(wave.get("xp", 1.0)))
+			e.net_id = "e%d" % _net_enemy_seq
+			_net_enemy_seq += 1
+			e.dormant = true
+			entities.add_child(e)
+			e.global_position = (centers[n] as Vector2) + Vector2(rng.randf_range(-110.0, 110.0), rng.randf_range(-90.0, 90.0))
+			e.set_bounds_rect(MARGIN, VILLAGE.x - MARGIN, MARGIN, VILLAGE.y - MARGIN)
+	wave_i = waves.size()
+	_set_step(wave_i)
+	wave_active = true
+	GameState.toast.emit("Potwory czekają w mroku — atakują, gdy podejdziesz zbyt blisko.", UiKit.ACCENT)
 
 ## Na końcu jaskini czeka boss, który dzierży legendarną broń z nagrody.
 func _spawn_cave_boss() -> void:

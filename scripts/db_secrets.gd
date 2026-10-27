@@ -255,6 +255,24 @@ static func cave_by_id(cave_id: String) -> Dictionary:
 	return {}
 
 ## Strefa-jaskinia w formacie ZoneDB (obsługiwana przez Village).
+## Punkty zasadzek w jaskini: po jednym na watahę (wpis fali), z dala od wejścia i od siebie nawzajem.
+static func ambush_centers(count: int, size: Vector2, margin: float, start: Vector2, rng: RandomNumberGenerator) -> Array:
+	var out: Array = []
+	var tries := 0
+	while out.size() < count and tries < 400:
+		tries += 1
+		var p := Vector2(rng.randf_range(margin + 160.0, size.x - margin - 160.0), rng.randf_range(margin + 160.0, size.y - margin - 160.0))
+		var min_gap := 520.0 if tries < 200 else 320.0
+		var ok := p.distance_to(start) > 650.0
+		for q in out:
+			if p.distance_to(q) < min_gap:
+				ok = false
+		if ok:
+			out.append(p)
+	while out.size() < count:
+		out.append(Vector2(rng.randf_range(margin + 160.0, size.x - margin - 160.0), margin + 200.0))
+	return out
+
 static func cave_zone(cave_id: String) -> Dictionary:
 	var c := cave_by_id(cave_id)
 	if c.is_empty():

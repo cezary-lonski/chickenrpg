@@ -425,6 +425,7 @@ func _shop_done() -> void:
 # ------------------------------------------------------------------- scena ---
 
 func _build_stage(index: int) -> void:
+	Fx.apply_quality(GameState.gfx_quality())
 	var scene_path := VILLAGE_SCENE if GameState.is_topdown() else STAGE_SCENE
 	var packed: PackedScene = load(scene_path)
 	if packed == null:

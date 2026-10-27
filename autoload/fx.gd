@@ -20,9 +20,20 @@ var enabled_shake := true
 
 # -------------------------------------------------------------------- init ---
 
+## Jakość grafiki (ustawienia): 0 niska, 1 średnia, 2 wysoka, 3 bez cząsteczek — skaluje liczbę cząsteczek i wygładzanie linii.
+static var low_end: bool = OS.has_feature("mobile")
+static var particle_mul: float = 0.45 if OS.has_feature("mobile") else 1.0
+
+static func apply_quality(q: int) -> void:
+	q = clampi(q, 0, 3)
+	low_end = q == 0 or q == 3
+	particle_mul = [0.45, 0.75, 1.0, 0.0][q]
+	Engine.max_fps = 60 if q != 2 else 0
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
+	apply_quality(GameState.gfx_quality())
 	_flash_layer = CanvasLayer.new()
 	_flash_layer.layer = 90
 	add_child(_flash_layer)
@@ -128,6 +139,9 @@ func popup(pos: Vector2, text: String, color: Color) -> void:
 func burst(pos: Vector2, color: Color, count: int = 12, speed: float = 260.0, size: float = 3.0, life: float = 0.4) -> void:
 	if world == null or not is_instance_valid(world):
 		return
+	if particle_mul <= 0.0:
+		return
+	count = maxi(3, int(float(count) * particle_mul))
 	var p := ParticleBurst.new()
 	p.global_position = pos
 	p.color = color
@@ -171,6 +185,8 @@ func spin_arc(pos: Vector2, color: Color, radius: float = 68.0, angle: float = 0
 	world.add_child(s)
 
 func sparkle(pos: Vector2, color: Color) -> void:
+	if particle_mul <= 0.0:
+		return
 	if world == null or not is_instance_valid(world):
 		return
 	var s := Sparkle.new()
@@ -213,6 +229,9 @@ func pixel_ring(pos: Vector2, color: Color, radius: float = 90.0, life: float = 
 
 ## Unoszące się znaczki: "arrow" (wzmocnienie), "plus" (leczenie), "diamond" (tarcza), "paw" (pupil).
 func motes(pos: Vector2, color: Color, kind: String = "plus", count: int = 10, spread: float = 40.0, life: float = 0.9) -> void:
+	if particle_mul <= 0.0:
+		return
+	count = maxi(3, int(float(count) * particle_mul))
 	var n := PxMotes.new()
 	n.color = color
 	n.kind = kind

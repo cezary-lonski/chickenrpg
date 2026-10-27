@@ -15,6 +15,7 @@ var _next_voice: int = 0
 var _current_track := ""
 var _rng := RandomNumberGenerator.new()
 var _warm_thread: Thread
+var _building: Dictionary = {}
 
 # ------------------------------------------------------------------ tablice ---
 
@@ -72,7 +73,8 @@ func _ready() -> void:
 	_music_player.volume_db = -13.0
 	add_child(_music_player)
 	_build_sfx()
-	if not ServerMode.is_active():
+	# na telefonach nie budujemy wszystkich utworów naraz (grzeje i zacina) — tylko ten, który jest potrzebny
+	if not ServerMode.is_active() and not OS.has_feature("mobile"):
 		_warm_thread = Thread.new()
 		_warm_thread.start(_warm_music)
 
@@ -97,6 +99,10 @@ func _warm_music() -> void:
 func _store_music(track: String, st: AudioStreamWAV) -> void:
 	if not _music.has(track):
 		_music[track] = st
+	_building.erase(track)
+	if _current_track == track and not _music_player.playing and GameState.setting("music"):
+		_music_player.stream = st
+		_music_player.play()
 
 func _exit_tree() -> void:
 	if _warm_thread != null and _warm_thread.is_started():
@@ -112,7 +118,12 @@ func play_music(track: String) -> void:
 		_music_player.stop()
 		return
 	if not _music.has(track):
-		_music[track] = _build_music(track)
+		# budowa w tle — gra nie zamarza, a muzyka startuje, gdy utwór będzie gotowy
+		_music_player.stop()
+		if not _building.has(track):
+			_building[track] = true
+			WorkerThreadPool.add_task(func(): _store_music.call_deferred(track, _build_music(track)))
+		return
 	_music_player.stream = _music[track]
 	_music_player.play()
 

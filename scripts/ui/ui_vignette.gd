@@ -252,8 +252,14 @@ func _ready() -> void:
 	_caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_caption.custom_minimum_size = Vector2(960, 56)
 	v.add_child(_caption)
-	_hint = UiKit.label("[Esc] pomiń", 13, UiKit.DIM, HORIZONTAL_ALIGNMENT_RIGHT)
+	_hint = UiKit.label("Dotknij „Pomiń”" if Touch.enabled else "[Esc] pomiń", 13, UiKit.DIM, HORIZONTAL_ALIGNMENT_RIGHT)
 	v.add_child(_hint)
+	# na telefonie nie ma Esc — przycisk dostępny dotykiem
+	var skip := UiKit.button("Pomiń ▶▶", 22)
+	skip.position = Vector2(1090, 14)
+	skip.custom_minimum_size = Vector2(160, 52)
+	skip.pressed.connect(_close)
+	add_child(skip)
 	_show_line(0)
 
 func _show_line(i: int) -> void:
