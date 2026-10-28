@@ -296,15 +296,19 @@ func _heist_off() -> bool:
 	var fl := _flags()
 	return bool(fl.get("heist_taken:" + q, false)) or bool(fl.get(ChapterExtras.flag(q, String(hz.get("id", "")), 0), false))
 
-func _refresh_guards() -> void:
+var _camp_off := false
+
 ## Strażnicy znikają też po pokonaniu naczelnika obozu (cel z pola `disarm`).
 func _guards_off() -> bool:
+	var hz: Dictionary = zone.get("heist", {})
+	if bool(hz.get("camp", false)):
+		return _camp_off
 	if _heist_off():
 		return true
-	var hz: Dictionary = zone.get("heist", {})
 	var did := String(hz.get("disarm", ""))
 	return did != "" and bool(_flags().get(ChapterExtras.flag(String(zone.get("quest", "")), did, 0), false))
 
+func _refresh_guards() -> void:
 	var off := _guards_off()
 	for g in _guards:
 		if is_instance_valid(g):
@@ -371,6 +375,9 @@ func _on_event(kind: String, data: Dictionary) -> void:
 			if bool(data.get("hit", false)):
 				Audio.play("hit_heavy", 0.7, -4.0)
 				Fx.shake(6.0, 0.3)
+		"camp_off":
+			_camp_off = true
+			_refresh_guards()
 		"objs_add":
 			for o in data.get("objs", []):
 				_make_object(o)

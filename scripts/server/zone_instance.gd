@@ -67,6 +67,7 @@ var hunts: Dictionary = {}     # id zlecenia -> wróg łowcy nagród
 var heist: Dictionary = {}     # cel skradankowy rozdziału (strażnicy ze stożkiem wzroku)
 var _clock := 0.0              # zegar patroli strażników (klienci rysują ich z tego samego czasu)
 var _heist_alert: Dictionary = {}   # peer -> pasek wykrycia
+var camp_off := false              # obóz niewolników: strażnicy odeszli (naczelnik pokonany albo jeniec wolny)
 var _heist_send := 0.0
 
 func setup(p_srv: MmoServer, p_key: String, p_slot: int) -> void:
@@ -118,6 +119,9 @@ func setup(p_srv: MmoServer, p_key: String, p_slot: int) -> void:
 		spawn = zone.get("spawn", Vector2(1100.0, 1280.0))
 		waves = zone.get("waves", [])
 		_start_t = 2.6
+		if zone.has("camp"):
+			var cp: Dictionary = zone["camp"]
+			heist = {"id": "camp:" + cave_id, "guards": cp["guards"], "start": cp["start"], "camp": true}
 	else:
 		quest_id = key
 		zone = ZoneDB.get_data(key)
@@ -175,7 +179,7 @@ func zone_info() -> Dictionary:
 	return {"key": key, "kind": kind, "terrain": terrain, "size": size, "spawn": spawn, "npcs": npc_list,
 		"quest": quest_id, "title": zone_title(), "waves_n": waves.size(),
 		"banner": banner, "boss_pos": BossDB.ARENA_CENTER, "boss_radius": BossDB.ARENA_RADIUS, "objs": objs + extra_objs, "buildings": buildings,
-		"heist": {} if heist.is_empty() else {"guards": heist["guards"], "t": _clock, "id": String(heist["id"]), "disarm": String(heist.get("disarm", ""))}}
+		"heist": {} if heist.is_empty() else {"guards": heist["guards"], "t": _clock, "id": String(heist["id"]), "disarm": String(heist.get("disarm", "")), "camp": bool(heist.get("camp", false))}}
 
 # ---------------------------------------------------------------- obiekty ---
 
@@ -199,6 +203,10 @@ func _build_objects() -> void:
 	for c in SecretDB.chests_for(quest_id):
 		objs.append({"uid": "%s:%s" % [quest_id, String(c["id"])], "kind": "chest", "label": "Otwórz skrzynię", "pos": c["pos"],
 			"type": "chest", "hidden": bool(c.get("hidden", false)), "chest": String(c["id"])})
+	for camp_id in SpecialDB.camps_in(quest_id):
+		var cvc := SecretDB.cave_by_id(String(camp_id))
+		objs.append({"uid": "cave:" + String(camp_id), "kind": "entrance", "label": "Ścieżka do obozu niewolników", "pos": cvc["entrance"], "type": "entrance",
+			"cave": String(camp_id), "levers": 0, "camp": true})
 	var cv := SecretDB.cave_for(quest_id)
 	if not cv.is_empty():
 		objs.append({"uid": "sign:" + quest_id, "kind": "sign", "label": "Przeczytaj", "pos": _free_pos(spawn + Vector2(150.0, -90.0)), "type": "sign"})
@@ -396,7 +404,7 @@ func _tick_heist(delta: float) -> void:
 		if pl == null:
 			continue
 		var node = pl.get("node")
-		if node == null or not is_instance_valid(node) or StoryActions.guards_off(pl["rec"], quest_id, heist):
+		if node == null or not is_instance_valid(node) or (camp_off if bool(heist.get("camp", false)) else StoryActions.guards_off(pl["rec"], quest_id, heist)):
 			if _heist_alert.erase(peer):
 				srv.send_ev(peer, "heist_alert", {"a": 0.0, "hit": false})
 			continue
@@ -704,6 +712,8 @@ func _spawn_ambush() -> void:
 			if e != null:
 				e.dormant = true
 				e.aggro = 460.0
+				if bool(wave.get("elite", false)) and zone.has("camp"):
+					e.died.connect(func(_x): camp_disarm())
 	wave_i = waves.size()
 	set_step(wave_i)
 	wave_active = true
@@ -747,6 +757,21 @@ func _spawn_boss(bid: String, wave: Dictionary, center: Vector2 = BossDB.ARENA_C
 	b.died.connect(srv.on_mob_died.bind(self))
 	b.start_intro()
 
+## Obóz niewolników: naczelnik padł — strażnicy ze stożkami odchodzą.
+func camp_disarm() -> void:
+	if camp_off:
+		return
+	camp_off = true
+	srv.broadcast_zone_ev(self, "camp_off", {})
+	srv.broadcast_zone_chat(self, "system", "", "Naczelnik padł — reszta strażników rozbiega się w popłochu.")
+
+## Jeniec uwolniony: strażnicy odchodzą, a na starcie pojawia się wyjście.
+func camp_freed() -> void:
+	if not camp_off:
+		camp_off = true
+		srv.broadcast_zone_ev(self, "camp_off", {})
+	add_extra_obj({"uid": "campportal", "kind": "portal", "label": "Wróć na pustkowie", "pos": (zone["camp"] as Dictionary).get("start", spawn) + Vector2(0.0, -90.0), "type": "portal"})
+
 func _tick_cave(delta: float) -> void:
 	if _start_t >= 0.0:
 		_start_t -= delta
@@ -754,7 +779,10 @@ func _tick_cave(delta: float) -> void:
 			_start_t = -1.0
 			var banner: Array = zone.get("intro_banner", ["", ""])
 			srv.broadcast_zone_ev(self, "banner", {"title": String(banner[0]), "sub": String(banner[1])})
-			if kind == "cave":
+			if kind == "cave" and zone.has("camp"):
+				for pid in peer_ids:
+					srv._open_dialog(int(pid), (zone["camp"] as Dictionary).get("intro", []), UiKit.ACCENT2, "")
+			elif kind == "cave":
 				srv.broadcast_zone_chat(self, "system", "", "Wyzwanie: oczyść jaskinię w 120 s, by dostać dodatkową nagrodę.")
 			waves_started = true
 			if kind == "cave":

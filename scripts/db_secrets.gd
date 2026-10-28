@@ -258,6 +258,8 @@ static func cave_for(zone_id: String) -> Dictionary:
 	return CAVES.get(zone_id, {})
 
 static func cave_by_id(cave_id: String) -> Dictionary:
+	if SpecialDB.is_camp(cave_id):
+		return SpecialDB.camp_cave(cave_id)
 	for z in CAVES:
 		if String(CAVES[z]["id"]) == cave_id:
 			var c: Dictionary = CAVES[z].duplicate(true)
@@ -288,7 +290,7 @@ static func cave_zone(cave_id: String) -> Dictionary:
 	var c := cave_by_id(cave_id)
 	if c.is_empty():
 		return {}
-	return {
+	var z := {
 		"terrain": "cave",
 		"spawn": Vector2(1100, 1280),
 		"npcs": [],
@@ -300,6 +302,9 @@ static func cave_zone(cave_id: String) -> Dictionary:
 		"intro_banner": ["SEKRETNA JASKINIA", String(c["name"])],
 		"outro_banner": ["JASKINIA OCZYSZCZONA", String(c["name"])],
 	}
+	if SpecialDB.is_camp(cave_id):
+		z.merge(SpecialDB.camp_zone_extra(cave_id), true)
+	return z
 
 # ------------------------------------------------------------- stan w profilu ---
 

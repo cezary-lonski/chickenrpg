@@ -1554,6 +1554,8 @@ func _build_secrets() -> void:
 		_spot(ch, c["pos"])
 		var cd: Dictionary = c
 		ch.activated.connect(func(_w): _open_chest(ch, cd))
+	for camp_id in SpecialDB.camps_in(quest_id):
+		_build_camp_entrance(String(camp_id))
 	var cave := SecretDB.cave_for(quest_id)
 	if cave.is_empty() or (SecretDB.cave_done(String(cave["id"])) and not bool(cave.get("repeatable", false))):
 		return
@@ -1578,6 +1580,20 @@ func _build_secrets() -> void:
 	_spot(_entrance, cave["entrance"])
 	_entrance.visible = _levers_pulled_count(cave) >= lev_pos.size()
 	_entrance.activated.connect(func(_w): _enter_cave(cave))
+
+## Ścieżka do obozu niewolników (zadanie poboczne): wejście jest zawsze, ale wpuszcza dopiero po rozmowie ze zleceniodawcą.
+func _build_camp_entrance(camp_id: String) -> void:
+	if SecretDB.cave_done(camp_id) or Net.has_peer():
+		return
+	var cv := SecretDB.cave_by_id(camp_id)
+	var en := Interactable.new()
+	en.setup("entrance", "Ścieżka do obozu niewolników")
+	_spot(en, cv["entrance"])
+	en.activated.connect(func(_w):
+		if not GameState.story_flag(SpecialDB.accept_flag(camp_id)):
+			_open_dialog([["", String(cv["hint"])], ["", "Nie wiesz jeszcze, kogo tam szukać. Porozmawiaj najpierw z: %s." % SpecialDB.giver_name(camp_id)]], UiKit.ACCENT2)
+			return
+		_enter_cave(cv))
 
 func _open_chest(ch: Interactable, c: Dictionary) -> void:
 	if ch.done:
@@ -1634,7 +1650,7 @@ func _begin_cave() -> void:
 		return
 	var banner: Array = zone.get("intro_banner", ["", ""])
 	_banner(String(banner[0]), String(banner[1]))
-	if not custom_mode:
+	if not custom_mode and not zone.has("camp"):
 		GameState.toast.emit("Wyzwanie: oczyść jaskinię w 120 s, by dostać dodatkową nagrodę.", UiKit.ACCENT)
 	await get_tree().create_timer(1.7).timeout
 	if not is_instance_valid(self) or finished:
@@ -1646,6 +1662,7 @@ func _begin_cave() -> void:
 	else:
 		_spawn_cave_ambush()
 		_build_prisoners()
+		_build_camp()
 
 ## Więźniowie w celach (lochy zamku Kruka): klatki do otwarcia, z nagrodą i podziękowaniem.
 func _build_prisoners() -> void:
@@ -1664,6 +1681,8 @@ func _free_prisoner(pr: Dictionary, it: Interactable) -> void:
 		return
 	it.done = true
 	GameState.set_story_flag(it.uid)
+	if zone.has("camp"):
+		_camp_freed()
 	var knows := not bool(pr.get("tosia", false)) or GameState.story_flag(SpecialDB.TOSIA_FLAG)
 	var rw: Dictionary = pr["reward"] if knows else pr.get("reward_plain", pr["reward"])
 	var thanks: Array = pr["thanks"] if knows else pr.get("thanks_plain", pr["thanks"])
@@ -1674,6 +1693,56 @@ func _free_prisoner(pr: Dictionary, it: Interactable) -> void:
 		GameState.toast.emit("Uwolniono: %s — %s" % [String(pr.get("name", "więzień")), ", ".join(lines)], UiKit.GOOD)
 		Audio.play("levelup", 1.3, -6.0)
 		GameState.save_game())
+
+## Obóz niewolników: strażnicy ze stożkami wzroku (zauważenie cofa na start); znikają po pokonaniu naczelnika albo uwolnieniu jeńca.
+var _camp_guards: Array = []
+var _camp_off := false
+
+func _build_camp() -> void:
+	var camp: Dictionary = zone.get("camp", {})
+	if camp.is_empty():
+		return
+	for g in camp["guards"]:
+		var sg := StealthGuard.new()
+		sg.setup(g["path"], float(g.get("range", 250.0)))
+		entities.add_child(sg)
+		sg.spotted.connect(_camp_spotted)
+		_camp_guards.append(sg)
+	_open_dialog(camp.get("intro", []), UiKit.ACCENT2)
+
+func _refresh_camp_guards() -> void:
+	for sg in _camp_guards:
+		if is_instance_valid(sg):
+			sg.active = not _camp_off
+			sg.visible = not _camp_off
+
+func _camp_spotted() -> void:
+	if _camp_off or player == null or not is_instance_valid(player):
+		return
+	Audio.play("hit_heavy", 0.7, -4.0)
+	Fx.shake(6.0, 0.3)
+	player.global_position = (zone["camp"] as Dictionary).get("start", spawn)
+	for sg in _camp_guards:
+		if is_instance_valid(sg):
+			sg.reset()
+	GameState.toast.emit("Zauważono cię! Strażnicy odprowadzili cię na start.", UiKit.BAD)
+
+func _camp_disarm() -> void:
+	if _camp_off:
+		return
+	_camp_off = true
+	_refresh_camp_guards()
+	GameState.toast.emit("Naczelnik padł — reszta strażników rozbiega się w popłochu.", UiKit.GOOD)
+
+## Jeniec uwolniony: strażnicy znikają, obóz uznany za rozbity, a na starcie pojawia się wyjście.
+func _camp_freed() -> void:
+	_camp_off = true
+	_refresh_camp_guards()
+	SecretDB.mark_cave(cave_id)
+	var portal := Interactable.new()
+	portal.setup("portal", "Wróć na pustkowie")
+	_spot(portal, (zone["camp"] as Dictionary).get("start", spawn) + Vector2(0, -90))
+	portal.activated.connect(func(_w): _leave_cave())
 
 ## Sekretna jaskinia nie ma fal: wszystkie potwory czekają w mroku i atakują dopiero, gdy podejdziesz.
 func _spawn_cave_ambush() -> void:
@@ -1697,6 +1766,8 @@ func _spawn_cave_ambush() -> void:
 			_net_enemy_seq += 1
 			e.dormant = true
 			e.aggro = minf(e.aggro, 460.0)
+			if bool(wave.get("elite", false)) and zone.has("camp"):
+				e.died.connect(func(_x): _camp_disarm())
 			entities.add_child(e)
 			e.global_position = (centers[n] as Vector2) + Vector2(rng.randf_range(-110.0, 110.0), rng.randf_range(-90.0, 90.0))
 			e.set_bounds_rect(MARGIN, VILLAGE.x - MARGIN, MARGIN, VILLAGE.y - MARGIN)

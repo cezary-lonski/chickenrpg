@@ -48,6 +48,8 @@ static func usable(rec: Dictionary, inst: ZoneInstance, peer: int, o: Dictionary
 			var arr: Array = (secrets_of(rec).get("levers", {}) as Dictionary).get(q, []) if secrets_of(rec).get("levers") is Dictionary else []
 			return not (bool(flags.get(String(o["uid"]), false)) or int(o["idx"]) in arr) and not cv.is_empty()
 		"entrance":
+			if bool(o.get("camp", false)):
+				return not bool(flags.get("camp_done:" + String(o["cave"]), false))
 			return levers_pulled(rec, inst.quest_id, int(o.get("levers", 3))) >= int(o.get("levers", 3))
 		"cavechest":
 			return not inst.opened.has(peer)
@@ -77,7 +79,7 @@ static func activate(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionar
 		"chest": _chest(srv, peer, inst, o)
 		"sign": _sign(srv, peer, inst)
 		"lever": _lever(srv, peer, inst, o)
-		"entrance": srv.enter_cave(peer, String(o["cave"]))
+		"entrance": _entrance(srv, peer, o)
 		"board": open_board(srv, peer, inst)
 		"cavechest": _cave_chest(srv, peer, inst)
 		"prisoner": _prisoner(srv, peer, inst, o)
@@ -203,6 +205,14 @@ static func _chest(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary)
 	srv.after_ctx(peer, int(res["levels"]))
 	srv.push_prog(peer)
 
+## Wejście do jaskini; ścieżka do obozu niewolników wpuszcza dopiero po rozmowie ze zleceniodawcą.
+static func _entrance(srv: MmoServer, peer: int, o: Dictionary) -> void:
+	var cid := String(o["cave"])
+	if bool(o.get("camp", false)) and not bool(flags_of(srv.peers[peer]["rec"]).get(SpecialDB.accept_flag(cid), false)):
+		srv._open_dialog(peer, [["", String(SecretDB.cave_by_id(cid).get("hint", ""))], ["", "Nie wiesz jeszcze, kogo tam szukać. Porozmawiaj najpierw z: %s." % SpecialDB.giver_name(cid)]], UiKit.ACCENT2, "")
+		return
+	srv.enter_cave(peer, cid)
+
 static func _sign(srv: MmoServer, peer: int, inst: ZoneInstance) -> void:
 	var cv := SecretDB.cave_for(inst.quest_id)
 	if not cv.is_empty():
@@ -240,6 +250,9 @@ static func _prisoner(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictiona
 	if pr.is_empty():
 		return
 	fl[uid] = true
+	if inst.zone.has("camp"):
+		fl["camp_done:" + inst.cave_id] = true
+		inst.camp_freed()
 	var knows := not bool(pr.get("tosia", false)) or bool(fl.get(SpecialDB.TOSIA_FLAG, false))
 	var rw: Dictionary = pr["reward"] if knows else pr.get("reward_plain", pr["reward"])
 	var thanks: Array = pr["thanks"] if knows else pr.get("thanks_plain", pr["thanks"])
