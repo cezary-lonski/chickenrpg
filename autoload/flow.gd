@@ -349,7 +349,8 @@ var _arena_next := false
 func _on_lan_start(p1: String, p2: String, cls: String) -> void:
 	var info := Net.first_client_info()
 	var cls2 := String(info.get("class", cls))
-	GameState.start_rpg_run("lan", p1, p2, not _arena_next)
+	# gospodarz gra dalej swoją fabułę (nie zaczyna nowej gry); goście dostają jego rozdział i postęp przez apply_net_story
+	GameState.start_rpg_run("lan", p1, p2, false)
 	if _arena_next:
 		GameState.rpg["arena"] = true
 	GameState.set_class_for(p1, cls)
