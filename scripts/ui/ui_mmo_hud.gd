@@ -6,6 +6,8 @@ signal exit_requested()
 signal dialog_closed(token: int)
 signal choice_picked(token: int, index: int)
 signal puzzle_done(token: int, ok: bool)
+signal puzzle_hint(token: int)
+signal enc_picked(token: int, index: int)
 
 const KIND_COLORS := {
 	"chat": "#f6efd9", "system": "#ffd966", "error": "#f2685a", "whisper": "#f59be0", "me": "#9fd9ff", "server": "#ffa94d",
@@ -378,12 +380,32 @@ func open_puzzle(token: int, kind: String, uid: String, pick: String = "") -> vo
 	var ui := UiPuzzle.new()
 	ui.setup(kind, hash(uid), SecretDB.PICKS.get(pick, {}))
 	ui.finished.connect(func(ok: bool): puzzle_done.emit(token, ok))
+	ui.hint_requested.connect(func(): puzzle_hint.emit(token))
 	ui.on_close.connect(func():
 		if is_instance_valid(ui):
 			ui.queue_free()
 		_dialog = null)
 	_dialog = ui
 	_root.add_child(ui)
+
+## Rozmowa ze spotkania (EncounterDB); wybór wraca do serwera, który rzuca kośćmi.
+func open_encounter(token: int, view: Dictionary, roll_text: String, roll_ok: bool, fx_text: String) -> void:
+	if is_dialog_open():
+		_dialog.queue_free()
+	var ui := UiEncounter.new()
+	ui.setup(view, roll_text, roll_ok, fx_text)
+	ui.picked.connect(func(i: int): enc_picked.emit(token, i))
+	ui.on_close.connect(func():
+		if is_instance_valid(ui):
+			ui.queue_free()
+		_dialog = null)
+	_dialog = ui
+	_root.add_child(ui)
+
+## Serwer potwierdził opłatę — zagadka pokazuje podpowiedź.
+func puzzle_hint_ok() -> void:
+	if is_dialog_open() and _dialog is UiPuzzle:
+		(_dialog as UiPuzzle).grant_hint()
 
 func open_choice(token: int, prompt: String, options: Array, accent: Color) -> void:
 	if is_dialog_open():

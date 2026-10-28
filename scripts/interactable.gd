@@ -97,6 +97,8 @@ func _draw() -> void:
 		"stash": _draw_stash()
 		"herb": _draw_herb()
 		"tracks": _draw_tracks()
+		"wanderer": _draw_wanderer()
+		"shaft": _draw_shaft()
 	_pflush()
 	if _near > 0.01:
 		var f := ThemeDB.fallback_font
@@ -222,6 +224,31 @@ func _draw_herb() -> void:
 	_pc(Vector2(9, -26), 5.0, Color(0.95, 0.5, 0.7))
 	if not done:
 		_pc(Vector2(0, -20), 22.0 + 3.0 * sin(_t * 4.0), Color(0.6, 1.0, 0.6, 0.12))
+
+## Szyb kopalni: drewniana ramka z kołowrotem nad ciemnym otworem.
+func _draw_shaft() -> void:
+	var wood := Color(0.42, 0.28, 0.16)
+	_pc(Vector2(0, 4), 26.0, Color(0.04, 0.03, 0.05))
+	_pc(Vector2(0, 2), 19.0, Color(0.0, 0.0, 0.0))
+	_pl(Vector2(-26, 8), Vector2(-14, -40), wood, 5.0)
+	_pl(Vector2(26, 8), Vector2(14, -40), wood, 5.0)
+	_pl(Vector2(-16, -38), Vector2(16, -38), wood.lightened(0.15), 5.0)
+	_pc(Vector2(0, -32), 7.0, Color(0.55, 0.55, 0.6))
+	_pl(Vector2(0, -26), Vector2(0, 0), Color(0.85, 0.8, 0.6), 2.0)
+	if not done:
+		_pc(Vector2(0, 2), 30.0 + 3.0 * sin(_t * 3.0), Color(0.5, 0.6, 1.0, 0.08))
+
+## Wędrowny podróżnik: postać w płaszczu z kijem i dymkiem „?” (spotkanie z EncounterDB).
+func _draw_wanderer() -> void:
+	_pc(Vector2(0, 6), 18.0, Color(0, 0, 0, 0.25))
+	_pc(Vector2(0, -14), 15.0, Color(0.45, 0.35, 0.55))
+	_pc(Vector2(0, -30), 10.0, Color(0.9, 0.85, 0.75))
+	_pc(Vector2(4, -28), 3.0, Color(1.0, 0.7, 0.2))
+	_pl(Vector2(16, 4), Vector2(18, -34), Color(0.5, 0.35, 0.2), 4.0)
+	if not done:
+		var b := 4.0 * sin(_t * 3.0)
+		_pc(Vector2(-14, -52 + b), 9.0, Color(1.0, 0.95, 0.7))
+		_pl(Vector2(-14, -56 + b), Vector2(-14, -50 + b), Color(0.3, 0.2, 0.1), 3.0)
 
 func _draw_tracks() -> void:
 	var c := Color(0.35, 0.26, 0.18)

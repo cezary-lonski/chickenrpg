@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Chicken Brawl"
-config/version="0.2.3-beta"
+config/version="0.2.4-beta"
 config/description="Jesteś kurczakiem. Oni są ptakami."
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
@@ -28,6 +28,7 @@ Net="*res://autoload/net.gd"
 Mmo="*res://autoload/mmo.gd"
 Look="*res://autoload/look.gd"
 Touch="*res://autoload/touch.gd"
+HitboxView="*res://autoload/hitbox_view.gd"
 
 [display]
 

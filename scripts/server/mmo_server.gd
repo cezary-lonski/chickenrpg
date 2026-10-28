@@ -497,6 +497,23 @@ func open_puzzle(id: int, kind: String, uid: String, extra: Dictionary) -> void:
 	pl["frozen"] = DIALOG_FREEZE
 	send_ev(id, "puzzle", {"token": _token_seq, "kind": kind, "uid": uid, "pick": String(extra.get("pick", ""))})
 
+## Płatna podpowiedź do zagadki: serwer pobiera złoto, dopiero potem klient pokazuje wskazówkę.
+func _puzzle_hint(id: int, token: int) -> void:
+	var pl = peers.get(id)
+	if pl == null:
+		return
+	var tk: Dictionary = pl["token"]
+	if tk.is_empty() or int(tk.get("n", -1)) != token or String(tk.get("action", "")) != "puzzle":
+		return
+	var rec: Dictionary = pl["rec"]
+	if int(rec["gold"]) < UiPuzzle.HINT_COST:
+		_say_to(id, "Za mało złota na podpowiedź (%d zł)." % UiPuzzle.HINT_COST, "error")
+		return
+	rec["gold"] = int(rec["gold"]) - UiPuzzle.HINT_COST
+	chars.mark_dirty()
+	_push_me(id)
+	send_ev(id, "puzzle_hint", {})
+
 func _puzzle_done(id: int, token: int, ok: bool) -> void:
 	var pl = peers.get(id)
 	if pl == null:
@@ -515,8 +532,10 @@ func _interact(id: int) -> void:
 	var pl = peers.get(id)
 	var inst: ZoneInstance = pl["inst"] if pl != null else null
 	var node := player_of(id)
-	if inst == null or node == null or inst.kind == "swiat" or node.state == Player.S.DEAD or float(pl["frozen"]) > 0.0:
+	if inst == null or node == null or node.state == Player.S.DEAD or float(pl["frozen"]) > 0.0:
 		return
+	if inst.kind == "swiat" and not pl.has("wander"):
+		return   # na Pustkowiu można rozmawiać tylko z wędrownym podróżnikiem
 	var obj := StoryActions.nearest_object(self, id, inst, node.position)
 	var best := ""
 	var best_d := StoryActions.NPC_RADIUS
@@ -1063,6 +1082,10 @@ func on_act(id: int, kind: String, data: Dictionary) -> void:
 			_dialog_done(id, int(data.get("token", -1)))
 		"puzzle_done":
 			_puzzle_done(id, int(data.get("token", -1)), bool(data.get("ok", false)))
+		"puzzle_hint":
+			_puzzle_hint(id, int(data.get("token", -1)))
+		"enc_pick":
+			StoryActions.enc_pick(self, id, int(data.get("token", -1)), int(data.get("i", -1)))
 		"buy", "sell":
 			_shop_op(id, kind, String(data.get("id", "")), int(data.get("n", 1)))
 		"shop_close":
@@ -1351,11 +1374,25 @@ func _on_player_died(id: int) -> void:
 	pl["scroll"] = false
 	pl["offer"] = false
 	var rec: Dictionary = pl["rec"]
+	if _count_of(rec, "zwoj_wskrzeszenia") <= 0:
+		_death_loss(id)
 	if _count_of(rec, "zwoj_wskrzeszenia") > 0:
 		pl["offer"] = true
 		open_choice(id, "Giniesz! Użyć Zwoju Wskrzeszenia? Wstaniesz tu, gdzie padłeś, z pełnym życiem i pełną energią. (masz: %d)" % _count_of(rec, "zwoj_wskrzeszenia"),
 			[{"text": "Wskrześ się (zużywa 1 zwój)"}, {"text": "Giń (wstaniesz na początku strefy)"}], Color(1.0, 0.85, 0.35), {"kind": "revive"})
 	broadcast_chat("system", "", "%s poległ." % pl["name"])
+
+## Śmierć kosztuje część przedmiotów z plecaka (założone są bezpieczne); lista trafia na czat.
+func _death_loss(id: int) -> void:
+	var pl = peers.get(id)
+	if pl == null:
+		return
+	var lost: Array = ServerChars.death_penalty(pl["rec"])
+	if lost.is_empty():
+		return
+	_say_to(id, "Utracone przedmioty: " + ", ".join(lost), "error")
+	chars.mark_dirty()
+	_push_me(id)
 
 ## Odpowiedź na pytanie o Zwój Wskrzeszenia: zużyj i wstań na miejscu albo zgiń i wstań na starcie strefy.
 func revive_choice(id: int, use: bool) -> void:
@@ -1374,6 +1411,7 @@ func revive_choice(id: int, use: bool) -> void:
 		return
 	pl["scroll"] = false
 	pl["respawn"] = 0.0
+	_death_loss(id)
 
 # --------------------------------------------------------------------- czat ---
 

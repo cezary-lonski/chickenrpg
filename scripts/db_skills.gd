@@ -3,7 +3,7 @@ extends RefCounted
 ## Baza skilli przypisywanych do slotów w ekwipunku (3x3).
 ## Skile kosztują energię (żółty pasek) i mają cooldown.
 
-const LIST := {
+const BASE := {
 	"furia": {
 		"name": "Furia", "type": "special",
 		"desc": "Wściekły atak obszarowy. Ładuje się trafieniami (nie podczas trwania furii).",
@@ -216,6 +216,9 @@ const LIST := {
 		"col": Color(0.9, 0.7, 1.0),
 	},
 }
+
+## Skille bazowe i skille poszczególnych klas (ClassSkillDB).
+static var LIST: Dictionary = BASE.merged(ClassSkillDB.skills())
 
 static func default_slots() -> Array:
 	return ["furia", "", "", "", "", ""]

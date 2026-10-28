@@ -115,13 +115,27 @@ func setup(p_srv: MmoServer, p_key: String, p_slot: int) -> void:
 		owner_peer = int(parts[2]) if parts.size() > 2 else 0
 		cave = SecretDB.cave_by_id(cave_id)
 		zone = SecretDB.cave_zone(cave_id)
-		terrain = "cave"
+		terrain = String(zone.get("terrain", "cave"))
 		spawn = zone.get("spawn", Vector2(1100.0, 1280.0))
 		waves = zone.get("waves", [])
 		_start_t = 2.6
 		if zone.has("camp"):
 			var cp: Dictionary = zone["camp"]
 			heist = {"id": "camp:" + cave_id, "guards": cp["guards"], "start": cp["start"], "camp": true}
+			# wyjście z obozu jest od początku: uciec można bez zabijania strażników
+			extra_objs.append({"uid": "campportal", "kind": "portal", "label": "Opuść obóz", "pos": (cp["start"] as Vector2) + Vector2(0.0, -90.0), "type": "portal"})
+		for pr in zone.get("shafts", []):
+			var sa: Vector2 = pr[0]
+			var sb: Vector2 = pr[1]
+			extra_objs.append({"uid": "shaft:%d:a" % extra_objs.size(), "kind": "shaft", "label": "Zejdź szybem", "pos": sa, "type": "shaft", "to": sb})
+			extra_objs.append({"uid": "shaft:%d:b" % extra_objs.size(), "kind": "shaft", "label": "Zejdź szybem", "pos": sb, "type": "shaft", "to": sa})
+		if zone.has("mine"):
+			var mn: Dictionary = zone["mine"]
+			var steps: Array = mn["steps"]
+			for i in steps.size():
+				var st: Dictionary = steps[i]
+				extra_objs.append({"uid": "mine:%s:%d" % [String(mn["id"]), i], "kind": String(st["kind"]), "label": String(st["label"]),
+					"pos": st["pos"], "type": "mine", "mine": String(mn["id"]), "idx": i})
 	else:
 		quest_id = key
 		zone = ZoneDB.get_data(key)
@@ -178,7 +192,7 @@ func zone_info() -> Dictionary:
 	var banner: Array = zone.get("intro_banner", ["", ""])
 	return {"key": key, "kind": kind, "terrain": terrain, "size": size, "spawn": spawn, "npcs": npc_list,
 		"quest": quest_id, "title": zone_title(), "waves_n": waves.size(),
-		"banner": banner, "boss_pos": BossDB.ARENA_CENTER, "boss_radius": BossDB.ARENA_RADIUS, "objs": objs + extra_objs, "buildings": buildings,
+		"mine_id": String((zone.get("mine", {}) as Dictionary).get("id", (zone.get("camp", {}) as Dictionary).get("id", ""))), "banner": banner, "boss_pos": BossDB.ARENA_CENTER, "boss_radius": BossDB.ARENA_RADIUS, "objs": objs + extra_objs, "buildings": buildings,
 		"heist": {} if heist.is_empty() else {"guards": heist["guards"], "t": _clock, "id": String(heist["id"]), "disarm": String(heist.get("disarm", "")), "camp": bool(heist.get("camp", false))}}
 
 # ---------------------------------------------------------------- obiekty ---
@@ -193,8 +207,8 @@ func _build_objects() -> void:
 			"collect", "free", "sabotage":
 				var positions: Array = o.get("positions", [])
 				for i in positions.size():
-					objs.append({"uid": ChapterExtras.flag(quest_id, String(o["id"]), i), "kind": String(o.get("kind", "document")),
-						"label": String(o.get("label", "Użyj")), "pos": positions[i], "type": "obj", "obj": String(o["id"]), "idx": i,
+					objs.append({"uid": ChapterExtras.flag(quest_id, String(o["id"]), i), "kind": MinesDB.step_value(o, "kinds", "kind", i, "document"),
+						"label": MinesDB.step_value(o, "labels", "label", i, "Użyj"), "pos": positions[i], "type": "obj", "obj": String(o["id"]), "idx": i,
 						"phase": String(o.get("phase", "pre"))})
 	for obj2 in ChapterExtras.objectives(quest_id):
 		if String(obj2.get("type", "")) == "heist":
@@ -207,6 +221,10 @@ func _build_objects() -> void:
 		var cvc := SecretDB.cave_by_id(String(camp_id))
 		objs.append({"uid": "cave:" + String(camp_id), "kind": "entrance", "label": "Ścieżka do obozu niewolników", "pos": cvc["entrance"], "type": "entrance",
 			"cave": String(camp_id), "levers": 0, "camp": true})
+	for mine_id in MinesDB.mines_in(quest_id):
+		var cvm := SecretDB.cave_by_id(String(mine_id))
+		objs.append({"uid": "cave:" + String(mine_id), "kind": "entrance", "label": "Wejdź: " + String(cvm["name"]), "pos": cvm["entrance"], "type": "entrance",
+			"cave": String(mine_id), "levers": 0, "camp": false, "mine": true})
 	var cv := SecretDB.cave_for(quest_id)
 	if not cv.is_empty():
 		objs.append({"uid": "sign:" + quest_id, "kind": "sign", "label": "Przeczytaj", "pos": _free_pos(spawn + Vector2(150.0, -90.0)), "type": "sign"})
@@ -321,6 +339,9 @@ func add_player(peer: int, rec: Dictionary) -> Player:
 	p.hp = p.max_hp
 	p.energy = p.max_energy
 	peer_ids.append(peer)
+	if srv.peers.has(peer) and (srv.peers[peer] as Dictionary).has("wander"):
+		(srv.peers[peer] as Dictionary).erase("wander")
+		(srv.peers[peer] as Dictionary)["wander_objs"] = []
 	_idle_t = 0.0
 	spawn_objective_elites()
 	return p
@@ -414,6 +435,11 @@ func _tick_heist(delta: float) -> void:
 			best = maxf(best, StealthGuard.sees(s["pos"], s["dir"], float(g.get("range", 250.0)), (node as Node2D).position))
 		var a := float(_heist_alert.get(peer, 0.0))
 		a = a + delta * (0.9 + 1.6 * best) if best > 0.0 else maxf(0.0, a - delta * 0.7)
+		if a >= 1.0 and bool(heist.get("camp", false)):
+			_heist_alert.erase(peer)
+			srv.send_ev(peer, "heist_alert", {"a": 0.0, "hit": false})
+			camp_alarm()
+			continue
 		if a >= 1.0:
 			_heist_alert.erase(peer)
 			(node as Node2D).position = heist.get("start", spawn)
@@ -573,7 +599,68 @@ func world_boss_alive() -> bool:
 			return true
 	return false
 
+# ------------------------------------------------ wędrowni podróżnicy ---
+# Na Pustkowiu co kilka minut koło gracza pojawia się wędrowiec (spotkanie z EncounterDB): rozmowa z próbami umiejętności,
+# znika po kilku minutach. Widzi go tylko ten gracz; po każdej rozmowie ten podróżnik nie wraca do tego samego gracza.
+
+const WANDER_MIN := 300.0
+const WANDER_MAX := 540.0
+const WANDER_LIFE := 180.0
+var _wander_t: Dictionary = {}
+
+func _tick_wander(delta: float) -> void:
+	for peer in peer_ids:
+		var pl = srv.peers.get(peer)
+		if pl == null:
+			continue
+		if pl.has("wander"):
+			pl["wander"]["t"] = float(pl["wander"]["t"]) - delta
+			if float(pl["wander"]["t"]) <= 0.0:
+				clear_wander(peer)
+			continue
+		_wander_t[peer] = float(_wander_t.get(peer, randf_range(90.0, 200.0))) - delta
+		if float(_wander_t[peer]) <= 0.0:
+			_wander_t[peer] = randf_range(WANDER_MIN, WANDER_MAX)
+			spawn_wander(int(peer))
+
+## Pojawia wędrowca przy graczu (enc = "" losuje); false, gdy już rozmawiał ze wszystkimi albo coś mu przeszkadza.
+func spawn_wander(peer: int, enc: String = "") -> bool:
+	var pl = srv.peers.get(peer)
+	if pl == null or pl.has("wander") or float(pl["frozen"]) > 0.0:
+		return false
+	var node = pl.get("node")
+	if node == null or not is_instance_valid(node):
+		return false
+	var fl: Dictionary = StoryActions.flags_of(pl["rec"])
+	var pool: Array = []
+	for e in EncounterDB.roaming():
+		if enc != "" and String(e) != enc:
+			continue
+		if enc != "" or not bool(fl.get(EncounterDB.flag_done(String(e)), false)):
+			pool.append(String(e))
+	if pool.is_empty():
+		return false
+	var pick: String = pool[randi() % pool.size()]
+	var p := ((node as Node2D).position + Vector2.from_angle(randf() * TAU) * randf_range(180.0, 260.0)).clamp(Vector2(MARGIN, MARGIN), size - Vector2(MARGIN, MARGIN))
+	var nm := String(((EncounterDB.LIST[pick] as Dictionary)["npc"] as Dictionary)["name"])
+	var obj := {"uid": "wander:" + pick, "kind": "wanderer", "label": "Porozmawiaj: " + nm, "pos": p, "type": "wander", "enc": pick}
+	pl["wander"] = {"obj": obj, "t": WANDER_LIFE}
+	pl["wander_objs"] = [obj]
+	srv.send_ev(peer, "wander", {"obj": obj})
+	srv.say(peer, "Na drodze pojawił się wędrowiec: %s." % nm)
+	return true
+
+func clear_wander(peer: int) -> void:
+	var pl = srv.peers.get(peer)
+	if pl == null or not pl.has("wander"):
+		return
+	var uid := String((pl["wander"]["obj"] as Dictionary)["uid"])
+	pl.erase("wander")
+	pl["wander_objs"] = []
+	srv.send_ev(peer, "wander_off", {"uid": uid})
+
 func _tick_events(delta: float) -> void:
+	_tick_wander(delta)
 	_boss_t -= delta
 	if _boss_t <= 0.0:
 		_boss_t = WORLD_BOSS_EVERY
@@ -765,11 +852,25 @@ func camp_disarm() -> void:
 	srv.broadcast_zone_ev(self, "camp_off", {})
 	srv.broadcast_zone_chat(self, "system", "", "Naczelnik padł — reszta strażników rozbiega się w popłochu.")
 
+## Obóz niewolników: strażnik zauważył intruza — stożki znikają, a cała straż obozu rusza do ataku.
+func camp_alarm() -> void:
+	if camp_off:
+		return
+	camp_off = true
+	srv.broadcast_zone_ev(self, "camp_off", {})
+	for c in entities.get_children():
+		if c is Enemy and (c as Enemy).dormant:
+			(c as Enemy).dormant = false
+	srv.broadcast_zone_chat(self, "system", "", "Alarm! Strażnicy zauważyli intruza i ruszają do ataku!")
+
 ## Jeniec uwolniony: strażnicy odchodzą, a na starcie pojawia się wyjście.
 func camp_freed() -> void:
 	if not camp_off:
 		camp_off = true
 		srv.broadcast_zone_ev(self, "camp_off", {})
+	for o in extra_objs:
+		if String(o.get("uid", "")) == "campportal":
+			return
 	add_extra_obj({"uid": "campportal", "kind": "portal", "label": "Wróć na pustkowie", "pos": (zone["camp"] as Dictionary).get("start", spawn) + Vector2(0.0, -90.0), "type": "portal"})
 
 func _tick_cave(delta: float) -> void:

@@ -74,8 +74,9 @@ const QUESTS := {
 ## wzroku (skradanka), `waves` = straż i naczelnik (siłowe rozwiązanie), `captive` = jeniec z podziękowaniem i nagrodą.
 const CAMPS := {
 	"oboz_tosia": {
+		"shafts": [[Vector2(450, 1200), Vector2(1700, 720)], [Vector2(1050, 1000), Vector2(1700, 330)]],
 		"zone": "droga_do_stolicy", "name": "Obóz niewolników — Tosia",
-		"hint": "Wydeptana ścieżka znika w wydmach. Ktoś wbił w ziemię tabliczkę: „Obóz Handlarzy. Wstęp tylko z kajdankami.”",
+		"hint": "Wydeptana ścieżka znika w wydmach. Ktoś wbił w ziemię tabliczkę: „Opuszczona kopalnia. Obóz Handlarzy. Wstęp tylko z kajdankami.”",
 		"start": Vector2(300, 1300), "reward": {"gold": 60, "xp": 80},
 		"chief": ["sep", "Naczelnik Handlarzy"],
 		"guards": [
@@ -84,12 +85,13 @@ const CAMPS := {
 			{"path": [Vector2(900, 650), Vector2(1500, 650)], "range": 240.0},
 			{"path": [Vector2(1650, 450), Vector2(2050, 450)], "range": 220.0},
 		],
-		"intro": [["", "Obóz handlarzy rozbito w kotlinie między wydmami. W głębi stoi klatka z warkoczastą dziewczynką — to Tosia. Strażnicy patrolują między namiotami: przemknij za ich plecami albo zbij naczelnika."]],
+		"intro": [["", "Obóz handlarzy rozbito w opuszczonej kopalni na pustyni — wokół hałdy, szyby i wózki z rudą. W głębi stoi klatka z warkoczastą dziewczynką — to Tosia. Strażnicy patrolują między namiotami: przemknij za ich plecami albo zbij naczelnika."]],
 		"captive": {"id": "tosia", "name": "Tosia", "pos": Vector2(1900, 430), "label": "Uwolnij Tosię",
 			"thanks": [["Tosia", "Tata mówił, że ktoś po mnie przyjdzie! Jestem Tosia, córka młynarza."], ["Tosia", "Weź to, ukradłam strażnikom, kiedy spali. Biegnę do domu — powiedz tacie, że się nie poddałam!"]],
 			"reward": {"gold": 350, "xp": 300, "items": {"mikstura_miodu": 2, "zwoj_wskrzeszenia": 1}}},
 	},
 	"oboz_pisklaczka": {
+		"shafts": [[Vector2(450, 1200), Vector2(1650, 780)], [Vector2(1000, 950), Vector2(1700, 330)]],
 		"zone": "marsz_na_forteca", "name": "Obóz niewolników — Pisklaczka",
 		"hint": "Za palisadą widać dym ognisk. Na słupie wisi kolczatka: „Obóz jeńców. Własność wojska.”",
 		"start": Vector2(300, 1300), "reward": {"gold": 60, "xp": 80},
@@ -100,12 +102,13 @@ const CAMPS := {
 			{"path": [Vector2(900, 650), Vector2(1500, 650), Vector2(1500, 520), Vector2(900, 520)], "range": 230.0},
 			{"path": [Vector2(1650, 450), Vector2(2050, 450)], "range": 220.0},
 		],
-		"intro": [["", "Za palisadą widać klatkę Pisklaczki. Strażnicy obozu patrolują między namiotami — kryj się za ich plecami albo najpierw zbij naczelnika."]],
+		"intro": [["", "Za palisadą opuszczonej kopalni na pustyni widać klatkę Pisklaczki, a między hałdami ziejące szyby. Strażnicy obozu patrolują między namiotami — kryj się za ich plecami albo najpierw zbij naczelnika."]],
 		"captive": {"id": "pisklaczka", "name": "Pisklaczka", "pos": Vector2(1850, 420), "label": "Uwolnij Pisklaczkę",
 			"thanks": [["Pisklaczka", "Babcia mówiła, że ktoś się zjawi! Ten kogut przeszedł tuż obok strażników. Nawet się nie spocił."], ["Pisklaczka", "Weź to, dziecko… to znaczy, kogucie. Powiedz babci, że placki będą na ciebie czekać."]],
 			"reward": {"gold": 300, "xp": 260, "items": {"sztabka_kurczalu": 2}}},
 	},
 	"oboz_leila": {
+		"shafts": [[Vector2(450, 1150), Vector2(1700, 1000)], [Vector2(900, 900), Vector2(1750, 300)]],
 		"zone": "pustynny_trakt", "name": "Obóz niewolników — Leila",
 		"hint": "Wydmy rozstępują się nad kotliną pełną namiotów. Wiatr niesie zapach dymu i brzęk łańcuchów.",
 		"start": Vector2(300, 1300), "reward": {"gold": 60, "xp": 80},
@@ -117,12 +120,13 @@ const CAMPS := {
 			{"path": [Vector2(1750, 1100), Vector2(1750, 600)], "range": 230.0},
 			{"path": [Vector2(1500, 430), Vector2(2050, 430)], "range": 220.0},
 		],
-		"intro": [["", "Obóz niewolników rozbito w kotlinie między wydmami. Klatka Leili stoi w głębi, a strażnicy krążą między namiotami. Przemknij za ich plecami albo zbij herszta."]],
+		"intro": [["", "Obóz niewolników rozbito w opuszczonej kopalni na pustyni, wśród hałd i szybów. Klatka Leili stoi w głębi, a strażnicy krążą między namiotami. Przemknij za ich plecami albo zbij herszta."]],
 		"captive": {"id": "leila", "name": "Leila", "pos": Vector2(1900, 360), "label": "Uwolnij Leilę",
 			"thanks": [["Leila", "Tata nie przestawał we mnie wierzyć! Ten bohater przeszedł przez obóz jak cień — nikt go nie zauważył."], ["Leila", "Weź to, co ocalało z naszego towaru. Droga jest teraz bezpieczniejsza."]],
 			"reward": {"gold": 320, "xp": 280, "items": {"sztabka_kurczalu": 2, "krysztal_cienia": 1}}},
 	},
 	"oboz_iskierka": {
+		"shafts": [[Vector2(450, 1200), Vector2(1500, 900)], [Vector2(700, 980), Vector2(1300, 300)]],
 		"zone": "gniazdo_nad_burza", "name": "Obóz niewolników — Iskierka",
 		"hint": "Na burzowym pustkowiu błyska bez przerwy. Między głazami świeci strażnicza latarnia.",
 		"start": Vector2(300, 1300), "reward": {"gold": 60, "xp": 80},
@@ -134,7 +138,7 @@ const CAMPS := {
 			{"path": [Vector2(700, 560), Vector2(1500, 560)], "range": 230.0},
 			{"path": [Vector2(900, 440), Vector2(1300, 440)], "range": 210.0},
 		],
-		"intro": [["", "U stóp strażniczej latarni stoi klatka z Iskierką. Strażnicy burzy patrolują w kilku rzędach — przekradaj się rzędami, kiedy się odwracają."]],
+		"intro": [["", "W opuszczonej kopalni u stóp strażniczej latarni stoi klatka z Iskierką, a wokół ziejące szyby. Strażnicy burzy patrolują w kilku rzędach — przekradaj się rzędami, kiedy się odwracają."]],
 		"captive": {"id": "iskierka", "name": "Iskierka", "pos": Vector2(1100, 330), "label": "Uwolnij Iskierkę",
 			"thanks": [["Iskierka", "Wiedziałam, że tata kogoś przyśle! Ten bohater wyprowadził mnie spod nosa strażnikom!"], ["Iskierka", "Weź to, to dar od całej wyspy. A maszyny pogodowe… już ich nie włączą."]],
 			"reward": {"gold": 400, "xp": 340, "items": {"mikstura_miodu": 3, "zwoj_wskrzeszenia": 1}}},
@@ -209,7 +213,9 @@ static func camp_zone_extra(camp_id: String) -> Dictionary:
 	return {
 		"spawn": c["start"],
 		"prisoners": [(c["captive"] as Dictionary).duplicate(true)],
-		"camp": {"id": camp_id, "guards": c["guards"], "start": c["start"], "intro": c["intro"]},
+		"camp": {"id": camp_id, "guards": c["guards"], "start": c["start"],
+			"intro": (c["intro"] as Array) + [["", "Szyby (E) łączą odległe części kopalni: zejdź jednym, wyjdź drugim — a ominiesz strażników."]]},
+		"terrain": "desert", "shafts": (c["shafts"] as Array).duplicate(true),
 		"intro_banner": ["OBÓZ NIEWOLNIKÓW", String(c["name"]).split(" — ")[1]],
 		"outro_banner": ["OBÓZ ROZBITY", ""],
 	}

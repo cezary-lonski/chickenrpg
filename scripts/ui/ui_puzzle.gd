@@ -5,6 +5,10 @@ extends Control
 ## potem wysyła on_close. Esc przerywa bez kary (wynik: porażka).
 
 signal finished(ok: bool)
+signal hint_requested   # klient online: serwer pobiera złoto i odpowiada grant_hint()
+
+const HINT_COST := 40
+const HINT_KINDS := ["lights", "cipher", "melody", "pairs"]
 signal on_close
 
 const KINDS := {
@@ -24,6 +28,14 @@ const NOTES := [
 const BAR_W := 640.0
 
 var kind := "lockpick"
+## Płatna podpowiedź w grze jednoosobowej: zwraca true, gdy pobrano złoto. Bez niej (serwer) idzie hint_requested.
+var pay: Callable
+var _hint_btn: Button
+var _hint_cell := -1
+var _start_lit: Array = []
+var _cols: Array = []
+var _marks: Array = []
+var _revealed: Array = []
 var _rng := RandomNumberGenerator.new()
 var _done := false
 var _info: Label
@@ -106,6 +118,10 @@ func _ready() -> void:
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hint.custom_minimum_size = Vector2(740, 0)
 	v.add_child(_hint)
+	if kind in HINT_KINDS:
+		_hint_btn = UiKit.button("Podpowiedź (%d zł)" % HINT_COST, 18, UiKit.GOOD)
+		_hint_btn.pressed.connect(_ask_hint)
+		v.add_child(_hint_btn)
 	var skip := UiKit.button("Anuluj", 20)
 	skip.pressed.connect(func(): _end(false))
 	v.add_child(skip)
@@ -373,6 +389,12 @@ func _build_lights() -> void:
 	if _all_lit():
 		_toggle_area(4)
 		_toggle_area(0)
+	_start_lit = _lit.duplicate()
+	var rb := UiKit.button("Od nowa", 18)
+	rb.position = Vector2(520, 60)
+	rb.custom_minimum_size = Vector2(120, 44)
+	rb.pressed.connect(_reset_lights)
+	_body.add_child(rb)
 	for i in 9:
 		var b := Button.new()
 		b.position = Vector2(290 + (i % 3) * 66, 8 + (i / 3) * 58)
@@ -400,6 +422,9 @@ func _paint_lights() -> void:
 		var sb := StyleBoxFlat.new()
 		sb.bg_color = Color(1.0, 0.85, 0.35) if _lit[i] else Color(0.14, 0.13, 0.2)
 		sb.set_corner_radius_all(8)
+		if i == _hint_cell:
+			sb.set_border_width_all(5)
+			sb.border_color = Color(0.3, 1.0, 0.45)
 		(_cells[i] as Button).add_theme_stylebox_override("normal", sb)
 		(_cells[i] as Button).add_theme_stylebox_override("hover", sb)
 		(_cells[i] as Button).add_theme_stylebox_override("pressed", sb)
@@ -408,6 +433,7 @@ func _light_press(i: int) -> void:
 	if _done:
 		return
 	_toggle_area(i)
+	_hint_cell = -1
 	_moves += 1
 	Audio.play("select", 1.0 + 0.05 * float(i), -6.0)
 	_paint_lights()
@@ -431,6 +457,8 @@ func _build_pairs() -> void:
 	_faces = ids
 	var cols := [Color(0.9, 0.35, 0.3), Color(0.95, 0.8, 0.3), Color(0.4, 0.8, 0.4), Color(0.4, 0.6, 0.95), Color(0.75, 0.5, 0.9), Color(0.95, 0.6, 0.35)]
 	var marks := ["♠", "♥", "♣", "♦", "★", "☾"]
+	_cols = cols
+	_marks = marks
 	for i in 12:
 		var b := Button.new()
 		b.position = Vector2(100 + (i % 6) * 90, 14 + (i / 6) * 84)
@@ -539,3 +567,91 @@ func _reflex_press(i: int) -> void:
 	_shots += 1
 	_target_id += 1      # unieważnia zegar bieżącego pola
 	_next_target()
+
+# ------------------------------------------------------------ podpowiedzi ---
+
+func _ask_hint() -> void:
+	if _done:
+		return
+	if pay.is_valid():
+		if bool(pay.call()):
+			grant_hint()
+	else:
+		hint_requested.emit()
+
+## Wywoływane po opłaceniu podpowiedzi (lokalnie albo po potwierdzeniu serwera).
+func grant_hint() -> void:
+	if _done:
+		return
+	Audio.play("coin", 1.0, -4.0)
+	match kind:
+		"lights":
+			_hint_cell = _solve_lights()
+			_paint_lights()
+		"cipher":
+			var left: Array = []
+			for i in 3:
+				if i not in _revealed:
+					left.append(i)
+			if left.is_empty():
+				return
+			var i: int = left[_rng.randi_range(0, left.size() - 1)]
+			_revealed.append(i)
+			_guess[i] = _code[i]
+			(_digits[i] as Button).text = str(_code[i])
+			_log.text = "Podpowiedź: cyfra nr %d to %d.\n%s" % [i + 1, _code[i], _log.text]
+		"melody":
+			if not _playing:
+				_play_seq()
+		"pairs":
+			_peek_pairs()
+
+## Pierwsze pole z najkrótszego zestawu kliknięć, który zapala wszystko; -1 gdy brak.
+func _solve_lights() -> int:
+	var best_mask := -1
+	var best_n := 99
+	for mask in 512:
+		var l: Array = _lit.duplicate()
+		var n := 0
+		for i in 9:
+			if (mask >> i) & 1:
+				n += 1
+				var x := i % 3
+				var y := i / 3
+				for d in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var nx: int = x + d.x
+					var ny: int = y + d.y
+					if nx >= 0 and nx < 3 and ny >= 0 and ny < 3:
+						l[ny * 3 + nx] = not l[ny * 3 + nx]
+		if not l.has(false) and n < best_n:
+			best_n = n
+			best_mask = mask
+	if best_mask <= 0:
+		return -1
+	for i in 9:
+		if (best_mask >> i) & 1:
+			return i
+	return -1
+
+func _reset_lights() -> void:
+	if _done:
+		return
+	_lit = _start_lit.duplicate()
+	_moves = 0
+	_hint_cell = -1
+	_paint_lights()
+	_refresh_info()
+
+func _peek_pairs() -> void:
+	if _lock:
+		return
+	_lock = true
+	for i in 12:
+		_paint_card(i, true, _cols, _marks)
+	await get_tree().create_timer(1.4).timeout
+	if _done or not is_inside_tree():
+		return
+	for i in 12:
+		if not (_cards[i] as Button).disabled and i not in _open:
+			_paint_card(i, false, _cols, _marks)
+	_lock = false

@@ -79,6 +79,12 @@ func _ready() -> void:
 	stairs_mode = bool(zone.get("stairs", false)) and not march_mode and not cave_mode
 	if march_mode:
 		waves = waves.filter(func(w): return not bool(w.get("boss", false)))
+	# po śmierci: ta sama fala i ci sami potwory (zapamiętane przy porażce, zob. _record_death)
+	var st := GameState.story()
+	if not _net_client and not cave_mode and not custom_mode and not march_mode and String(st.get("retry_quest", "")) == quest_id and int(st.get("retry_wave", -1)) >= 0 and not waves.is_empty():
+		_retry_wave = mini(int(st["retry_wave"]), waves.size() - 1)
+	st.erase("retry_wave")
+	st.erase("retry_quest")
 	# wznowienie zapisu w trakcie bitwy: zacznij rozdział od rozmowy
 	if not _net_client and not cave_mode and GameState.story_step() >= 1 and GameState.story_step() <= waves.size():
 		GameState.set_story_step(0)
@@ -187,6 +193,9 @@ func _begin_story() -> void:
 	if cave_mode:
 		_begin_cave()
 		return
+	if _retry_wave >= 0:
+		_resume_from_wave()
+		return
 	if zone.get("council", false):
 		_begin_council()
 		return
@@ -256,6 +265,27 @@ func _begin_council() -> void:
 
 func _hero_title() -> String:
 	return NpcDB.hero_title(String(GameState.run.get("character", "kurczak")))
+
+var _retry_wave := -1
+
+## Powtórka po śmierci: bez rozmów i narady, od razu ta sama fala z tymi samymi potworami.
+func _resume_from_wave() -> void:
+	await get_tree().create_timer(1.2).timeout
+	if not is_instance_valid(self) or finished:
+		return
+	_banner("PONOWNIE", "Fala %d / %d" % [_retry_wave + 1, waves.size()])
+	await get_tree().create_timer(1.2).timeout
+	if not is_instance_valid(self) or finished:
+		return
+	wave_i = _retry_wave
+	_begin_defense()
+
+## Porażka: zapamiętaj falę (powtórka zacznie od niej) i zabierz część przedmiotów z plecaka.
+func _record_death() -> void:
+	if _waves_started and not cave_mode and not custom_mode and not march_mode and not _net_client:
+		GameState.story()["retry_wave"] = maxi(0, wave_i - 1)
+		GameState.story()["retry_quest"] = quest_id
+	GameState.apply_death_penalty()
 
 func _begin_defense() -> void:
 	if _waves_started or finished:
@@ -955,9 +985,11 @@ func _on_player_died() -> void:
 		return
 	if GameState.item_count("zwoj_wskrzeszenia") > 0 and player != null and is_instance_valid(player):
 		Flow.offer_revive(player, func():
+			_record_death()
 			finished = true
 			player_died.emit())
 		return
+	_record_death()
 	finished = true
 	player_died.emit()
 
@@ -1565,6 +1597,8 @@ func _build_secrets() -> void:
 		ch.activated.connect(func(_w): _open_chest(ch, cd))
 	for camp_id in SpecialDB.camps_in(quest_id):
 		_build_camp_entrance(String(camp_id))
+	for mine_id in MinesDB.mines_in(quest_id):
+		_build_mine_entrance(String(mine_id))
 	var cave := SecretDB.cave_for(quest_id)
 	if cave.is_empty() or (SecretDB.cave_done(String(cave["id"])) and not bool(cave.get("repeatable", false))):
 		return
@@ -1693,6 +1727,8 @@ func _begin_cave() -> void:
 		_spawn_cave_ambush()
 		_build_prisoners()
 		_build_camp()
+		_build_mine()
+		_build_shafts()
 
 ## Więźniowie w celach (lochy zamku Kruka): klatki do otwarcia, z nagrodą i podziękowaniem.
 func _build_prisoners() -> void:
@@ -1706,12 +1742,118 @@ func _build_prisoners() -> void:
 		_spot(it, pr["pos"])
 		it.activated.connect(func(_w): _free_prisoner(pr, it))
 
+## Wejście do kopalni wroga (zob. MinesDB): wnętrze z patrolami, górnikami w klatkach i trzema urządzeniami do zalania.
+func _build_mine_entrance(mid: String) -> void:
+	if SecretDB.cave_done(mid) or Net.has_peer():
+		return
+	var cv := SecretDB.cave_by_id(mid)
+	var en := Interactable.new()
+	en.setup("entrance", "Wejdź: " + String(cv["name"]))
+	_spot(en, cv["entrance"])
+	en.activated.connect(func(_w): _enter_cave(cv))
+
+## Wnętrze kopalni: wystrój, trzy urządzenia z zagadkami; po trzecim zalewa kopalnię (historyjka) i odpala wyjście.
+## Szyby (pary): wejście do jednego wyprowadza z drugiego; omijają strażników i skracają drogę.
+func _build_shafts() -> void:
+	for pr in zone.get("shafts", []):
+		var a: Vector2 = pr[0]
+		var b: Vector2 = pr[1]
+		for pair in [[a, b], [b, a]]:
+			var from: Vector2 = pair[0]
+			var to: Vector2 = pair[1]
+			var sh := Interactable.new()
+			sh.setup("shaft", "Zejdź szybem")
+			_spot(sh, from)
+			sh.activated.connect(func(_w):
+				if player == null or not is_instance_valid(player):
+					return
+				Audio.play("gate", 1.2, -6.0)
+				Fx.burst(from + Vector2(0, -24), Color(0.4, 0.35, 0.3), 14, 160.0, 3.0, 0.4)
+				player.global_position = to + Vector2(0, 80)   # tuż obok szybu, żeby nie zjechać z powrotem
+				GameState.toast.emit("Zjeżdżasz szybem i wychodzisz na drugim końcu kopalni.", UiKit.ACCENT))
+
+func _build_mine() -> void:
+	var mine: Dictionary = zone.get("mine", {})
+	if mine.is_empty():
+		var camp: Dictionary = zone.get("camp", {})
+		if not camp.is_empty():
+			var cd := MineDecor.new()
+			cd.setup(String(camp["id"]))
+			cd.z_index = -3
+			entities.add_child(cd)
+		return
+	var deco := MineDecor.new()
+	deco.setup(String(mine["id"]))
+	deco.z_index = -3
+	entities.add_child(deco)
+	var steps: Array = mine["steps"]
+	for i in steps.size():
+		var st: Dictionary = steps[i]
+		var uid := "mine:%s:%d" % [String(mine["id"]), i]
+		var it := Interactable.new()
+		it.setup(String(st["kind"]), String(st["label"]), uid)
+		it.done = GameState.story_flag(uid)
+		it.accent = Color(0.7, 0.9, 1.0)
+		_spot(it, st["pos"])
+		var idx := i
+		it.activated.connect(func(_w): _mine_step(mine, idx, it))
+
+func _mine_step(mine: Dictionary, idx: int, it: Interactable) -> void:
+	if it.done or _dialog_open:
+		return
+	var st: Dictionary = (mine["steps"] as Array)[idx]
+	var ui := UiPuzzle.new()
+	ui.setup(String(st["puzzle"]), hash(it.uid))
+	ui.pay = _pay_puzzle_hint
+	_dialog_open = true
+	var solved := [false]
+	ui.finished.connect(func(ok: bool): solved[0] = ok)
+	ui.on_close.connect(func():
+		_dialog_open = false
+		await get_tree().process_frame   # Flow najpierw domyka nakładkę zagadki
+		if bool(solved[0]):
+			_mine_step_done(mine, idx, it)
+		else:
+			GameState.toast.emit("Nie udało się — spróbuj jeszcze raz.", UiKit.BAD))
+	Flow.open_dialog(ui)
+
+func _mine_step_done(mine: Dictionary, idx: int, it: Interactable) -> void:
+	it.done = true
+	GameState.set_story_flag(it.uid)
+	GameState.set_story_flag(ChapterExtras.flag(String(mine["zone"]), String(mine["id"]), idx))
+	Audio.play("hit_heavy", 0.8, -4.0)
+	Fx.shake(5.0, 0.2)
+	var steps: Array = mine["steps"]
+	var done_n := 0
+	for i in steps.size():
+		if GameState.story_flag("mine:%s:%d" % [String(mine["id"]), i]):
+			done_n += 1
+	GameState.toast.emit("%s (%d / %d)" % [String((steps[idx] as Dictionary)["msg"]), done_n, steps.size()], UiKit.GOOD)
+	if done_n < steps.size():
+		GameState.save_game()
+		return
+	var rflag := "r:mine:" + String(mine["id"])
+	if not GameState.story_flag(rflag):
+		GameState.set_story_flag(rflag)
+		var rw: Dictionary = mine["reward"]
+		var lines := SecretDB.grant({"items": rw.get("items", {}), "gold": int(rw.get("gold", 0)), "xp": int(rw.get("xp", 0))})
+		GameState.toast.emit("Kopalnia zalana! — " + ", ".join(lines), UiKit.ACCENT)
+		Audio.play("levelup", 1.3, -6.0)
+	SecretDB.mark_cave(String(mine["id"]))
+	_camp_off = true
+	_refresh_camp_guards()
+	_spawn_camp_exit()
+	if _camp_exit != null and is_instance_valid(_camp_exit):
+		_camp_exit.label_text = "Wróć na powierzchnię"
+	GameState.save_game()
+	_scene_later(String(mine["scene"]))
+
 func _free_prisoner(pr: Dictionary, it: Interactable) -> void:
 	if it.done or _dialog_open:
 		return
 	it.done = true
 	GameState.set_story_flag(it.uid)
-	if zone.has("camp"):
+	if zone.has("camp") and not zone.has("mine"):
 		_camp_freed()
 	var knows := not bool(pr.get("tosia", false)) or GameState.story_flag(SpecialDB.TOSIA_FLAG)
 	var rw: Dictionary = pr["reward"] if knows else pr.get("reward_plain", pr["reward"])
@@ -1739,6 +1881,18 @@ func _build_camp() -> void:
 		sg.spotted.connect(_camp_spotted)
 		_camp_guards.append(sg)
 	_open_dialog(camp.get("intro", []), UiKit.ACCENT2)
+	_spawn_camp_exit()
+
+## Wyjście z obozu na starcie jest od początku: uciec można bez zabijania strażników.
+var _camp_exit: Interactable
+
+func _spawn_camp_exit() -> void:
+	if _camp_exit != null and is_instance_valid(_camp_exit):
+		return
+	_camp_exit = Interactable.new()
+	_camp_exit.setup("portal", "Opuść obóz")
+	_spot(_camp_exit, (zone["camp"] as Dictionary).get("start", spawn) + Vector2(0, -90))
+	_camp_exit.activated.connect(func(_w): _leave_cave())
 
 func _refresh_camp_guards() -> void:
 	for sg in _camp_guards:
@@ -1749,13 +1903,15 @@ func _refresh_camp_guards() -> void:
 func _camp_spotted() -> void:
 	if _camp_off or player == null or not is_instance_valid(player):
 		return
+	# alarm: strażnicy zrzucają stożki wzroku i ruszają do ataku (cała straż obozu się budzi)
 	Audio.play("hit_heavy", 0.7, -4.0)
 	Fx.shake(6.0, 0.3)
-	player.global_position = (zone["camp"] as Dictionary).get("start", spawn)
-	for sg in _camp_guards:
-		if is_instance_valid(sg):
-			sg.reset()
-	GameState.toast.emit("Zauważono cię! Strażnicy odprowadzili cię na start.", UiKit.BAD)
+	_camp_off = true
+	_refresh_camp_guards()
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if is_instance_valid(e) and e.get("dormant") == true:
+			e.dormant = false
+	GameState.toast.emit("Alarm! Strażnicy cię zauważyli i ruszają do ataku!", UiKit.BAD)
 
 func _camp_disarm() -> void:
 	if _camp_off:
@@ -1769,10 +1925,9 @@ func _camp_freed() -> void:
 	_camp_off = true
 	_refresh_camp_guards()
 	SecretDB.mark_cave(cave_id)
-	var portal := Interactable.new()
-	portal.setup("portal", "Wróć na pustkowie")
-	_spot(portal, (zone["camp"] as Dictionary).get("start", spawn) + Vector2(0, -90))
-	portal.activated.connect(func(_w): _leave_cave())
+	_spawn_camp_exit()
+	if _camp_exit != null and is_instance_valid(_camp_exit):
+		_camp_exit.label_text = "Wróć na pustkowie"
 
 ## Sekretna jaskinia nie ma fal: wszystkie potwory czekają w mroku i atakują dopiero, gdy podejdziesz.
 func _spawn_cave_ambush() -> void:
@@ -1945,7 +2100,7 @@ func _build_extras() -> void:
 				var positions: Array = o.get("positions", [])
 				for i in positions.size():
 					var it := Interactable.new()
-					it.setup(String(o.get("kind", "document")), String(o.get("label", "Użyj")), ChapterExtras.flag(quest_id, String(o["id"]), i))
+					it.setup(MinesDB.step_value(o, "kinds", "kind", i, "document"), MinesDB.step_value(o, "labels", "label", i, "Użyj"), ChapterExtras.flag(quest_id, String(o["id"]), i))
 					it.done = GameState.story_flag(it.uid)
 					it.accent = Color(0.7, 0.9, 1.0)
 					_spot(it, positions[i])
@@ -2048,13 +2203,22 @@ func _reveal_post_objectives() -> void:
 			if is_instance_valid(n):
 				n.visible = true
 
+## Podpowiedź do zagadki za złoto (UiPuzzle.HINT_COST).
+func _pay_puzzle_hint() -> bool:
+	if GameState.gold() < UiPuzzle.HINT_COST:
+		GameState.toast.emit("Za mało złota na podpowiedź (%d zł)." % UiPuzzle.HINT_COST, UiKit.BAD)
+		return false
+	GameState.add_gold(-UiPuzzle.HINT_COST)
+	return true
+
 func _obj_activate(o: Dictionary, idx: int, it: Interactable) -> void:
 	if it.done:
 		return
-	var pz := String(o.get("puzzle", ""))
+	var pz := MinesDB.step_value(o, "puzzles", "puzzle", idx)
 	if pz != "" and not it.has_meta("solved"):
 		var ui := UiPuzzle.new()
 		ui.setup(pz, hash(it.uid))
+		ui.pay = _pay_puzzle_hint
 		_dialog_open = true
 		ui.finished.connect(func(ok: bool):
 			if ok:
@@ -2083,7 +2247,8 @@ func _obj_activate(o: Dictionary, idx: int, it: Interactable) -> void:
 		"sabotage":
 			Audio.play("hit_heavy", 0.8, -4.0)
 			Fx.shake(5.0, 0.2)
-			GameState.toast.emit("Zniszczono! (%d / %d)" % [ChapterExtras.count_done(quest_id, o), int(o.get("count", 1))], UiKit.GOOD)
+			var msg := MinesDB.step_value(o, "msgs", "msg", idx, "Zniszczono!")
+			GameState.toast.emit("%s (%d / %d)" % [msg, ChapterExtras.count_done(quest_id, o), int(o.get("count", 1))], UiKit.GOOD)
 	_check_obj_reward(o)
 
 func _obj_complete_flag(o: Dictionary, i: int) -> void:
@@ -2103,9 +2268,21 @@ func _check_obj_reward(o: Dictionary) -> void:
 	GameState.toast.emit("Cel ukończony: %s%s" % [String(o["text"]), (" — " + ", ".join(lines)) if not lines.is_empty() else ""], UiKit.ACCENT)
 	Audio.play("levelup", 1.3, -6.0)
 	GameState.save_game()
+	if String(o.get("scene", "")) != "":
+		_scene_later(String(o["scene"]))
+
+## Historyjka po ukończeniu celu (np. zalanie kopalni) — z chwilą oddechu po zamknięciu zagadki.
+func _scene_later(kind: String) -> void:
+	await get_tree().create_timer(1.4).timeout
+	if is_instance_valid(self) and not finished and not _dialog_open:
+		await _vignette_async(kind)
 
 func _talk_extra(id: String) -> void:
 	if _heist_turn_in(id):
+		return
+	var enc := EncounterDB.enc_of_npc(id)
+	if enc != "":
+		_start_encounter(enc)
 		return
 	var d := ChapterExtras.dialog(quest_id, id)
 	var accent: Color = NpcDB.get_data(id).get("accent", UiKit.ACCENT)
@@ -2121,6 +2298,43 @@ func _talk_extra(id: String) -> void:
 		_mark_talked(id)
 		if not choice.is_empty() and not made and not post:
 			_open_choice_deferred(choice, accent))
+
+## Spotkanie w stylu BG (zob. EncounterDB): rozmowa z próbami umiejętności, rozgrywana raz.
+func _start_encounter(enc: String) -> void:
+	if _dialog_open:
+		return
+	var e: Dictionary = EncounterDB.LIST[enc]
+	if GameState.story_flag(EncounterDB.flag_done(enc)):
+		_open_dialog([[String((e["npc"] as Dictionary)["name"]), "Wszystko już sobie powiedzieliśmy. Powodzenia."]], (e["npc"] as Dictionary).get("accent", UiKit.ACCENT))
+		return
+	_enc_step(enc, String(e["start"]), "", true, "")
+
+func _enc_step(enc: String, node: String, roll_text: String, roll_ok: bool, fx_text: String) -> void:
+	var v := EncounterDB.view(enc, node, EncounterDB.ctx_game())
+	var ui := UiEncounter.new()
+	ui.setup(v, roll_text, roll_ok, fx_text)
+	_dialog_open = true
+	var picked := [-2]
+	ui.picked.connect(func(i: int): picked[0] = i)
+	ui.on_close.connect(func():
+		_dialog_open = false
+		await get_tree().process_frame   # Flow najpierw domyka nakładkę
+		if int(picked[0]) < 0 or bool(v["terminal"]):
+			return
+		var res := EncounterDB.choose(enc, node, int(picked[0]), EncounterDB.ctx_game())
+		if not bool(res.get("ok", false)):
+			return
+		if String(res.get("set", "")) != "":
+			GameState.set_story_flag("enc:" + String(res["set"]))
+		var next := String(res["next"])
+		var fx := EncounterDB.node_effects(enc, next)
+		var lines := EncounterDB.apply(res, fx)
+		var nv := EncounterDB.view(enc, next, EncounterDB.ctx_game())
+		if bool(nv["terminal"]):
+			GameState.set_story_flag(EncounterDB.flag_done(enc))
+		GameState.save_game()
+		_enc_step(enc, next, EncounterDB.roll_text(res["roll"]), bool((res["roll"] as Dictionary).get("success", true)), ", ".join(lines)))
+	Flow.open_dialog(ui)
 
 func _mark_talked(id: String) -> void:
 	for o in ChapterExtras.objectives(quest_id):

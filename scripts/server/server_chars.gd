@@ -270,6 +270,21 @@ static func normalize(rec: Dictionary) -> void:
 		rec["gsx"] = {}
 	if not (rec.get("tree") is Dictionary):
 		rec["tree"] = {}
+	if int(rec.get("tree_v", 0)) < ClassSkillDB.TREE_VERSION:
+		# nowe, osobne drzewka klas: zeruj rozdane punkty, zostaw tylko umiejętności klasowe i Furię
+		rec["tree_v"] = ClassSkillDB.TREE_VERSION
+		rec["tree"] = {}
+		if String(rec.get("class", "")) != "admin":
+			var known: Array = []
+			for s in ClassDatabase.get_data(String(rec.get("class", ""))).get("skills", []):
+				known.append(s)
+			if "furia" not in known:
+				known.append("furia")
+			rec["known_skills"] = known
+			var sl: Array = rec.get("skills", [])
+			for i in sl.size():
+				if String(sl[i]) != "" and String(sl[i]) not in known:
+					sl[i] = ""
 	if not (rec.get("support") is Dictionary):
 		rec["support"] = {"hp": {}, "fallen": {}}
 
@@ -505,6 +520,27 @@ static func inv_add(rec: Dictionary, id: String, n: int = 1, q: float = 1.0, met
 		inv.append(ent)
 		left -= add2
 	return n - left
+
+## Kara za śmierć (zob. ItemDB.death_losable): zabiera losowe przedmioty z plecaka postaci; zwraca opisy utraconych.
+static func death_penalty(rec: Dictionary) -> Array:
+	var inv: Array = rec["inv"]
+	var cand: Array = []
+	for i in inv.size():
+		if ItemDB.death_losable(String(inv[i]["id"])):
+			cand.append(i)
+	cand.shuffle()
+	var picked: Array = cand.slice(0, ItemDB.DEATH_LOSS_MAX)
+	picked.sort()
+	var lost: Array = []
+	for k in range(picked.size() - 1, -1, -1):
+		var i: int = picked[k]
+		var id := String(inv[i]["id"])
+		var lose := ItemDB.death_loss_amount(id, int(inv[i]["n"]))
+		lost.append("%s ×%d" % [String(ItemDB.get_data(id).get("name", id)), lose])
+		inv[i]["n"] = int(inv[i]["n"]) - lose
+		if int(inv[i]["n"]) <= 0:
+			inv.remove_at(i)
+	return lost
 
 static func inv_remove(rec: Dictionary, id: String, n: int = 1) -> bool:
 	var inv: Array = rec["inv"]

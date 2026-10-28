@@ -20,7 +20,7 @@ const MAX_PLAYERS := 32
 const MAX_CHAT := 200
 const ALLOWED_ACTIONS := ["light_attack", "heavy_attack", "dash", "jump", "special", "throw_item", "block",
 		"skill_1", "skill_2", "skill_3", "skill_4", "skill_5", "skill_6", "skill_7", "skill_8", "skill_9"]
-const ACT_KINDS := ["interact", "dialog_done", "buy", "sell", "shop_close", "choice_pick", "puzzle_done", "forge_buy", "forge_start", "forge_finish", "rune_apply", "forge_close", "hosp_heal", "hosp_revive", "stash_put", "stash_take", "lab_buy", "lab_start", "lab_bu", "lab_kurcz", "pet_equip", "pet_gear", "pet_ungear", "panel_close", "waves_save", "waves_start", "act2_pick", "act2_started", "travel"]
+const ACT_KINDS := ["interact", "dialog_done", "buy", "sell", "shop_close", "choice_pick", "puzzle_done", "puzzle_hint", "enc_pick", "forge_buy", "forge_start", "forge_finish", "rune_apply", "forge_close", "hosp_heal", "hosp_revive", "stash_put", "stash_take", "lab_buy", "lab_start", "lab_bu", "lab_kurcz", "pet_equip", "pet_gear", "pet_ungear", "panel_close", "waves_save", "waves_start", "act2_pick", "act2_started", "travel"]
 const INV_OPS := ["equip", "unequip", "use", "skill", "give", "drop"]
 
 ## MmoServer — ustawiane po stronie serwera.

@@ -5,7 +5,7 @@ extends RefCounted
 const PLAYER_HELP := "Komendy: /help /list /w <gracz> <tekst> /me <tekst> /pos /stats /skills /skill <slot 1-9> <id|-> /attr <statystyka> [ile] /swiat /kampania /quest /wyzwanie /arena <gracz> /wyjdz /ranking /wlasne (edytor fal: klawisz B)"
 const ADMIN_HELP := "Admin: /tp /tphere /give /heal /god /creative /survival /kill /kick /ban /unban /spawn /killall /xp /setlevel /gold /say /op /deop /class /items /save /backup /stop /rozdzial <nr> /kia <ally N|pet> /boss [id] /bosses /event raid"
 const ADMIN_CMDS := ["update", "tp", "tphere", "give", "heal", "god", "creative", "survival", "kill", "kick", "ban", "unban", "spawn", "killall", "xp", "setlevel", "gold",
-		"say", "op", "deop", "class", "items", "save", "backup", "stop", "rozdzial", "kia", "boss", "bosses", "event"]
+		"say", "op", "deop", "class", "items", "save", "backup", "stop", "rozdzial", "kia", "boss", "bosses", "event", "wedrowiec"]
 
 ## Opisy komend do podpowiedzi w czacie (klient pokazuje je po wpisaniu "/", Tab uzupełnia).
 const INFO := {
@@ -60,6 +60,7 @@ const INFO := {
 	"boss": "/boss [id] — przywołaj bossa [admin]",
 	"bosses": "/bosses — lista bossów [admin]",
 	"event": "/event raid|duel — wymuś wydarzenie [admin]",
+	"wedrowiec": "/wedrowiec [id] — przywołaj wędrownego podróżnika obok siebie (Pustkowie) [admin]",
 }
 
 ## Rodzaje argumentów komend (podpowiedzi jak w Minecrafcie): player = nick online, item = przedmiot z gry itd.
@@ -374,6 +375,14 @@ func run(srv: MmoServer, id: int, line: String) -> void:
 				srv.reply(id, "Nieznany boss. /bosses", "error")
 				return
 			binst.spawn_world_boss(want_boss, (bnode.position + Vector2(0.0, -300.0)).clamp(Vector2(700, 700), binst.size - Vector2(700, 700)))
+		"wedrowiec":
+			var winst := srv.inst_of(id)
+			if winst == null or winst.kind != "swiat":
+				srv.reply(id, "Wędrowcy pojawiają się tylko na Pustkowiu.", "error")
+				return
+			var want := String(args[0]) if not args.is_empty() else ""
+			if not winst.spawn_wander(id, want):
+				srv.reply(id, "Nie można teraz przywołać wędrowca (rozmawia? już jest? zły id?). Id: " + ", ".join(EncounterDB.roaming()), "error")
 		"event":
 			var einst := srv.inst_of(id)
 			if einst == null or args.is_empty():

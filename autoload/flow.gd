@@ -571,6 +571,8 @@ func _restart_current() -> void:
 		var quest := GameState.story_quest() if GameState.story_quest() != "" else String(QuestDB.chapter(chap).get("id", "obrona_wioski"))
 		var flags: Dictionary = GameState.story().get("flags", {}).duplicate()
 		var done: Array = (GameState.story().get("done", []) as Array).duplicate()
+		var retry_wave := int(GameState.story().get("retry_wave", -1))
+		var retry_quest := String(GameState.story().get("retry_quest", ""))
 		GameState.finish_run(false)
 		GameState.start_rpg_run(mode, p1, p2)
 		var s := GameState.story()
@@ -579,6 +581,9 @@ func _restart_current() -> void:
 		s["step"] = 0
 		s["flags"] = flags
 		s["done"] = done
+		if retry_wave >= 0:
+			s["retry_wave"] = retry_wave
+			s["retry_quest"] = retry_quest
 		GameState.save_game()
 		goto("game", {"stage": 0})
 		return

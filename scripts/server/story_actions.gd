@@ -47,7 +47,13 @@ static func usable(rec: Dictionary, inst: ZoneInstance, peer: int, o: Dictionary
 			var cv := SecretDB.cave_for(q)
 			var arr: Array = (secrets_of(rec).get("levers", {}) as Dictionary).get(q, []) if secrets_of(rec).get("levers") is Dictionary else []
 			return not (bool(flags.get(String(o["uid"]), false)) or int(o["idx"]) in arr) and not cv.is_empty()
+		"wander", "shaft":
+			return true
+		"mine":
+			return not bool(flags.get(String(o["uid"]), false))
 		"entrance":
+			if bool(o.get("mine", false)):
+				return not bool(flags.get("mine_done:" + String(o["cave"]), false))
 			if bool(o.get("camp", false)):
 				return not bool(flags.get("camp_done:" + String(o["cave"]), false))
 			return levers_pulled(rec, inst.quest_id, int(o.get("levers", 3))) >= int(o.get("levers", 3))
@@ -63,7 +69,7 @@ static func nearest_object(srv: MmoServer, peer: int, inst: ZoneInstance, pos: V
 	var rec: Dictionary = srv.peers[peer]["rec"]
 	var best := {}
 	var best_d := 1.0e9
-	var all: Array = inst.objs + inst.extra_objs + (srv.peers[peer].get("side_objs", []) as Array)
+	var all: Array = inst.objs + inst.extra_objs + (srv.peers[peer].get("side_objs", []) as Array) + (srv.peers[peer].get("wander_objs", []) as Array)
 	for o in all:
 		if not usable(rec, inst, peer, o):
 			continue
@@ -82,7 +88,10 @@ static func activate(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionar
 		"entrance": _entrance(srv, peer, o)
 		"board": open_board(srv, peer, inst)
 		"cavechest": _cave_chest(srv, peer, inst)
+		"wander": enc_start(srv, peer, String(o["enc"]))
+		"shaft": _shaft(srv, peer, o)
 		"prisoner": _prisoner(srv, peer, inst, o)
+		"mine": srv.open_puzzle(peer, String(_mine_step(inst, o).get("puzzle", "lockpick")), String(o["uid"]), {"mine": o})
 		"portal": srv.enter_zone(peer, srv.zone_key_for(srv.peers[peer]["rec"]))
 		"side": _side(srv, peer, inst, o)
 		"heist": _heist_take(srv, peer, inst)
@@ -102,13 +111,66 @@ static func _obj(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary) -
 	var obj := _objective(inst.quest_id, String(o["obj"]))
 	if obj.is_empty():
 		return
-	if String(obj.get("puzzle", "")) != "":
-		srv.open_puzzle(peer, String(obj["puzzle"]), String(o["uid"]), {"o": o})
+	var pz := MinesDB.step_value(obj, "puzzles", "puzzle", int(o.get("idx", 0)))
+	if pz != "":
+		srv.open_puzzle(peer, pz, String(o["uid"]), {"o": o})
 		return
 	obj_apply(srv, peer, inst, o)
 
 ## Wynik zagadki: cel (obj) albo zamek skrzyni (chest, z wytrychem, który może się złamać).
+static func _mine_step(inst: ZoneInstance, o: Dictionary) -> Dictionary:
+	var steps: Array = (inst.zone.get("mine", {}) as Dictionary).get("steps", [])
+	var i := int(o.get("idx", 0))
+	return steps[i] if i >= 0 and i < steps.size() else {}
+
+## Krok kopalni wykonany: flagi postaci i licznik celu, a po trzecim — nagroda, historyjka zalania i wyjście.
+## Szyb: przenosi gracza do drugiego końca (omija strażników w kopalni/obozie).
+static func _shaft(srv: MmoServer, peer: int, o: Dictionary) -> void:
+	var node = srv.player_of(peer)
+	if node == null:
+		return
+	(node as Node2D).position = (o["to"] as Vector2) + Vector2(0.0, 80.0)   # tuż obok szybu, żeby nie zjechać z powrotem
+	if "velocity" in node:
+		node.velocity = Vector2.ZERO
+	srv.say(peer, "Zjeżdżasz szybem i wychodzisz na drugim końcu kopalni.")
+
+static func mine_step_done(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary) -> void:
+	var rec: Dictionary = srv.peers[peer]["rec"]
+	var fl := flags_of(rec)
+	var mine: Dictionary = inst.zone.get("mine", {})
+	if mine.is_empty() or bool(fl.get(String(o["uid"]), false)):
+		return
+	var mid := String(mine["id"])
+	fl[String(o["uid"])] = true
+	fl[ChapterExtras.flag(String(mine["zone"]), mid, int(o["idx"]))] = true
+	var steps: Array = mine["steps"]
+	var done_n := 0
+	for i in steps.size():
+		if bool(fl.get("mine:%s:%d" % [mid, i], false)):
+			done_n += 1
+	srv.say(peer, "%s (%d / %d)" % [String(_mine_step(inst, o).get("msg", "Gotowe!")), done_n, steps.size()])
+	srv.chars.mark_dirty()
+	srv.push_prog(peer)
+	if done_n < steps.size():
+		return
+	fl["mine_done:" + mid] = true
+	var rflag := "r:mine:" + mid
+	if not bool(fl.get(rflag, false)):
+		fl[rflag] = true
+		var rw: Dictionary = mine["reward"]
+		var res := ServerCtx.run(rec, func(): return SecretDB.grant({"items": rw.get("items", {}), "gold": int(rw.get("gold", 0)), "xp": int(rw.get("xp", 0))}))
+		srv.say(peer, "Kopalnia zalana! — " + ", ".join(res["result"]))
+		srv.after_ctx(peer, int(res["levels"]))
+	inst.camp_freed()
+	srv._open_dialog(peer, [], UiKit.ACCENT, "", {"scene": String(mine["scene"])})
+
 static func puzzle_result(srv: MmoServer, peer: int, inst: ZoneInstance, extra: Dictionary, ok: bool) -> void:
+	if extra.has("mine"):
+		if ok:
+			mine_step_done(srv, peer, inst, extra["mine"])
+		else:
+			srv.say(peer, "Nie udało się — spróbuj jeszcze raz.")
+		return
 	if extra.has("chest"):
 		var rec: Dictionary = srv.peers[peer]["rec"]
 		var pick := String(extra.get("pick", ""))
@@ -143,7 +205,7 @@ static func obj_apply(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictiona
 		"free":
 			srv.say(peer, "Uwolniono! (%d / %d)" % [ChapterExtras.count_done(inst.quest_id, obj, flags_of(rec)), int(obj.get("count", 1))])
 		"sabotage":
-			srv.say(peer, "Zniszczono! (%d / %d)" % [ChapterExtras.count_done(inst.quest_id, obj, flags_of(rec)), int(obj.get("count", 1))])
+			srv.say(peer, "%s (%d / %d)" % [MinesDB.step_value(obj, "msgs", "msg", int(o["idx"]), "Zniszczono!"), ChapterExtras.count_done(inst.quest_id, obj, flags_of(rec)), int(obj.get("count", 1))])
 	check_obj_reward(srv, peer, inst.quest_id, obj)
 	srv.push_prog(peer)
 
@@ -160,6 +222,8 @@ static func check_obj_reward(srv: MmoServer, peer: int, quest: String, obj: Dict
 	var lines: Array = res["result"]
 	srv.say(peer, "Cel ukończony: %s%s" % [String(obj["text"]), (" — " + ", ".join(lines)) if not lines.is_empty() else ""])
 	srv.after_ctx(peer, int(res["levels"]))
+	if String(obj.get("scene", "")) != "":
+		srv._open_dialog(peer, [], UiKit.ACCENT, "", {"scene": String(obj["scene"])})
 
 # ------------------------------------------------------------ skradanka (lutnia) ---
 
@@ -292,7 +356,7 @@ static func _prisoner(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictiona
 	if pr.is_empty():
 		return
 	fl[uid] = true
-	if inst.zone.has("camp"):
+	if inst.zone.has("camp") and not inst.zone.has("mine"):
 		fl["camp_done:" + inst.cave_id] = true
 		inst.camp_freed()
 	var knows := not bool(pr.get("tosia", false)) or bool(fl.get(SpecialDB.TOSIA_FLAG, false))
@@ -430,9 +494,65 @@ static func choice_pick(srv: MmoServer, peer: int, data: Dictionary, i: int) -> 
 
 # ------------------------------------------------------------ rozmowy z NPC ---
 
+## Spotkania w stylu BG (EncounterDB): serwer rzuca kośćmi i księguje skutki; rozgrywane raz na postać.
+static func enc_start(srv: MmoServer, peer: int, enc: String) -> void:
+	var rec: Dictionary = srv.peers[peer]["rec"]
+	var e: Dictionary = EncounterDB.LIST[enc]
+	if bool(flags_of(rec).get(EncounterDB.flag_done(enc), false)):
+		srv._open_dialog(peer, [[String((e["npc"] as Dictionary)["name"]), "Wszystko już sobie powiedzieliśmy. Powodzenia."]], (e["npc"] as Dictionary).get("accent", UiKit.ACCENT), "")
+		return
+	_enc_send(srv, peer, enc, String(e["start"]), "", true, "")
+
+static func _enc_send(srv: MmoServer, peer: int, enc: String, node: String, roll_text: String, roll_ok: bool, fx_text: String) -> void:
+	var rec: Dictionary = srv.peers[peer]["rec"]
+	var ctx: Dictionary = ServerCtx.run(rec, func(): return EncounterDB.ctx_game())["result"]
+	var v := EncounterDB.view(enc, node, ctx)
+	srv._token_seq += 1
+	srv.peers[peer]["enc"] = {"n": srv._token_seq, "enc": enc, "node": node, "terminal": bool(v["terminal"])}
+	srv.peers[peer]["frozen"] = MmoServer.DIALOG_FREEZE
+	srv.send_ev(peer, "enc", {"token": srv._token_seq, "view": v, "roll": roll_text, "ok": roll_ok, "fx": fx_text})
+
+static func enc_pick(srv: MmoServer, peer: int, token: int, i: int) -> void:
+	var pl: Dictionary = srv.peers[peer]
+	var en: Dictionary = pl.get("enc", {})
+	if en.is_empty() or int(en.get("n", -1)) != token:
+		return
+	pl["enc"] = {}
+	pl["frozen"] = 0.0
+	if i < 0 or bool(en["terminal"]):
+		return
+	var rec: Dictionary = pl["rec"]
+	var enc := String(en["enc"])
+	var node := String(en["node"])
+	var ctx: Dictionary = ServerCtx.run(rec, func(): return EncounterDB.ctx_game())["result"]
+	var res := EncounterDB.choose(enc, node, i, ctx)
+	if not bool(res.get("ok", false)):
+		_enc_send(srv, peer, enc, node, "", true, "")
+		return
+	if String(res.get("set", "")) != "":
+		flags_of(rec)["enc:" + String(res["set"])] = true
+	var next := String(res["next"])
+	var fx := EncounterDB.node_effects(enc, next)
+	var out := ServerCtx.run(rec, func(): return EncounterDB.apply(res, fx))
+	srv.after_ctx(peer, int(out["levels"]))
+	var nctx: Dictionary = ServerCtx.run(rec, func(): return EncounterDB.ctx_game())["result"]
+	if bool(EncounterDB.view(enc, next, nctx)["terminal"]):
+		flags_of(rec)[EncounterDB.flag_done(enc)] = true
+		var winst = pl.get("inst")
+		if pl.has("wander") and String(pl["wander"]["obj"]["enc"]) == enc and winst != null:
+			(winst as ZoneInstance).clear_wander(peer)
+	srv.chars.mark_dirty()
+	srv.push_prog(peer)
+	srv._push_me(peer)
+	_enc_send(srv, peer, enc, next, EncounterDB.roll_text(res["roll"]), bool((res["roll"] as Dictionary).get("success", true)), ", ".join(out["result"]))
+
 static func talk_extra(srv: MmoServer, peer: int, inst: ZoneInstance, npc: String) -> void:
 	var rec: Dictionary = srv.peers[peer]["rec"]
 	if _heist_turn_in(srv, peer, inst, npc):
+		return
+	var enc := EncounterDB.enc_of_npc(npc)
+	if enc != "":
+		enc_start(srv, peer, enc)
 		return
 	var d := ChapterExtras.dialog(inst.quest_id, npc)
 	var accent: Color = NpcDB.get_data(npc).get("accent", UiKit.ACCENT)

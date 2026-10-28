@@ -162,6 +162,14 @@ const SCENES2 := {
 		"props": [["lute", 150, 0], ["shelf_bottles", -330, 0]], "extras": [["kurczak", 330, 0]],
 		"context": "Wieczór w izbie. Kukuryk siedzi z pustymi rękami, a kurczak podchodzi, chowając coś za plecami.",
 		"lines": [["Bard Kukuryk", "Cisza. Tak brzmi pieśń bez lutni. Okropnie."], ["", "Kurczak wyciąga zza pleców lutnię, zwędzoną spod nosa strażników. Struny drżą w świetle ogniska."], ["Bard Kukuryk", "Moja lutnia! Mój złoty, drewniany skarb! Ukradłeś ją spod nosa strażników?"], ["", "Bard przytula instrument, trąca struny i podskakuje z radości. Kilka piór unosi się w powietrzu."], ["Bard Kukuryk", "Teraz pieśń zabrzmi jak trzeba. Weź to — i zapamiętaj: nie każdy bohater walczy mieczem."]]},
+	"flood_iron": {"title": "Zalanie Kopalni Żelaza", "npc": "straznik", "bg": Color(0.38, 0.34, 0.32), "anim": "jump", "ax": -60.0,
+		"props": [["flood", 0, 0], ["cart", 250, 0]], "extras": [["kogut", -320, 0, "klawisz"], ["kogut", 360, 0, "kasztelan"]],
+		"context": "Sztolnie Kopalni Żelaza. Górnicy Kruka toczą wózki z rudą, kiedy z góry dochodzi głuche dudnienie.",
+		"lines": [["Strażnik Michał", "Co to za szum? Ktoś przestawił śluzę? Przecież przestawianie śluzy jest zabronione!"], ["", "Z korytarza wypada fala. Wózki z rudą pływają jak okręty, a górnicy łapią się szyn."], ["Klawisz Zbigniew", "Mówiłem, że ta kopalnia ma wady! Nikt nie słuchał!"], ["", "Po chwili w sztolni jest tylko woda i drewniana łopata, która spokojnie dryfuje ku wyjściu."], ["Kasztelan Fryderyk", "Zgłaszam: zatopienie. Strata: kopalnia. Winny: nieznany. Nagroda dla znalazcy: żadna."]]},
+	"flood_salt": {"title": "Zalanie Kopalni Soli", "npc": "kasztelan", "bg": Color(0.42, 0.45, 0.52), "anim": "pace", "ax": -100.0,
+		"props": [["flood", 0, 0], ["jars", 260, 0]], "extras": [["kogut", -330, 0, "straznik"], ["gasior", 370, 0]],
+		"context": "Kopalnia Soli nad Zatoką. Kasztelan Fryderyk liczy beczki, a w głębi korytarzy cicho szumi pompa.",
+		"lines": [["Kasztelan Fryderyk", "Zapasy soli na cały rok. Wystarczy na marynaty dla całego pułku."], ["", "Pompy zaczynają pracować w odwrotną stronę. Z kanału wypływa pierwsza słona fala."], ["Strażnik Michał", "Panie Kasztelanie, woda! Morze wchodzi do środka!"], ["", "Beczki z solą unoszą się na wodzie jak wielkie koła ratunkowe. Fryderyk dzielnie próbuje je uratować — jedną po drugiej."], ["Kasztelan Fryderyk", "Czy ktoś mógłby mi powiedzieć, kto otworzył wrota? A, nieważne. Sól nigdy nie traci wartości. Ale mokra jest bezużyteczna."]]},
 	"bread": {"title": "Pożar w piekarni", "npc": "zosia", "bg": Color(0.6, 0.35, 0.25), "anim": "pace", "ax": -140.0,
 		"props": [["bread", 130, 0], ["cauldron", -320, 0]],
 		"context": "W piekarni Zosi buchnął ogień — ale piekarka nie traci głowy. Gasi pożar... pieczywem.",
@@ -817,6 +825,13 @@ class _Stage extends Node2D:
 				ob(x - 160, y - 340, 320, 36, Color(0.85, 0.75, 0.45))
 				for i in 5:
 					r(x - 130 + i * 56, y - 150, 30, 36, Color(0.9, 0.85, 0.6))
+			"flood":
+				# woda wlewa się do sztolni: poziom rośnie z czasem sceny, na powierzchni migoczą fale
+				var lvl := minf(t * 26.0, 230.0)
+				for q in 3:
+					r(x - 480, y - lvl + 10 + q * 40, 960, 40, Color(0.15, 0.45 + 0.05 * q, 0.85, 0.42))
+				for w in 14:
+					r(x - 470 + w * 68 + 20.0 * sin(t * 2.0 + w), y - lvl + 4.0 * sin(t * 3.0 + w), 36, 6, Color(0.85, 0.95, 1.0, 0.55))
 			"bread":
 				for i in 6:
 					var fy := fposmod(t * 60.0 + i * 40.0, 240.0)

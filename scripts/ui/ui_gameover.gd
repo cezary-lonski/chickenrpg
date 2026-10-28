@@ -21,6 +21,8 @@ func _ready() -> void:
 	var t := UiKit.title("KONIEC WALKI", 60, UiKit.BAD)
 	center.add_child(t)
 	center.add_child(UiKit.label("Twoje pióra spadły na ziemię…", 22, UiKit.DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	if not GameState.last_death_loss.is_empty():
+		center.add_child(UiKit.label("Utracone przedmioty: " + ", ".join(GameState.last_death_loss), 18, UiKit.BAD, HORIZONTAL_ALIGNMENT_CENTER))
 	center.add_child(UiKit.sep(26))
 	center.add_child(UiKit.label("Wskrzesić może cię tylko Zwój Wskrzeszenia — nagroda za duże zadania poboczne (np. lutnia barda).", 16, UiKit.ACCENT, HORIZONTAL_ALIGNMENT_CENTER))
 	center.add_child(UiKit.sep(14))

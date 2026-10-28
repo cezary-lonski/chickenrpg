@@ -730,6 +730,32 @@ func item_count(id: String) -> int:
 			total += int(e["n"])
 	return total
 
+## Utracone przy ostatniej śmierci (do pokazania na ekranie końca walki): ["Miecz ×1", ...].
+var last_death_loss: Array = []
+
+## Kara za śmierć (zob. ItemDB.death_losable): zabiera losowe przedmioty z plecaka i zwraca ich opisy.
+func apply_death_penalty() -> Array:
+	last_death_loss = []
+	var inv_a := inv()
+	var cand: Array = []
+	for i in INV_SIZE:
+		var e = inv_a[i]
+		if e is Dictionary and ItemDB.death_losable(String(e["id"])):
+			cand.append(i)
+	cand.shuffle()
+	for k in mini(ItemDB.DEATH_LOSS_MAX, cand.size()):
+		var i: int = cand[k]
+		var e: Dictionary = inv_a[i]
+		var id := String(e["id"])
+		var lose := ItemDB.death_loss_amount(id, int(e["n"]))
+		last_death_loss.append("%s ×%d" % [String(ItemDB.get_data(id).get("name", id)), lose])
+		e["n"] = int(e["n"]) - lose
+		if int(e["n"]) <= 0:
+			inv_a[i] = null
+	if not last_death_loss.is_empty():
+		save_game()
+	return last_death_loss
+
 func remove_item(id: String, amount: int = 1) -> bool:
 	if item_count(id) < amount: return false
 	var inv_a := inv()
@@ -1190,8 +1216,8 @@ func _register_default_actions() -> void:
 		_set_keys(action, DEFAULT_KEYS[action])
 
 func setting(key: String) -> bool:
-	# spowolnienie przy ataku jest domyślnie wyłączone (dawało efekt „lagu”), reszta opcji — włączona
-	return bool(profile.get("settings", {}).get(key, key != "hitstop"))
+	# spowolnienie przy ataku i hitboxy są domyślnie wyłączone, reszta opcji — włączona
+	return bool(profile.get("settings", {}).get(key, key not in ["hitstop", "hitboxes"]))
 
 ## Rozdzielczość okna i pole widzenia (ile świata widać w trybie RPG / online).
 const RES_PRESETS := [Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440)]
@@ -1394,6 +1420,16 @@ func _tree() -> Dictionary:
 		cp["skill_points"] = maxi(int(cp.get("skill_points", 0)), int(cp.get("level", 1)) - 1)
 	if not (cp.get("tree") is Dictionary):
 		cp["tree"] = {}
+	if int(cp.get("tree_v", 0)) < ClassSkillDB.TREE_VERSION:
+		# nowe, osobne drzewka klas: zeruj rozdane punkty i wyczyść sloty z nieposiadanymi umiejętnościami
+		cp["tree_v"] = ClassSkillDB.TREE_VERSION
+		cp["tree"] = {}
+		cp["skill_points"] = maxi(0, int(cp.get("level", 1)) - 1)
+		var sl = cp.get("skills", [])
+		if sl is Array:
+			for i in (sl as Array).size():
+				if String(sl[i]) != "" and not _free_skill(String(sl[i])):
+					sl[i] = ""
 	return cp["tree"]
 
 func skill_points() -> int:

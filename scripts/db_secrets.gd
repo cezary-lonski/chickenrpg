@@ -282,6 +282,8 @@ static func cave_for(zone_id: String) -> Dictionary:
 	return CAVES.get(zone_id, {})
 
 static func cave_by_id(cave_id: String) -> Dictionary:
+	if MinesDB.has(cave_id):
+		return MinesDB.cave(cave_id)
 	if SpecialDB.is_camp(cave_id):
 		return SpecialDB.camp_cave(cave_id)
 	for z in CAVES:
@@ -328,6 +330,8 @@ static func cave_zone(cave_id: String) -> Dictionary:
 	}
 	if SpecialDB.is_camp(cave_id):
 		z.merge(SpecialDB.camp_zone_extra(cave_id), true)
+	elif MinesDB.has(cave_id):
+		z.merge(MinesDB.zone_extra(cave_id), true)
 	return z
 
 # ------------------------------------------------------------- stan w profilu ---

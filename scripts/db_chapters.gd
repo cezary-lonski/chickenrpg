@@ -330,8 +330,8 @@ const BASE_EXTRAS := {
 
 # ------------------------------------------------------------------ pomocnicze ---
 
-static var NPCS: Dictionary = BASE_NPCS.merged(Act2DB.NPCS).merged(PalaceDB.NPCS).merged(SpecialDB.NPCS)
-static var EXTRAS: Dictionary = DecisionDB.annotate(SpecialDB.patch(PalaceDB.patch_extras(_with_bard(BASE_EXTRAS).merged(Act2DB.EXTRAS)).merged(PalaceDB.EXTRAS).duplicate(true)))
+static var NPCS: Dictionary = BASE_NPCS.merged(Act2DB.NPCS).merged(PalaceDB.NPCS).merged(SpecialDB.NPCS).merged(EncounterDB.npcs())
+static var EXTRAS: Dictionary = MinesDB.patch_extras(EncounterDB.patch_extras(DecisionDB.annotate(SpecialDB.patch(PalaceDB.patch_extras(_with_bard(BASE_EXTRAS).merged(Act2DB.EXTRAS)).merged(PalaceDB.EXTRAS).duplicate(true)))))
 
 ## Wędrowny bard Kukuryk śpiewa w kolejnych rozdziałach jedną długą „Pieśń o Pierwszym Kogucie”.
 ## Rozmowa z nim jest dobrowolna (nagroda za wysłuchanie), a w ostatnim rozdziale pieśń kończy się wyborem.
@@ -432,7 +432,7 @@ static func _with_bard(base: Dictionary) -> Dictionary:
 	return src
 
 ## Zadanie skradankowe: przemknij obok strażników (stożki wzroku), zwędź lutnię i zanieś ją bardowi.
-## Zauważenie wraca gracza na start. Cel liczy się dopiero po oddaniu lutni (flaga indeksu 0).
+## Zauważenie wraca gracza na start (w obozach niewolników: alarm i atak straży). Cel liczy się dopiero po oddaniu lutni (flaga indeksu 0).
 const HEIST := {
 	"id": "lutnia", "phase": "pre", "type": "heist", "required": false,
 	"text": "Zwędź lutnię Kukuryka z gabinetu kanclerza i zanieś ją bardowi (opcjonalnie)",

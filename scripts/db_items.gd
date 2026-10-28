@@ -341,6 +341,18 @@ static func bu_sacrifice_ok(id: String) -> bool:
 		return false
 	return RARITIES.find(rarity_of(id)) >= RARITIES.find("rzadki")
 
+## Kara za śmierć: do DEATH_LOSS_MAX losowych przedmiotów z plecaka (założone są bezpieczne). Rzeczy wyposażenia znikają
+## w całości, mikstury i rzutki — połowa stosu. Materiały, klucze, wzorce i sprzęt pupili nie giną.
+const DEATH_LOSS_MAX := 3
+static func death_losable(id: String) -> bool:
+	return String(get_data(id).get("slot", "")) in ["weapon", "armor", "helmet", "boots", "accessory", "amulet", "consumable", "throwable"]
+
+## Ile sztuk z danego stosu przepada (n = wielkość stosu).
+static func death_loss_amount(id: String, n: int) -> int:
+	if String(get_data(id).get("slot", "")) in ["consumable", "throwable"]:
+		return maxi(1, int(ceil(float(n) / 2.0)))
+	return n
+
 static func rarity_of(id: String) -> String:
 	var d: Dictionary = LIST.get(id, {})
 	if d.has("rarity"):

@@ -373,9 +373,11 @@ func _on_player_died() -> void:
 	if not finished:
 		if GameState.item_count("zwoj_wskrzeszenia") > 0 and player != null and is_instance_valid(player):
 			Flow.offer_revive(player, func():
+				GameState.apply_death_penalty()
 				finished = true
 				player_died.emit())
 			return
+		GameState.apply_death_penalty()
 		finished = true
 		player_died.emit()
 

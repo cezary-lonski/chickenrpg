@@ -57,6 +57,8 @@ func _ready() -> void:
 	hud = UiMmoHud.new()
 	hud.exit_requested.connect(_leave)
 	hud.dialog_closed.connect(func(token: int): Mmo.send_act("dialog_done", {"token": token}))
+	hud.enc_picked.connect(func(token: int, i: int): Mmo.send_act("enc_pick", {"token": token, "i": i}))
+	hud.puzzle_hint.connect(func(token: int): Mmo.send_act("puzzle_hint", {"token": token}))
 	hud.puzzle_done.connect(func(token: int, ok: bool): Mmo.send_act("puzzle_done", {"token": token, "ok": ok}))
 	hud.choice_picked.connect(func(token: int, i: int): Mmo.send_act("choice_pick", {"token": token, "i": i}))
 	add_child(hud)
@@ -159,6 +161,11 @@ func _on_zone(info: Dictionary) -> void:
 		entities.add_child(sg)
 		_guards.append(sg)
 	_refresh_guards()
+	if String(info.get("mine_id", "")) != "":
+		var deco := MineDecor.new()
+		deco.setup(String(info["mine_id"]))
+		deco.z_index = -3
+		entities.add_child(deco)
 	hud.set_zone_title(String(info.get("title", "")))
 	_on_roster(Mmo.roster)
 
@@ -357,6 +364,18 @@ func _on_event(kind: String, data: Dictionary) -> void:
 			Audio.play("gate", 1.0, -8.0)
 		"dialog":
 			hud.open_dialog(int(data.get("token", 0)), data.get("lines", []), data.get("accent", UiKit.ACCENT), String(data.get("scene", "")))
+		"wander":
+			_make_object(data["obj"])
+		"wander_off":
+			var wuid := String(data.get("uid", ""))
+			if _objs.has(wuid):
+				if is_instance_valid(_objs[wuid]["node"]):
+					(_objs[wuid]["node"] as Node).queue_free()
+				_objs.erase(wuid)
+		"enc":
+			hud.open_encounter(int(data.get("token", 0)), data.get("view", {}), String(data.get("roll", "")), bool(data.get("ok", true)), String(data.get("fx", "")))
+		"puzzle_hint":
+			hud.puzzle_hint_ok()
 		"puzzle":
 			hud.open_puzzle(int(data.get("token", 0)), String(data.get("kind", "")), String(data.get("uid", "")), String(data.get("pick", "")))
 		"shop":
