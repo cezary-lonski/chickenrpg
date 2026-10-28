@@ -158,6 +158,10 @@ const SCENES2 := {
 		"props": [["cart", 130, 0]],
 		"context": "Kupiec Bronek sprzedaje podróżnym mapy. Nad wozem wisi baner: „NAJLEPSZE MAPY W OKOLICY”. Okolica jest bardzo mała.",
 		"lines": [["Kupiec Bronek", "Mapa do stolicy! Tylko dziś, z podpisem autora i plamą po kawie."], ["", "Mapa przedstawia... kurczaka z kreską do stolicy. Kreska jest zygzakiem."], ["Kupiec Bronek", "Czytelna, prawda? Wystarczy iść za kreską. Ewentualnie za sercem. Albo za mną."]]},
+	"lute_gift": {"title": "Lutnia wraca do barda", "npc": "bard", "bg": Color(0.5, 0.38, 0.28), "anim": "lute", "ax": -40.0,
+		"props": [["lute", 150, 0], ["shelf_bottles", -330, 0]], "extras": [["kurczak", 330, 0]],
+		"context": "Wieczór w izbie. Kukuryk siedzi z pustymi rękami, a kurczak podchodzi, chowając coś za plecami.",
+		"lines": [["Bard Kukuryk", "Cisza. Tak brzmi pieśń bez lutni. Okropnie."], ["", "Kurczak wyciąga zza pleców lutnię, zwędzoną spod nosa strażników. Struny drżą w świetle ogniska."], ["Bard Kukuryk", "Moja lutnia! Mój złoty, drewniany skarb! Ukradłeś ją spod nosa strażników?"], ["", "Bard przytula instrument, trąca struny i podskakuje z radości. Kilka piór unosi się w powietrzu."], ["Bard Kukuryk", "Teraz pieśń zabrzmi jak trzeba. Weź to — i zapamiętaj: nie każdy bohater walczy mieczem."]]},
 	"bread": {"title": "Pożar w piekarni", "npc": "zosia", "bg": Color(0.6, 0.35, 0.25), "anim": "pace", "ax": -140.0,
 		"props": [["bread", 130, 0], ["cauldron", -320, 0]],
 		"context": "W piekarni Zosi buchnął ogień — ale piekarka nie traci głowy. Gasi pożar... pieczywem.",
@@ -437,6 +441,14 @@ class _Stage extends Node2D:
 				actor.lean = 0.2
 			"jump":
 				actor.position.y = -absf(sin(t * 3.0)) * 40.0
+			"lute":
+				# do pierwszej uwagi o lutni bard stoi smutny, potem podskakuje z radością i gra
+				if beat < 3:
+					actor.crouch = 0.4
+				else:
+					actor.crouch = 0.0
+					actor.arm = 0.5 + 0.5 * sin(t * 9.0)
+					actor.position.y = -absf(sin(t * 4.0)) * 30.0
 
 	func _snap(v: float) -> float:
 		return roundf(v / C) * C
@@ -756,6 +768,24 @@ class _Stage extends Node2D:
 					var sw := sin(t * 5.0 + i) * 8.0
 					r(x - 90 + i * 28 + sw, y + 0, 8, 46, Color(0.95, 0.8, 0.3))
 					disc(x - 86 + i * 28 + sw, y - 6, 9, Color(0.95, 0.8, 0.3))
+			"lute":
+				# lutnia unosi się nad ziemią i lekko kołysze; po wręczeniu (beat >= 3) lśni i leci nutami
+				var bob := sin(t * 2.0) * 8.0
+				var lx := x
+				var ly := y - 120 + bob
+				disc(lx, ly, 52, Color(1.0, 0.85, 0.4, 0.14 + (0.1 if beat >= 3 else 0.0)))
+				for i in 6:                                                   # szyjka i główka
+					ob(lx + 24 + i * 12, ly - 24 - i * 12, 18, 18, Color(0.4, 0.26, 0.14))
+				ob(lx + 90, ly - 108, 30, 22, Color(0.75, 0.55, 0.15))
+				disc(lx - 6, ly + 10, 48, Color(0.05, 0.04, 0.07))
+				disc(lx - 6, ly + 10, 42, Color(0.9, 0.6, 0.3))
+				disc(lx - 6, ly + 10, 26, Color(0.97, 0.78, 0.5))
+				disc(lx - 6, ly + 10, 12, Color(0.12, 0.08, 0.06))
+				if beat >= 3:
+					for i in 3:
+						var ny := fposmod(t * 50.0 + i * 40.0, 120.0)
+						r(lx - 90 + i * 70, ly - 80 - ny, 12, 24, Color(1.0, 0.95, 0.5, 1.0 - ny / 120.0))
+						disc(lx - 94 + i * 70, ly - 56 - ny, 8, Color(1.0, 0.95, 0.5, 1.0 - ny / 120.0))
 			"jars":
 				for i in 5:
 					ob(x - 100 + i * 46, y - 130 - (i % 2) * 40, 34, 70, Color(0.1, 0.08, 0.14))

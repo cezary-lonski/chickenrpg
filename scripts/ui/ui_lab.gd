@@ -1,14 +1,14 @@
 class_name UiLab
 extends Control
 ## Laboratorium:
-## (1) Pierwiastek BU powstaje z ofiary: poświęcasz przedmiot LEGENDARNY (lub hiperlegendarny),
+## (1) Pierwiastek BU powstaje z ofiary: poświęcasz BROŃ (rzadką lub lepszą) — 1 broń daje 1 BU,
 ##     zmniejszasz się do rozmiaru atomu i zjadasz wszystkie jądra atomowe przedmiotu.
 ##     Na końcu następuje wybuch — na ekranie sypią się okna błędów — a przedmiot zamienia się w BU.
-## (2) Z węgla, diamentu, kurczalu i BU powstaje sztabka kurczalium.
+## (2) Z węgla, diamentu, kurczalu i 3 BU powstaje sztabka kurczalium.
 
 signal on_close
 
-const KURCZALIUM_COST := {"wegiel": 1, "krysztal_cienia": 1, "sztabka_kurczalu": 2, "pierwiastek_bu": 1}
+const KURCZALIUM_COST := {"wegiel": 1, "krysztal_cienia": 1, "sztabka_kurczalu": 2, "pierwiastek_bu": 3}
 const TIME_LIMIT := 30.0
 const ERROR_COUNT := 5000
 const ARENA := Vector2(1000, 400)
@@ -34,7 +34,7 @@ const STORY := [
 	{"id": "wegiel", "text": "Rozpalasz ogień pod kotłem i wrzucasz kawałek węgla. Kocioł syczy i puszcza czarny dym — mieszaj, żeby się nie przypalił!", "col": Color(0.25, 0.22, 0.24)},
 	{"id": "krysztal_cienia", "text": "Diament rozpuszcza się w gęstniejącej mazi i cała zawartość zaczyna lśnić fioletem. Mieszaj dalej!", "col": Color(0.5, 0.3, 0.8)},
 	{"id": "sztabka_kurczalu", "text": "Dwie sztabki kurczalu topią się w srebrną ciecz. Kury w całej wsi gdaczą ze strachu. Mieszaj mocniej!", "col": Color(0.7, 0.75, 0.85)},
-	{"id": "pierwiastek_bu", "text": "Na koniec wpuszczasz pierwiastek BU. Kocioł huczy, bąble pękają tęczą… Mieszaj, aż wszystko zastygnie w kurczalium!", "col": Color(1.0, 0.7, 0.2)},
+	{"id": "pierwiastek_bu", "text": "Na koniec wpuszczasz trzy pierwiastki BU. Kocioł huczy, bąble pękają tęczą… Mieszaj, aż wszystko zastygnie w kurczalium!", "col": Color(1.0, 0.7, 0.2)},
 ]
 const STIR_TURNS := 1.6
 var _stage := 0
@@ -172,7 +172,7 @@ func _count_line(id: String, need: int) -> Control:
 	h.add_child(UiKit.label("%s: %d / %d" % [String(ItemDB.get_data(id).get("name", id)), have, need], 15, UiKit.GOOD if have >= need else UiKit.BAD))
 	return h
 
-## Przedmioty z plecaka o rzadkości legendarnej lub wyższej: [{idx, id, rar}]
+## Bronie z plecaka o rzadkości rzadkiej lub wyższej: [{idx, id, rar}]
 func _sacrifices() -> Array:
 	var out: Array = []
 	var inv := GameState.inv()
@@ -180,16 +180,16 @@ func _sacrifices() -> Array:
 		var e = inv[i]
 		if e is Dictionary:
 			var rar := ItemDB.rarity_of(String(e["id"]))
-			if rar == "legendarny" or rar == "hiperlegendarny":
+			if ItemDB.bu_sacrifice_ok(String(e["id"])):
 				out.append({"idx": i, "id": String(e["id"]), "rar": rar})
 	return out
 
 func _build_menu() -> void:
 	_box.add_child(UiKit.label("SYNTEZA PIERWIASTKA BU", 20, UiKit.ACCENT))
-	_box.add_child(_wl("Aby wytworzyć BU, musisz POŚWIĘCIĆ przedmiot o rzadkości legendarnej (lub hiperlegendarnej) z plecaka. Zmniejszysz się do rozmiaru atomu i zjesz wszystkie jądra atomowe przedmiotu. Gdy skończysz — wybuch zamieni go w BU. Legendarny daje 3 BU, hiperlegendarny 6 (zjedz wszystko, by dostać całość).", 14, UiKit.DIM))
+	_box.add_child(_wl("Aby wytworzyć BU, musisz POŚWIĘCIĆ BROŃ (rzadką lub lepszą) z plecaka — 1 broń to 1 BU. Zmniejszysz się do rozmiaru atomu i zjesz wszystkie jądra atomowe przedmiotu. Gdy skończysz — wybuch zamieni go w BU. Zjedz wszystkie jądra, nim minie czas. Sztabka kurczalium kosztuje 3 BU.", 14, UiKit.DIM))
 	var list := _sacrifices()
 	if list.is_empty():
-		_box.add_child(_wl("Nie masz w plecaku żadnego legendarnego przedmiotu (założone nie liczą się — zdejmij je najpierw).", 14, UiKit.BAD))
+		_box.add_child(_wl("Nie masz w plecaku żadnej broni rzadkiej lub lepszej (założone nie liczą się — zdejmij je najpierw).", 14, UiKit.BAD))
 	for s in list:
 		var d := ItemDB.get_data(String(s["id"]))
 		var row := UiKit.panel(UiKit.BG2, 8)
@@ -201,14 +201,14 @@ func _build_menu() -> void:
 		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		h.add_child(v)
 		v.add_child(UiKit.label(String(d.get("name", "?")), 16, ItemDB.rarity_color(String(s["id"]))))
-		v.add_child(UiKit.label(String(ItemDB.RARITY_NAMES.get(s["rar"], "")) + " → %d BU" % (6 if s["rar"] == "hiperlegendarny" else 3), 12, UiKit.DIM))
+		v.add_child(UiKit.label(String(ItemDB.RARITY_NAMES.get(s["rar"], "")) + " → 1 BU", 12, UiKit.DIM))
 		var b := UiKit.button("Poświęć", 16, UiKit.BAD)
 		var idx: int = int(s["idx"])
 		b.pressed.connect(func(): Audio.play("deny"); _start_eat(idx))
 		h.add_child(b)
 	_box.add_child(UiKit.sep(10))
 	_box.add_child(UiKit.label("WYTWARZANIE KURCZALIUM", 20, UiKit.ACCENT))
-	_box.add_child(_wl("Receptura: węgiel + diament + 2 sztabki kurczalu + pierwiastek BU (zdobyty z poświęcenia legendarnego przedmiotu) = sztabka kurczalium.", 14, UiKit.DIM))
+	_box.add_child(_wl("Receptura: węgiel + diament + 2 sztabki kurczalu + 3 pierwiastki BU (każdy z poświęcenia broni) = sztabka kurczalium.", 14, UiKit.DIM))
 	var can := true
 	for id in KURCZALIUM_COST:
 		_box.add_child(_count_line(String(id), int(KURCZALIUM_COST[id])))
@@ -369,7 +369,7 @@ func _start_eat(idx: int) -> void:
 		return
 	_item_idx = idx
 	_item_id = String(e["id"])
-	_tier_bonus = 6 if ItemDB.rarity_of(_item_id) == "hiperlegendarny" else 3
+	_tier_bonus = 3
 	_total = 10 + _tier_bonus * 2
 	_eaten = 0
 	_t = 0.0
@@ -473,9 +473,7 @@ func _process(delta: float) -> void:
 func _explode() -> void:
 	_phase = "boom"
 	var ratio := float(_eaten) / float(_total)
-	var yield_n := maxi(1, int(round(float(_tier_bonus) * ratio)))
-	if _eaten >= _total and _t < TIME_LIMIT - 10.0:
-		yield_n += 1
+	var yield_n := ItemDB.BU_PER_SACRIFICE
 	# przedmiot przepada (zawsze znajdź go ponownie po id)
 	var inv := GameState.inv()
 	if _item_idx >= 0 and _item_idx < inv.size() and inv[_item_idx] is Dictionary and String(inv[_item_idx]["id"]) == _item_id:

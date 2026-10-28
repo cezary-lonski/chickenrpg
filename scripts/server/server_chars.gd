@@ -268,6 +268,8 @@ static func normalize(rec: Dictionary) -> void:
 		rec["equip_m"] = {}
 	if not (rec.get("gsx") is Dictionary):
 		rec["gsx"] = {}
+	if not (rec.get("tree") is Dictionary):
+		rec["tree"] = {}
 	if not (rec.get("support") is Dictionary):
 		rec["support"] = {"hp": {}, "fallen": {}}
 
@@ -425,9 +427,53 @@ static func add_xp(rec: Dictionary, amount: int) -> int:
 
 static func ranks_of(rec: Dictionary) -> Dictionary:
 	var out := {}
+	var tree: Dictionary = rec.get("tree", {}) if rec.get("tree") is Dictionary else {}
 	for s in rec.get("known_skills", []):
-		out[String(s)] = 1
+		out[String(s)] = maxi(1, int(tree.get(String(s), 0)))
 	return out
+
+# ------------------------------------------------------- drzewko umiejętności ---
+## Jak w grze lokalnej: 1 punkt za każdy poziom (od 2.), każda ranga kosztuje 1; umiejętności klasowe i Furia są od początku (ranga 1).
+
+static func tree_points(level: int, tree: Dictionary) -> int:
+	var spent := 0
+	for k in tree:
+		spent += int(tree[k])
+	return maxi(0, level - 1 - spent)
+
+static func free_skill(cls: String, id: String) -> bool:
+	return id == "furia" or id in ClassDatabase.get_data(cls).get("skills", [])
+
+## {ok, reason} — używane przez serwer (walidacja) i panel klienta (wyszarzenie przycisków).
+static func can_learn(cls: String, level: int, tree: Dictionary, id: String) -> Dictionary:
+	if not SkillTreeDB.has(id, cls):
+		return {"ok": false, "reason": "Brak w drzewku"}
+	var n := SkillTreeDB.node(id, cls)
+	var cur := int(tree.get(id, 0))
+	if cur >= int(n["max_rank"]):
+		return {"ok": false, "reason": "Maksymalny poziom"}
+	var need_lv := SkillTreeDB.rank_level(id, cur + 1, cls)
+	if level < need_lv:
+		return {"ok": false, "reason": "Wymaga poziomu %d" % need_lv}
+	for r in n.get("req", []):
+		if int(tree.get(String(r), 0)) < 1 and not free_skill(cls, String(r)):
+			return {"ok": false, "reason": "Wymaga: %s" % String(SkillDB.get_data(String(r)).get("name", r))}
+	if tree_points(level, tree) < 1:
+		return {"ok": false, "reason": "Brak punktów umiejętności"}
+	return {"ok": true, "reason": ""}
+
+## Kupuje rangę węzła; zwraca tekst błędu albo "" przy sukcesie.
+static func learn(rec: Dictionary, id: String) -> String:
+	var cls := String(rec.get("class", ""))
+	if not (rec.get("tree") is Dictionary):
+		rec["tree"] = {}
+	var chk := can_learn(cls, int(rec.get("level", 1)), rec["tree"], id)
+	if not bool(chk["ok"]):
+		return String(chk["reason"])
+	rec["tree"][id] = int(rec["tree"].get(id, 0)) + 1
+	if id not in rec["known_skills"]:
+		rec["known_skills"].append(id)
+	return ""
 
 # ----------------------------------------------------------------- plecak ---
 

@@ -10,8 +10,24 @@ const ITEMS := {
 		"desc": "Zapieczętowana przesyłka z tablicy ogłoszeń. Doręcz ją adresatowi.", "stats": {}, "tint": Color(0.95, 0.9, 0.7),
 	},
 	"lutnia_kukuryka": {
-		"name": "Lutnia Kukuryka", "slot": "material", "tier": 1, "price": 0, "icon": "list", "stack": 1,
+		"name": "Lutnia Kukuryka", "slot": "material", "tier": 1, "price": 0, "icon": "lutnia", "stack": 1,
 		"desc": "Ulubiona lutnia barda, skonfiskowana przez ludzi kanclerza. Zanieś ją bardowi.", "stats": {}, "tint": Color(0.9, 0.6, 0.3),
+	},
+	"wytrych_zardzewialy": {
+		"name": "Zardzewiały wytrych", "slot": "material", "tier": 1, "price": 40, "icon": "klucz", "stack": 20,
+		"desc": "Tanie, krzywe żelastwo. Wąskie zielone pole, szybki wskaźnik, dwa życia i często się łamie.", "stats": {}, "tint": Color(0.7, 0.45, 0.3),
+	},
+	"wytrych": {
+		"name": "Wytrych", "slot": "material", "tier": 1, "price": 150, "icon": "klucz", "stack": 20,
+		"desc": "Otwiera zamknięte skrzynie (minigra). Po udanej próbie czasem się łamie, po nieudanej zawsze.", "stats": {}, "tint": Color(0.75, 0.78, 0.85),
+	},
+	"wytrych_stalowy": {
+		"name": "Stalowy wytrych", "slot": "material", "tier": 2, "price": 400, "icon": "klucz", "stack": 20,
+		"desc": "Szersze zielone pole, wolniejszy wskaźnik, cztery życia. Rzadko się łamie.", "stats": {}, "tint": Color(0.6, 0.8, 0.98),
+	},
+	"wytrych_mistrzowski": {
+		"name": "Wytrych mistrzowski", "slot": "material", "tier": 3, "price": 1000, "icon": "klucz", "stack": 20,
+		"desc": "Dzieło mistrza zamkarzy: bardzo szerokie pole, spokojny wskaźnik, pięć żyć. Nie łamie się po udanej próbie.", "stats": {}, "tint": Color(1.0, 0.85, 0.35),
 	},
 	"jeniec_pisklaczka": {
 		"name": "Pisklaczka (pod opieką)", "slot": "material", "tier": 1, "price": 0, "icon": "list", "stack": 1,

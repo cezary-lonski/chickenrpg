@@ -5,6 +5,7 @@ extends CanvasLayer
 signal exit_requested()
 signal dialog_closed(token: int)
 signal choice_picked(token: int, index: int)
+signal puzzle_done(token: int, ok: bool)
 
 const KIND_COLORS := {
 	"chat": "#f6efd9", "system": "#ffd966", "error": "#f2685a", "whisper": "#f59be0", "me": "#9fd9ff", "server": "#ffa94d",
@@ -243,7 +244,7 @@ func _build_exit_panel(root: Control) -> void:
 	v.add_child(first)
 	_pause_btn(v, "Ekwipunek (I)", func(): _exit_panel.visible = false; toggle_inventory())
 	_pause_btn(v, "Atrybuty", Callable(), UiKit.ACCENT, true)
-	_pause_btn(v, "Umiejętności", Callable(), UiKit.ACCENT, true)
+	_pause_btn(v, "Umiejętności", func(): _exit_panel.visible = false; open_overlay("tree", {}))
 	_pause_btn(v, "Towarzysze (P)", func(): _exit_panel.visible = false; open_overlay("pets", {}))
 	_pause_btn(v, "Mapa świata (M)", func(): _exit_panel.visible = false; open_world_map())
 	var sp := Control.new()
@@ -353,11 +354,16 @@ func is_dialog_open() -> bool:
 func is_blocking() -> bool:
 	return _input.visible or inv_panel.visible or _exit_panel.visible or shop_panel.visible or is_dialog_open() or (forge_panel != null and is_instance_valid(forge_panel)) or has_overlay() or (_settings != null and is_instance_valid(_settings))
 
-func open_dialog(token: int, lines: Array, accent: Color) -> void:
+func open_dialog(token: int, lines: Array, accent: Color, scene: String = "") -> void:
 	if is_dialog_open():
 		_dialog.queue_free()
-	var d := UiDialog.new()
-	d.setup(lines, accent)
+	var d: Control
+	if UiVignette.ALL.has(scene):
+		d = UiVignette.new()
+		d.setup(scene)
+	else:
+		d = UiDialog.new()
+		d.setup(lines, accent)
 	d.on_close.connect(func():
 		if is_instance_valid(d):
 			d.queue_free()
@@ -365,6 +371,19 @@ func open_dialog(token: int, lines: Array, accent: Color) -> void:
 		dialog_closed.emit(token))
 	_dialog = d
 	_root.add_child(d)
+
+func open_puzzle(token: int, kind: String, uid: String, pick: String = "") -> void:
+	if is_dialog_open():
+		_dialog.queue_free()
+	var ui := UiPuzzle.new()
+	ui.setup(kind, hash(uid), SecretDB.PICKS.get(pick, {}))
+	ui.finished.connect(func(ok: bool): puzzle_done.emit(token, ok))
+	ui.on_close.connect(func():
+		if is_instance_valid(ui):
+			ui.queue_free()
+		_dialog = null)
+	_dialog = ui
+	_root.add_child(ui)
 
 func open_choice(token: int, prompt: String, options: Array, accent: Color) -> void:
 	if is_dialog_open():
@@ -399,6 +418,7 @@ func open_overlay(kind: String, data: Dictionary) -> void:
 			"waves": _overlay = UiMmoWaves.new()
 			"worldmap": _overlay = UiMmoMap.new()
 			"travel": _overlay = UiMmoTravel.new()
+			"tree": _overlay = UiMmoTree.new()
 			_: return
 		_overlay_kind = kind
 		_overlay.apply_state(data)
@@ -566,6 +586,16 @@ func toggle_inventory() -> void:
 	if inv_panel.visible:
 		inv_panel.rebuild(Mmo.my_info)
 		_center.call_deferred(inv_panel)
+
+## Menu umiejętności (sloty skilli) = ekwipunek otwarty od razu na wyborze skilla (klawisz O / przycisk SKILE na telefonie).
+func open_skills() -> void:
+	if inv_panel.visible and inv_panel._mode == "skills":
+		inv_panel.visible = false
+		return
+	inv_panel.visible = true
+	inv_panel.rebuild(Mmo.my_info)
+	inv_panel._open_skill_slot(0)
+	_center.call_deferred(inv_panel)
 
 func toggle_exit_menu() -> void:
 	_exit_panel.visible = not _exit_panel.visible

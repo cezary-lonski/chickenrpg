@@ -371,7 +371,10 @@ func _on_player_died() -> void:
 		return
 	await get_tree().create_timer(1.9).timeout
 	if not finished:
-		if GameState.try_scroll_revive(player):
+		if GameState.item_count("zwoj_wskrzeszenia") > 0 and player != null and is_instance_valid(player):
+			Flow.offer_revive(player, func():
+				finished = true
+				player_died.emit())
 			return
 		finished = true
 		player_died.emit()

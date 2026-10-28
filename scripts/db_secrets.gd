@@ -251,6 +251,30 @@ const LABS := {
 static func lab_for(zone_id: String) -> Variant:
 	return LABS.get(zone_id, null)
 
+## Skrzynie z kluczem "hidden" (ukryte, cenniejsze) są zamknięte na zamek — otwiera je wytrych.
+## Wytrychy od najlepszego: szerokość zielonego pola (zone), prędkość wskaźnika (speed), życia w minigrze
+## oraz szansa złamania po udanym otwarciu (ok) i po porażce (fail). Używany jest najlepszy, jaki masz.
+const PICKS := {
+	"wytrych_mistrzowski": {"zone": 1.5, "speed": 0.7, "lives": 5, "ok": 0.0, "fail": 0.2},
+	"wytrych_stalowy": {"zone": 1.25, "speed": 0.85, "lives": 4, "ok": 0.1, "fail": 0.5},
+	"wytrych": {"zone": 1.0, "speed": 1.0, "lives": 3, "ok": 0.3, "fail": 1.0},
+	"wytrych_zardzewialy": {"zone": 0.8, "speed": 1.2, "lives": 2, "ok": 0.6, "fail": 1.0},
+}
+
+## Najlepszy wytrych, który gracz ma (count: Callable id -> ilość); "" gdy brak.
+static func best_pick(count: Callable) -> String:
+	for id in PICKS:
+		if int(count.call(id)) > 0:
+			return String(id)
+	return ""
+
+## Czy wytrych po tej próbie się łamie.
+static func pick_breaks(id: String, ok: bool) -> bool:
+	return randf() < float(PICKS[id]["ok" if ok else "fail"])
+
+static func chest_locked(c: Dictionary) -> bool:
+	return bool(c.get("locked", c.get("hidden", false)))
+
 static func chests_for(zone_id: String) -> Array:
 	return CHESTS.get(zone_id, [])
 

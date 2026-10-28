@@ -99,9 +99,39 @@ static func _objective(quest: String, id: String) -> Dictionary:
 	return {}
 
 static func _obj(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary) -> void:
-	var rec: Dictionary = srv.peers[peer]["rec"]
 	var obj := _objective(inst.quest_id, String(o["obj"]))
 	if obj.is_empty():
+		return
+	if String(obj.get("puzzle", "")) != "":
+		srv.open_puzzle(peer, String(obj["puzzle"]), String(o["uid"]), {"o": o})
+		return
+	obj_apply(srv, peer, inst, o)
+
+## Wynik zagadki: cel (obj) albo zamek skrzyni (chest, z wytrychem, który może się złamać).
+static func puzzle_result(srv: MmoServer, peer: int, inst: ZoneInstance, extra: Dictionary, ok: bool) -> void:
+	if extra.has("chest"):
+		var rec: Dictionary = srv.peers[peer]["rec"]
+		var pick := String(extra.get("pick", ""))
+		if pick == "" or _item_count(rec, pick) <= 0:
+			return
+		if SecretDB.pick_breaks(pick, ok):
+			ServerChars.inv_remove(rec, pick, 1)
+			srv.say(peer, "%s się złamał." % String(ItemDB.get_data(pick).get("name", "Wytrych")))
+			srv.chars.mark_dirty()
+			srv._push_me(peer)
+		if ok:
+			_chest_open(srv, peer, inst, extra["chest"])
+		return
+	if not ok:
+		srv.say(peer, "Nie udało się — spróbuj jeszcze raz.")
+		return
+	obj_apply(srv, peer, inst, extra["o"])
+
+## Cel zaliczony (po zagadce, jeśli była): flaga, komunikat i nagroda.
+static func obj_apply(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary) -> void:
+	var rec: Dictionary = srv.peers[peer]["rec"]
+	var obj := _objective(inst.quest_id, String(o["obj"]))
+	if obj.is_empty() or bool(flags_of(rec).get(String(o["uid"]), false)):
 		return
 	flags_of(rec)[String(o["uid"])] = true
 	srv.chars.mark_dirty()
@@ -168,7 +198,7 @@ static func _heist_turn_in(srv: MmoServer, peer: int, inst: ZoneInstance, npc: S
 		return false
 	ServerChars.inv_remove(rec, ChapterExtras.heist_item(o), 1)
 	flags_of(rec)[ChapterExtras.flag(inst.quest_id, String(o["id"]), 0)] = true
-	srv._open_dialog(peer, o.get("thanks", []), NpcDB.get_data(npc).get("accent", UiKit.ACCENT), "")
+	srv._open_dialog(peer, o.get("thanks", []), NpcDB.get_data(npc).get("accent", UiKit.ACCENT), "", {"scene": String(o.get("scene", ""))})
 	check_obj_reward(srv, peer, inst.quest_id, o)
 	srv.chars.mark_dirty()
 	srv.push_prog(peer)
@@ -191,11 +221,23 @@ static func mark_talked(srv: MmoServer, peer: int, quest: String, npc: String) -
 
 static func _chest(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary) -> void:
 	var rec: Dictionary = srv.peers[peer]["rec"]
+	for ch in SecretDB.chests_for(inst.quest_id):
+		if String(ch["id"]) == String(o["chest"]) and SecretDB.chest_locked(ch):
+			var pick := SecretDB.best_pick(func(id): return _item_count(rec, String(id)))
+			if pick == "":
+				srv.say(peer, "Skrzynia jest zamknięta na zamek. Potrzebny wytrych — kupisz go w sklepie.")
+				return
+			srv.open_puzzle(peer, "lockpick", String(o["uid"]), {"chest": o, "pick": pick})
+			return
+	_chest_open(srv, peer, inst, o)
+
+static func _chest_open(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary) -> void:
+	var rec: Dictionary = srv.peers[peer]["rec"]
 	var c := {}
 	for ch in SecretDB.chests_for(inst.quest_id):
 		if String(ch["id"]) == String(o["chest"]):
 			c = ch
-	if c.is_empty():
+	if c.is_empty() or String(o["uid"]) in (secrets_of(rec).get("chests", []) as Array):
 		return
 	var uid := String(o["uid"])
 	var res := ServerCtx.run(rec, func():
@@ -332,6 +374,8 @@ static func choice_pick(srv: MmoServer, peer: int, data: Dictionary, i: int) -> 
 	var rec: Dictionary = srv.peers[peer]["rec"]
 	var inst: ZoneInstance = srv.peers[peer]["inst"]
 	match String(data.get("kind", "")):
+		"revive":
+			srv.revive_choice(peer, i == 0)
 		"arena_invite":
 			srv.answer_arena(peer, int(data.get("from", -1)), i == 0)
 		"board":

@@ -1,16 +1,15 @@
 class_name UiMmoLab
 extends UiMmoPanel
-## Laboratorium na serwerze: synteza pierwiastka BU (minigra: zjadanie jąder atomowych poświęconego legendarnego
-## przedmiotu) i warzenie sztabki kurczalium (mieszanie kotła). Wyniki sprawdza i księguje serwer.
+## Laboratorium na serwerze: synteza pierwiastka BU (minigra: zjadanie jąder atomowych poświęconej broni) i warzenie sztabki kurczalium (mieszanie kotła). Wyniki sprawdza i księguje serwer.
 
-const KURCZALIUM_COST := {"wegiel": 1, "krysztal_cienia": 1, "sztabka_kurczalu": 2, "pierwiastek_bu": 1}
+const KURCZALIUM_COST := {"wegiel": 1, "krysztal_cienia": 1, "sztabka_kurczalu": 2, "pierwiastek_bu": 3}
 const TIME_LIMIT := 30.0
 const ARENA := Vector2(900, 360)
 const STORY := [
 	{"text": "Rozpalasz ogień pod kotłem i wrzucasz kawałek węgla. Kocioł syczy i puszcza czarny dym — mieszaj, żeby się nie przypalił!", "col": Color(0.25, 0.22, 0.24)},
 	{"text": "Diament rozpuszcza się w gęstniejącej mazi i cała zawartość zaczyna lśnić fioletem. Mieszaj dalej!", "col": Color(0.5, 0.3, 0.8)},
 	{"text": "Dwie sztabki kurczalu topią się w srebrną ciecz. Kury w całej wsi gdaczą ze strachu. Mieszaj mocniej!", "col": Color(0.7, 0.75, 0.85)},
-	{"text": "Na koniec wpuszczasz pierwiastek BU. Kocioł huczy, bąble pękają tęczą… Mieszaj, aż wszystko zastygnie w kurczalium!", "col": Color(1.0, 0.7, 0.2)},
+	{"text": "Na koniec wpuszczasz trzy pierwiastki BU. Kocioł huczy, bąble pękają tęczą… Mieszaj, aż wszystko zastygnie w kurczalium!", "col": Color(1.0, 0.7, 0.2)},
 ]
 const STIR_TURNS := 1.6
 
@@ -59,13 +58,13 @@ func _menu() -> void:
 	_arena = null
 	_gold = int(Mmo.my_info.get("gold", _gold))
 	_box.add_child(UiKit.label("SYNTEZA PIERWIASTKA BU", 20, UiKit.ACCENT))
-	_box.add_child(_wl("Aby wytworzyć BU, POŚWIĘĆ legendarny (lub hiperlegendarny) przedmiot z plecaka: zjedz wszystkie jądra atomowe, nim minie czas. Legendarny daje 3 BU, hiperlegendarny 6.", 14, UiKit.DIM))
+	_box.add_child(_wl("Aby wytworzyć BU, POŚWIĘĆ broń (rzadką lub lepszą) z plecaka: zjedz wszystkie jądra atomowe, nim minie czas. 1 broń daje 1 BU, a sztabka kurczalium kosztuje 3 BU.", 14, UiKit.DIM))
 	var any := false
 	var inv: Array = Mmo.my_info.get("inv", [])
 	for i in inv.size():
 		var id := String(inv[i]["id"])
 		var rar := ItemDB.rarity_of(id)
-		if rar != "legendarny" and rar != "hiperlegendarny":
+		if not ItemDB.bu_sacrifice_ok(id):
 			continue
 		any = true
 		var row := UiKit.panel(UiKit.BG2, 8)
@@ -77,16 +76,16 @@ func _menu() -> void:
 		v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		h.add_child(v)
 		v.add_child(UiKit.label(String(ItemDB.get_data(id).get("name", "?")), 16, ItemDB.rarity_color(id)))
-		v.add_child(UiKit.label(String(ItemDB.RARITY_NAMES.get(rar, "")) + " → %d BU" % (6 if rar == "hiperlegendarny" else 3), 12, UiKit.DIM))
+		v.add_child(UiKit.label(String(ItemDB.RARITY_NAMES.get(rar, "")) + " → 1 BU", 12, UiKit.DIM))
 		var b := UiKit.button("Poświęć", 16, UiKit.BAD)
 		var idx := i
 		b.pressed.connect(func(): Audio.play("deny"); _start_eat(idx, rar))
 		h.add_child(b)
 	if not any:
-		_box.add_child(_wl("Nie masz w plecaku legendarnego przedmiotu (założone nie liczą się — zdejmij je).", 14, UiKit.BAD))
+		_box.add_child(_wl("Nie masz w plecaku broni rzadkiej lub lepszej (założone nie liczą się — zdejmij je).", 14, UiKit.BAD))
 	_box.add_child(UiKit.sep(10))
 	_box.add_child(UiKit.label("WYTWARZANIE KURCZALIUM", 20, UiKit.ACCENT))
-	_box.add_child(_wl("Receptura: węgiel + diament + 2 sztabki kurczalu + pierwiastek BU = sztabka kurczalium.", 14, UiKit.DIM))
+	_box.add_child(_wl("Receptura: węgiel + diament + 2 sztabki kurczalu + 3 pierwiastki BU = sztabka kurczalium.", 14, UiKit.DIM))
 	var can := true
 	for id in KURCZALIUM_COST:
 		var have := _count(String(id))
@@ -117,7 +116,7 @@ func _make_arena(draw_cb: Callable) -> void:
 
 func _start_eat(idx: int, rar: String) -> void:
 	_item_idx = idx
-	_tier_bonus = 6 if rar == "hiperlegendarny" else 3
+	_tier_bonus = 3
 	_total = 10 + _tier_bonus * 2
 	_eaten = 0
 	_t = 0.0

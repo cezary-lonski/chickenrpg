@@ -216,6 +216,12 @@ func _with_title(lines: Array, title: String) -> Array:
 		out.append(pair)
 	return out
 
+func _vignette_then(kind: String, done: Callable) -> void:
+	await _vignette_async(kind)
+	if is_instance_valid(self):
+		await get_tree().process_frame   # Flow najpierw domyka nakładkę historyjki
+		done.call()
+
 func _vignette_async(kind: String) -> void:
 	_dialog_open = true
 	var ui := UiVignette.new()
@@ -947,7 +953,10 @@ func _on_player_died() -> void:
 	if challenge_mode:
 		_challenge_over()
 		return
-	if GameState.try_scroll_revive(player):
+	if GameState.item_count("zwoj_wskrzeszenia") > 0 and player != null and is_instance_valid(player):
+		Flow.offer_revive(player, func():
+			finished = true
+			player_died.emit())
 		return
 	finished = true
 	player_died.emit()
@@ -1598,6 +1607,27 @@ func _build_camp_entrance(camp_id: String) -> void:
 func _open_chest(ch: Interactable, c: Dictionary) -> void:
 	if ch.done:
 		return
+	if SecretDB.chest_locked(c) and not ch.has_meta("unlocked"):
+		var pick := SecretDB.best_pick(GameState.item_count)
+		if pick == "":
+			GameState.toast.emit("Skrzynia jest zamknięta na zamek. Potrzebny wytrych — kupisz go w sklepie.", UiKit.BAD)
+			return
+		var ui := UiPuzzle.new()
+		ui.setup("lockpick", hash(ch.uid), SecretDB.PICKS[pick])
+		_dialog_open = true
+		ui.finished.connect(func(ok: bool):
+			if ok:
+				ch.set_meta("unlocked", true)
+			if SecretDB.pick_breaks(pick, ok):
+				GameState.remove_item(pick, 1)
+				GameState.toast.emit("%s się złamał." % String(ItemDB.get_data(pick).get("name", "Wytrych")), UiKit.BAD))
+		ui.on_close.connect(func():
+			_dialog_open = false
+			await get_tree().process_frame   # Flow najpierw domyka nakładkę zagadki
+			if ch.has_meta("unlocked"):
+				_open_chest(ch, c))
+		Flow.open_dialog(ui)
+		return
 	ch.done = true
 	SecretDB.mark_chest(ch.uid)
 	var lines := SecretDB.grant({"items": c.get("loot", {}), "gold": int(c.get("gold", 0)), "xp": int(c.get("xp", 0))})
@@ -2005,7 +2035,10 @@ func _heist_turn_in(npc: String) -> bool:
 			return false
 		GameState.remove_item(item, 1)
 		var accent: Color = NpcDB.get_data(npc).get("accent", UiKit.ACCENT)
-		_open_dialog(obj.get("thanks", []), accent, func(): _obj_complete_flag(obj, 0))
+		if UiVignette.ALL.has(String(obj.get("scene", ""))):
+			_vignette_then(String(obj["scene"]), func(): _obj_complete_flag(obj, 0))
+		else:
+			_open_dialog(obj.get("thanks", []), accent, func(): _obj_complete_flag(obj, 0))
 		return true
 	return false
 
@@ -2017,6 +2050,23 @@ func _reveal_post_objectives() -> void:
 
 func _obj_activate(o: Dictionary, idx: int, it: Interactable) -> void:
 	if it.done:
+		return
+	var pz := String(o.get("puzzle", ""))
+	if pz != "" and not it.has_meta("solved"):
+		var ui := UiPuzzle.new()
+		ui.setup(pz, hash(it.uid))
+		_dialog_open = true
+		ui.finished.connect(func(ok: bool):
+			if ok:
+				it.set_meta("solved", true))
+		ui.on_close.connect(func():
+			_dialog_open = false
+			await get_tree().process_frame   # Flow najpierw domyka nakładkę zagadki
+			if it.has_meta("solved"):
+				_obj_activate(o, idx, it)
+			else:
+				GameState.toast.emit("Nie udało się — spróbuj jeszcze raz.", UiKit.BAD))
+		Flow.open_dialog(ui)
 		return
 	it.done = true
 	GameState.set_story_flag(it.uid)

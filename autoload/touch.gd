@@ -15,6 +15,8 @@ var _joy_vec := Vector2.ZERO
 var _btns: Array = []
 var _held: Dictionary = {}      # indeks palca -> przycisk
 var _canvas: Control
+# zawsze dostępny przycisk wyjścia z okien (telefon nie ma klawisza Esc)
+var _close_btn := {"id": "close", "pos": Vector2(1236, 44), "r": 30.0, "label": "✕", "kind": "key", "arg": KEY_ESCAPE, "hold": false}
 
 func _ready() -> void:
 	layer = 60
@@ -40,6 +42,7 @@ func _ready() -> void:
 		{"id": "chat", "pos": Vector2(262, 40), "r": 28.0, "label": "T", "kind": "key", "arg": KEY_T, "hold": false, "mmo": true},
 		{"id": "inv", "pos": Vector2(326, 40), "r": 28.0, "label": "I", "kind": "key", "arg": KEY_I, "hold": false, "mmo": true},
 		{"id": "pets", "pos": Vector2(390, 40), "r": 28.0, "label": "P", "kind": "key", "arg": KEY_P, "hold": false, "mmo": true},
+		{"id": "skills", "pos": Vector2(454, 40), "r": 28.0, "label": "SKILE", "kind": "key", "arg": KEY_O, "hold": false, "mmo": true},
 		{"id": "menu", "pos": Vector2(1236, 44), "r": 28.0, "label": "☰", "kind": "key", "arg": KEY_ESCAPE, "hold": false},
 	]
 
@@ -60,9 +63,11 @@ func _blocked() -> bool:
 	return false
 
 func _process(_delta: float) -> void:
-	_canvas.visible = _in_game() and not _blocked()
+	_canvas.visible = _in_game()
 	if _canvas.visible:
 		_canvas.queue_redraw()
+		if _blocked() and (_joy_index != -1 or _held.size() > 0 and not _held.values().has(_close_btn)):
+			_release_all()
 	elif _joy_index != -1 or not _held.is_empty():
 		_release_all()
 
@@ -77,6 +82,13 @@ func _release_all() -> void:
 
 func _draw_controls() -> void:
 	var f := ThemeDB.fallback_font
+	if _blocked():
+		# okno otwarte: tylko przycisk ✕ (odpowiednik Esc)
+		_canvas.draw_circle(_close_btn["pos"], _close_btn["r"], Color(0.9, 0.3, 0.3, 0.45))
+		_canvas.draw_arc(_close_btn["pos"], _close_btn["r"], 0.0, TAU, 32, Color(1, 1, 1, 0.7), 2.5, true)
+		var cw := f.get_string_size("✕", HORIZONTAL_ALIGNMENT_LEFT, -1, 26).x
+		_canvas.draw_string(f, _close_btn["pos"] + Vector2(-cw * 0.5, 9), "✕", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, Color(1, 1, 1, 0.95))
+		return
 	# joystick
 	_canvas.draw_circle(JOY_CENTER, JOY_RADIUS, Color(1, 1, 1, 0.10))
 	_canvas.draw_arc(JOY_CENTER, JOY_RADIUS, 0.0, TAU, 48, Color(1, 1, 1, 0.35), 3.0, true)
@@ -98,7 +110,7 @@ func _draw_controls() -> void:
 # ----------------------------------------------------------------- wejście ---
 
 func _input(event: InputEvent) -> void:
-	if not _in_game() or _blocked():
+	if not _in_game():
 		return
 	if event is InputEventScreenTouch:
 		var t := event as InputEventScreenTouch
@@ -112,12 +124,18 @@ func _input(event: InputEvent) -> void:
 			if _held.has(t.index):
 				_btn_up(_held[t.index])
 				_held.erase(t.index)
-	elif event is InputEventScreenDrag:
+	elif event is InputEventScreenDrag and not _blocked():
 		var d := event as InputEventScreenDrag
 		if d.index == _joy_index:
 			_update_joy(d.position)
 
 func _touch_down(index: int, pos: Vector2) -> bool:
+	if _blocked():
+		if pos.distance_to(_close_btn["pos"]) <= float(_close_btn["r"]) + 14.0:
+			_held[index] = _close_btn
+			_btn_down(_close_btn)
+			return true
+		return false
 	# przyciski
 	for b in _btns:
 		if bool(b.get("mmo", false)) and not _mmo():

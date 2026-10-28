@@ -314,7 +314,7 @@ const RARITY_COLORS := {
 }
 
 ## Scalona baza: przedmioty bazowe + dodatki (kuźnia, legendarne, pety).
-static var LIST: Dictionary = _armorize(BASE_LIST.merged(ItemsExtra.LIST).merged(RuneDB.pattern_items()).merged(ItemsHard.LIST).merged(SideDB.ITEMS).merged(PalaceDB.ITEMS).merged(BowDB.LIST))
+static var LIST: Dictionary = _armorize(BASE_LIST.merged(ItemsExtra.LIST).merged(RuneDB.pattern_items()).merged(ItemsHard.LIST).merged(SideDB.ITEMS).merged(PalaceDB.ITEMS).merged(BowDB.LIST).merged(ItemsGen.LIST))
 
 ## Zbroja nie dodaje życia — zmniejsza obrażenia: obrona zbroi zamienia się na procent
 ## mniejszych obrażeń (30% wartości obrony), a bonus do życia zbroi znika.
@@ -333,6 +333,13 @@ static func _armorize(l: Dictionary) -> Dictionary:
 		d["fx"] = fx
 		out[id] = d
 	return out
+
+## Ofiara do pierwiastka BU: dowolna broń o rzadkości rzadkiej lub wyższej. 1 broń = 1 BU, a sztabka kurczalium kosztuje 3 BU.
+const BU_PER_SACRIFICE := 1
+static func bu_sacrifice_ok(id: String) -> bool:
+	if String(get_data(id).get("slot", "")) != "weapon":
+		return false
+	return RARITIES.find(rarity_of(id)) >= RARITIES.find("rzadki")
 
 static func rarity_of(id: String) -> String:
 	var d: Dictionary = LIST.get(id, {})

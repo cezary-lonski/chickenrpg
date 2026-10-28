@@ -1,7 +1,7 @@
 class_name UiUpdater
 extends PanelContainer
 ## Auto-aktualizacja: przy starcie menu sprawdza najnowsze wydanie na GitHubie. Jeśli jest nowsze niż
-## wersja gry (application/config/version), pokazuje pasek z przyciskiem „Aktualizuj". Windows i Linux: pobiera paczkę
+## wersja gry (application/config/version), pokazuje pasek i od razu rozpoczyna aktualizację (raz na uruchomienie, jeden raz na tag; przycisk „Aktualizuj" zostaje na wypadek błędu). Windows i Linux: pobiera paczkę
 ## (.zip / .tar.gz), podmienia program (skrypt pomocniczy działa po zamknięciu) i uruchamia nową wersję.
 ## Android: otwiera pobieranie .apk. Te same funkcje statyczne używa serwer (ServerUpdater).
 
@@ -121,6 +121,27 @@ func _on_list(result: int, code: int, _h: PackedStringArray, body: PackedByteArr
 	_asset_url = String(best["url"])
 	_label.text = "Dostępna nowa wersja: %s (masz %s)" % [_tag, current_version()]
 	visible = true
+	if _auto_tried or OS.get_name() not in ["Windows", "Linux", "Android"] or UiUpdater._last_auto_tag() == _tag:
+		return
+	# po każdym uruchomieniu gry nowa wersja instaluje się sama; ten sam tag nie jest ponawiany automatycznie
+	# (gdyby wersja w paczce nie zgadzała się z tagiem, gra nie wpadnie w pętlę aktualizacji)
+	_auto_tried = true
+	UiUpdater._save_last_auto_tag(_tag)
+	_label.text = "Nowa wersja %s — uruchamiam aktualizację…" % _tag
+	_on_update()
+
+static var _auto_tried := false
+const AUTO_TAG_FILE := "user://last_auto_update.txt"
+
+static func _last_auto_tag() -> String:
+	if not FileAccess.file_exists(AUTO_TAG_FILE):
+		return ""
+	return FileAccess.get_file_as_string(AUTO_TAG_FILE).strip_edges()
+
+static func _save_last_auto_tag(tag: String) -> void:
+	var f := FileAccess.open(AUTO_TAG_FILE, FileAccess.WRITE)
+	if f:
+		f.store_string(tag)
 
 func _on_update() -> void:
 	if _asset_url == "" or OS.get_name() not in ["Windows", "Linux"]:

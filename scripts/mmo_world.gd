@@ -52,10 +52,12 @@ func _ready() -> void:
 	camera.position_smoothing_speed = 8.0
 	camera.limit_left = 0
 	camera.limit_top = 0
+	camera.zoom = Vector2.ONE * GameState.view_zoom()
 	add_child(camera)
 	hud = UiMmoHud.new()
 	hud.exit_requested.connect(_leave)
 	hud.dialog_closed.connect(func(token: int): Mmo.send_act("dialog_done", {"token": token}))
+	hud.puzzle_done.connect(func(token: int, ok: bool): Mmo.send_act("puzzle_done", {"token": token, "ok": ok}))
 	hud.choice_picked.connect(func(token: int, i: int): Mmo.send_act("choice_pick", {"token": token, "i": i}))
 	add_child(hud)
 	Mmo.snapshot_received.connect(_on_snapshot)
@@ -282,9 +284,9 @@ func _refresh_objects() -> void:
 				it.done = bool(flags.get(String(uid), false)) or int(o["idx"]) in (lv.get(q, []) as Array)
 			"heist":
 				it.done = _heist_off()
-			"entrance":
 			"prisoner":
 				it.done = bool(flags.get(String(uid), false))
+			"entrance":
 				it.visible = _levers_done(int(o.get("levers", 3))) >= int(o.get("levers", 3))
 
 ## Skradanka nie dotyczy gracza, który zwędził lutnię albo już ją oddał (strażnicy znikają z mapy).
@@ -354,7 +356,9 @@ func _on_event(kind: String, data: Dictionary) -> void:
 			add_child(b)
 			Audio.play("gate", 1.0, -8.0)
 		"dialog":
-			hud.open_dialog(int(data.get("token", 0)), data.get("lines", []), data.get("accent", UiKit.ACCENT))
+			hud.open_dialog(int(data.get("token", 0)), data.get("lines", []), data.get("accent", UiKit.ACCENT), String(data.get("scene", "")))
+		"puzzle":
+			hud.open_puzzle(int(data.get("token", 0)), String(data.get("kind", "")), String(data.get("uid", "")), String(data.get("pick", "")))
 		"shop":
 			hud.open_shop(data.get("stock", []), int(data.get("gold", 0)))
 		"hospital", "stash", "lab", "worldmap":
@@ -403,6 +407,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif key == KEY_I:
 		hud.toggle_inventory()
+		get_viewport().set_input_as_handled()
+	elif key == KEY_O and (not hud.is_blocking() or hud.inv_panel.visible):
+		hud.open_skills()
+		get_viewport().set_input_as_handled()
+	elif key == KEY_K and not hud.is_blocking():
+		hud.open_overlay("tree", {})
 		get_viewport().set_input_as_handled()
 	elif key == KEY_B and not hud.is_blocking():
 		hud.open_overlay("waves", {})

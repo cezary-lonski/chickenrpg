@@ -16,7 +16,7 @@ const DEFAULT_TINT := {
 	"amulet": Color(0.55, 0.8, 0.95), "okulary": Color(0.3, 0.3, 0.38), "feniks": Color(1.0, 0.5, 0.2), "jajko": Color(0.97, 0.93, 0.82),
 	"jajko_duze": Color(0.97, 0.93, 0.82), "skamielina": Color(0.7, 0.66, 0.55), "cebula": Color(0.78, 0.5, 0.7), "mikstura": Color(0.85, 0.25, 0.3),
 	"eliksir": Color(0.35, 0.6, 0.95), "koktajl": Color(0.95, 0.6, 0.3), "rosol": Color(0.95, 0.8, 0.4), "sztabka": Color(0.75, 0.78, 0.85),
-	"krysztal": Color(0.55, 0.4, 0.85), "diament": Color(0.7, 0.95, 1.0), "klucz": Color(0.98, 0.8, 0.25), "list": Color(0.95, 0.9, 0.7),
+	"krysztal": Color(0.55, 0.4, 0.85), "diament": Color(0.7, 0.95, 1.0), "klucz": Color(0.98, 0.8, 0.25), "list": Color(0.95, 0.9, 0.7), "lutnia": Color(0.9, 0.6, 0.3),
 }
 
 const SPRITES := {
@@ -152,6 +152,9 @@ const SPRITES := {
 	"klucz": [
 		"...gggg.........", "..gGGGGg........", "..gG..Gg........", "..gG..Gg........", "..gGGGGg........", "...ggggg........", "....gGg.........", "....gGg.........",
 		"....gGggg.......", "....gGg.g.......", "....gGgggg......", "....gGg.........", "................", "................", "................", "................"],
+	"lutnia": [
+		".............GG.", "............nNG.", "...........nN...", "..........nN....", ".........nN.....", "....aaa.nN......", "...aLLLaN.......",
+		"..aLLkLLaA......", "..aLkkkLaA......", "..aLLkLLaA......", "..aaLLLaaA......", "...aaaaAA.......", "....AAAA........", "................", "................", "................"],
 	"list": [
 		"................", "................", ".wwwwwwwwwwwww..", ".wLLLLLLLLLLAw..", ".wLwLLLLLLwLAw..", ".wLLwLLLLwLLAw..", ".wLLLwLLwLLLAw..", ".wLLLLwwLLLLAw..",
 		".wLLLLLLLLLLAw..", ".wAAAAAAAAAAAw..", ".wwwwwwwwwwwww..", "................", "................", "................", "................", "................"],

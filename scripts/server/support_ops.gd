@@ -7,7 +7,7 @@ extends RefCounted
 const HOSPITAL_SECS := 300.0
 const LAB_BU_COST_MIN_SECS := 6.0
 const LAB_KURCZ_MIN_SECS := 4.0
-const KURCZALIUM_COST := {"wegiel": 1, "krysztal_cienia": 1, "sztabka_kurczalu": 2, "pierwiastek_bu": 1}
+const KURCZALIUM_COST := {"wegiel": 1, "krysztal_cienia": 1, "sztabka_kurczalu": 2, "pierwiastek_bu": 3}
 
 static func support_of(rec: Dictionary) -> Dictionary:
 	if not (rec.get("support") is Dictionary):
@@ -278,22 +278,17 @@ static func lab_act(srv: MmoServer, peer: int, kind: String, data: Dictionary) -
 			return
 		"bu":
 			var idx := int(data.get("idx", -1))
-			var ratio := clampf(float(data.get("ratio", 0.0)), 0.0, 1.0)
-			var secs := float(data.get("secs", 0.0))
 			var inv: Array = rec["inv"]
 			if idx < 0 or idx >= inv.size():
 				return
 			var id := String(inv[idx]["id"])
-			var rar := ItemDB.rarity_of(id)
-			if rar != "legendarny" and rar != "hiperlegendarny":
-				srv.say(peer, "Tylko legendarne przedmioty można poświęcić.")
+			if not ItemDB.bu_sacrifice_ok(id):
+				srv.say(peer, "Do syntezy BU można poświęcić tylko broń rzadką lub lepszą.")
 				return
 			if elapsed < LAB_BU_COST_MIN_SECS:
-				ratio = minf(ratio, 0.3)
-			var tier_bonus := 6 if rar == "hiperlegendarny" else 3
-			var yield_n := maxi(1, int(round(float(tier_bonus) * ratio)))
-			if ratio >= 1.0 and secs < 20.0 and elapsed >= LAB_BU_COST_MIN_SECS + 4.0:
-				yield_n += 1
+				srv.say(peer, "Za szybko — jądra atomowe jeszcze się nie rozpadły.")
+				return
+			var yield_n := ItemDB.BU_PER_SACRIFICE
 			inv[idx]["n"] = int(inv[idx]["n"]) - 1
 			if int(inv[idx]["n"]) <= 0:
 				inv.remove_at(idx)

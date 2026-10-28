@@ -14,6 +14,7 @@ const SNAP_INTERVAL := 1.0 / 15.0
 const RESPAWN_SECS := 4.0
 const SAVE_EVERY := 30.0
 const DIALOG_FREEZE := 90.0
+const SHOP_EXTRA := ["wytrych_zardzewialy", "wytrych", "wytrych_stalowy", "wytrych_mistrzowski"]   # materiały sprzedawane obok slotów poniżej
 const SHOP_SLOTS := ["weapon", "armor", "helmet", "boots", "amulet", "accessory", "consumable", "throwable"]
 const SELL_RATIO := 0.4
 
@@ -484,7 +485,30 @@ func _open_dialog(id: int, lines: Array, accent: Color, action: String, extra: D
 	_token_seq += 1
 	pl["token"] = {"n": _token_seq, "action": action, "extra": extra}
 	pl["frozen"] = DIALOG_FREEZE
-	send_ev(id, "dialog", {"token": _token_seq, "lines": lines, "accent": accent})
+	send_ev(id, "dialog", {"token": _token_seq, "lines": lines, "accent": accent, "scene": String(extra.get("scene", ""))})
+
+## Zagadka (minigra) przy celu: klient gra, a po wyniku odsyła "puzzle_done"; porażkę można powtórzyć.
+func open_puzzle(id: int, kind: String, uid: String, extra: Dictionary) -> void:
+	var pl = peers.get(id)
+	if pl == null:
+		return
+	_token_seq += 1
+	pl["token"] = {"n": _token_seq, "action": "puzzle", "extra": extra}
+	pl["frozen"] = DIALOG_FREEZE
+	send_ev(id, "puzzle", {"token": _token_seq, "kind": kind, "uid": uid, "pick": String(extra.get("pick", ""))})
+
+func _puzzle_done(id: int, token: int, ok: bool) -> void:
+	var pl = peers.get(id)
+	if pl == null:
+		return
+	var tk: Dictionary = pl["token"]
+	if tk.is_empty() or int(tk.get("n", -1)) != token or String(tk.get("action", "")) != "puzzle":
+		return
+	pl["token"] = {}
+	pl["frozen"] = 0.0
+	var inst: ZoneInstance = pl["inst"]
+	if inst != null:
+		StoryActions.puzzle_result(self, id, inst, tk["extra"], ok)
 
 ## Interakcja (klawisz E): obiekt (skrzynia, dźwignia, cel, tablica…) albo rozmowa z najbliższym NPC.
 func _interact(id: int) -> void:
@@ -883,6 +907,7 @@ func shop_stock() -> Array:
 			if ItemDB.RARITIES.find(ItemDB.rarity_of(iid)) >= ItemDB.RARITIES.find("legendarny"):
 				continue
 			out.append(String(iid))
+	out.append_array(SHOP_EXTRA)
 	return out
 
 func _shop_op(id: int, kind: String, item: String, n: int) -> void:
@@ -1036,6 +1061,8 @@ func on_act(id: int, kind: String, data: Dictionary) -> void:
 			_interact(id)
 		"dialog_done":
 			_dialog_done(id, int(data.get("token", -1)))
+		"puzzle_done":
+			_puzzle_done(id, int(data.get("token", -1)), bool(data.get("ok", false)))
 		"buy", "sell":
 			_shop_op(id, kind, String(data.get("id", "")), int(data.get("n", 1)))
 		"shop_close":
@@ -1129,6 +1156,8 @@ func on_inv(id: int, op: String, a: String, b: String) -> void:
 				err = "Nie znasz tej umiejętności."
 			else:
 				rec["skills"][slot] = b
+		"tree":
+			err = ServerChars.learn(rec, a)
 		"use":
 			var ui := int(a)
 			err = _use_item(id, String(rec["inv"][ui]["id"])) if ui >= 0 and ui < (rec["inv"] as Array).size() else "Nie masz tego."
@@ -1255,7 +1284,7 @@ func me_info(id: int) -> Dictionary:
 		"name": rec["name"], "char": rec["char"], "class": rec["class"], "level": int(rec["level"]), "xp": int(rec["xp"]),
 		"xp_need": ServerChars.xp_needed(int(rec["level"])), "gold": int(rec["gold"]), "attr_points": int(rec.get("attr_points", 0)),
 		"attrs": rec["attrs"], "equip": rec["equip"], "equip_q": rec["equip_q"], "equip_m": rec["equip_m"], "inv": rec["inv"], "skills": rec["skills"],
-		"known_skills": rec["known_skills"], "admin": is_admin_rec(rec), "pets": SupportOps.pets_of(rec), "custom_waves": rec.get("custom_waves", UiWaveEditor.default_config()),
+		"known_skills": rec["known_skills"], "tree": rec.get("tree", {}), "skill_points": ServerChars.tree_points(int(rec["level"]), rec.get("tree", {})), "admin": is_admin_rec(rec), "pets": SupportOps.pets_of(rec), "custom_waves": rec.get("custom_waves", UiWaveEditor.default_config()),
 		"stats": {"max_health": st["max_health"], "strength": st["strength"], "defense": st["defense"], "speed": st["speed"], "crit": st["crit"]},
 		"server": String(cfg["name"]), "act2_choice": act2_needs_choice(rec), "chapter": int(story_of(rec)["chapter"]), "best": int(story_of(rec)["best"]),
 	}
@@ -1320,14 +1349,31 @@ func _on_player_died(id: int) -> void:
 		return
 	pl["respawn"] = RESPAWN_SECS
 	pl["scroll"] = false
+	pl["offer"] = false
 	var rec: Dictionary = pl["rec"]
-	if _count_of(rec, "zwoj_wskrzeszenia") > 0 and ServerChars.inv_remove(rec, "zwoj_wskrzeszenia", 1):
-		pl["respawn"] = 1.5
+	if _count_of(rec, "zwoj_wskrzeszenia") > 0:
+		pl["offer"] = true
+		open_choice(id, "Giniesz! Użyć Zwoju Wskrzeszenia? Wstaniesz tu, gdzie padłeś, z pełnym życiem i pełną energią. (masz: %d)" % _count_of(rec, "zwoj_wskrzeszenia"),
+			[{"text": "Wskrześ się (zużywa 1 zwój)"}, {"text": "Giń (wstaniesz na początku strefy)"}], Color(1.0, 0.85, 0.35), {"kind": "revive"})
+	broadcast_chat("system", "", "%s poległ." % pl["name"])
+
+## Odpowiedź na pytanie o Zwój Wskrzeszenia: zużyj i wstań na miejscu albo zgiń i wstań na starcie strefy.
+func revive_choice(id: int, use: bool) -> void:
+	var pl = peers.get(id)
+	if pl == null:
+		return
+	pl["offer"] = false
+	var rec: Dictionary = pl["rec"]
+	var node := player_of(id)
+	if use and node != null and node.state == Player.S.DEAD and ServerChars.inv_remove(rec, "zwoj_wskrzeszenia", 1):
 		pl["scroll"] = true
+		pl["respawn"] = 0.3
 		chars.mark_dirty()
 		_push_me(id)
-		_say_to(id, "Zwój Wskrzeszenia rozpada się — za chwilę wstaniesz w tym samym miejscu.")
-	broadcast_chat("system", "", "%s poległ." % pl["name"])
+		_say_to(id, "Zwój Wskrzeszenia rozpada się — wstajesz!")
+		return
+	pl["scroll"] = false
+	pl["respawn"] = 0.0
 
 # --------------------------------------------------------------------- czat ---
 
@@ -1380,7 +1426,7 @@ func _physics_process(delta: float) -> void:
 		SupportOps.tick(self, int(id), delta)
 		if node.state == Player.S.DEAD:
 			pl["respawn"] = float(pl["respawn"]) - delta
-			if float(pl["respawn"]) <= 0.0 and inst != null and inst.kind not in ["arena", "challenge", "custom"]:
+			if float(pl["respawn"]) <= 0.0 and not bool(pl.get("offer", false)) and inst != null and inst.kind not in ["arena", "challenge", "custom"]:
 				if not bool(pl.get("scroll", false)):
 					node.position = inst.spawn + Vector2(randf_range(-80.0, 80.0), randf_range(-60.0, 60.0))
 				pl["scroll"] = false

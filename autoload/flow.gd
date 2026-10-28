@@ -511,6 +511,17 @@ func _on_stage_cleared() -> void:
 	await get_tree().create_timer(1.1, false).timeout
 	goto("results", {"results": res})
 
+## Śmierć z Zwojem Wskrzeszenia w plecaku: gracz wybiera, czy go zużyć (pełne życie i energia), czy zginąć.
+func offer_revive(p: Node, on_die: Callable) -> void:
+	var ui := UiChoice.new()
+	ui.setup("Giniesz! Użyć Zwoju Wskrzeszenia? Wstaniesz z pełnym życiem i pełną energią. (masz: %d)" % GameState.item_count("zwoj_wskrzeszenia"),
+		[{"text": "Wskrześ się (zużywa 1 zwój)"}, {"text": "Giń"}], Color(1.0, 0.85, 0.35))
+	ui.chosen.connect(func(k: int):
+		if k == 0 and GameState.use_scroll_revive(p):
+			return
+		on_die.call_deferred())
+	open_dialog(ui)
+
 func _on_player_died() -> void:
 	var res := GameState.last_results()
 	res["victory"] = false

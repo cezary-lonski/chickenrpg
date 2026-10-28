@@ -363,7 +363,7 @@ static func _extras() -> Dictionary:
 			},
 			"objectives": [
 				_talk(["baron_gawron", "hrabina_wrona"], "Wysłuchaj kruczych arystokratów w komnatach"),
-				{"id": "pamiatki", "phase": "pre", "type": "collect", "kind": "document", "label": "Podnieś pamiątkę", "count": 2, "positions": [E, H], "text": "Znajdź pamiątki z pałacowych komnat (opcjonalnie)", "required": false,
+				{"id": "pamiatki", "phase": "pre", "type": "collect", "puzzle": "cipher", "kind": "document", "label": "Podnieś pamiątkę", "count": 2, "positions": [E, H], "text": "Znajdź pamiątki z pałacowych komnat (opcjonalnie)", "required": false,
 					"clues": ["Srebrna łyżeczka z inicjałami „G.”", "Złoty guzik od kapelusza hrabiny."], "reward": {"gold": 90}},
 			],
 		},
@@ -385,7 +385,7 @@ static func _extras() -> Dictionary:
 			},
 			"objectives": [
 				_talk(["ksiaze_kruczek", "diuk_kawka"], "Wysłuchaj kruczych arystokratów w komnatach"),
-				{"id": "zakladki", "phase": "pre", "type": "collect", "kind": "document", "label": "Podnieś zakładkę", "count": 2, "positions": [F, G], "text": "Znajdź zakładki w bibliotece (opcjonalnie)", "required": false,
+				{"id": "zakladki", "phase": "pre", "type": "collect", "puzzle": "pairs", "kind": "document", "label": "Podnieś zakładkę", "count": 2, "positions": [F, G], "text": "Znajdź zakładki w bibliotece (opcjonalnie)", "required": false,
 					"clues": ["Zakładka w „Poradniku dobrych manier”.", "Zakładka w „Mapie pałacu” — ktoś zaznaczył schody."], "reward": {"gold": 100, "xp": 100}},
 			],
 		},
@@ -407,7 +407,7 @@ static func _extras() -> Dictionary:
 			},
 			"objectives": [
 				_talk(["margrabia_kos", "dama_sroczka"], "Wysłuchaj kruczych arystokratów w komnatach"),
-				{"id": "przyprawy", "phase": "pre", "type": "collect", "kind": "document", "label": "Podnieś przyprawę", "count": 3, "positions": [A, C, J], "text": "Zbierz przyprawy dla szefa kuchni (opcjonalnie)", "required": false,
+				{"id": "przyprawy", "phase": "pre", "type": "collect", "puzzle": "cipher", "kind": "document", "label": "Podnieś przyprawę", "count": 3, "positions": [A, C, J], "text": "Zbierz przyprawy dla szefa kuchni (opcjonalnie)", "required": false,
 					"clues": ["Pieprz — gryzie w dziób.", "Sól — czysta, pałacowa.", "Szafran — droższy niż złoto."], "reward": {"gold": 130, "xp": 120}},
 			],
 		},
@@ -451,7 +451,7 @@ static func _extras() -> Dictionary:
 			},
 			"objectives": [
 				_talk(["kanonik_gawrosz", "hrabia_puchacz"], "Wysłuchaj kruczych arystokratów w komnatach"),
-				{"id": "relikwie", "phase": "pre", "type": "collect", "kind": "document", "label": "Podnieś relikwię", "count": 2, "positions": [D, B], "text": "Znajdź relikwie kaplicy (opcjonalnie)", "required": false,
+				{"id": "relikwie", "phase": "pre", "type": "collect", "puzzle": "pairs", "kind": "document", "label": "Podnieś relikwię", "count": 2, "positions": [D, B], "text": "Znajdź relikwie kaplicy (opcjonalnie)", "required": false,
 					"clues": ["Relikwia: pierwsze ziarnko, według kanonika.", "Relikwia: kapeć dawnego króla."], "reward": {"gold": 140, "xp": 140}},
 			],
 		},
@@ -497,7 +497,7 @@ static func _extras() -> Dictionary:
 			},
 			"objectives": [
 				{"id": "swiadkowie", "phase": "pre", "type": "talk", "npcs": ["wiezien_bajarz"], "text": "Porozmawiaj z więźniem Bajarzem", "required": true},
-				{"id": "krol", "phase": "post", "type": "free", "kind": "cage", "label": "Uwolnij Króla", "count": 1, "positions": [Vector2(1100, 420)], "text": "Podejdź do celi i uwolnij Króla", "required": true,
+				{"id": "krol", "phase": "post", "type": "free", "puzzle": "lockpick", "kind": "cage", "label": "Uwolnij Króla", "count": 1, "positions": [Vector2(1100, 420)], "text": "Podejdź do celi i uwolnij Króla", "required": true,
 					"reward": {"gold": 300, "xp": 250, "items": {"zwoj_teleportacji": 1}}},
 			],
 		},
@@ -519,7 +519,7 @@ static func _extras() -> Dictionary:
 			},
 			"objectives": [
 				{"id": "przewodnik", "phase": "pre", "type": "talk", "npcs": ["straganiarz_kruczy", "babcia_wrona"], "text": "Wypytaj mieszkańców o drogę do zamku", "required": true},
-				{"id": "pieczecie", "phase": "pre", "type": "collect", "kind": "document", "label": "Podnieś pieczęć miejską", "count": 2, "positions": [A, J], "text": "Zbierz pieczęcie przepustkowe (opcjonalnie)", "required": false,
+				{"id": "pieczecie", "phase": "pre", "type": "collect", "puzzle": "cipher", "kind": "document", "label": "Podnieś pieczęć miejską", "count": 2, "positions": [A, J], "text": "Zbierz pieczęcie przepustkowe (opcjonalnie)", "required": false,
 					"clues": ["Pieczęć: czarny kruk na szarym tle.", "Pieczęć: przepustka dla gołębi pocztowych."], "reward": {"gold": 160, "xp": 150}},
 			],
 		},
