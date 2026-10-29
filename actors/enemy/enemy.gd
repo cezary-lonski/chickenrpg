@@ -5,6 +5,7 @@ extends CharacterBody2D
 ## i sposób doboru ruchu.
 
 signal died(enemy: Enemy)
+signal noticed   # potwór zauważył gracza (dymek „!”; serwer rozsyła go klientom)
 
 enum S { SPAWN, IDLE, APPROACH, BACKOFF, WINDUP, STRIKE, RECOVER, HURT, STAGGER, DEAD, AIR_WAIT, SUMMON }
 
@@ -358,9 +359,15 @@ func wake() -> void:
 	if not dormant:
 		return
 	dormant = false
+	_notice_bubble()
 	for o in get_tree().get_nodes_in_group("enemies"):
 		if o != self and is_instance_valid(o) and o.get("dormant") == true and global_position.distance_to(o.global_position) < 280.0:
 			o.dormant = false
+			o._notice_bubble()
+
+func _notice_bubble() -> void:
+	noticed.emit()
+	Fx.popup(global_position + Vector2(0, -78), "!", Color(1.0, 0.3, 0.2))
 
 func _td_approach(delta: float, d: float, ai: String) -> void:
 	if not player or not is_instance_valid(player):

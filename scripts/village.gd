@@ -1806,6 +1806,9 @@ func _build_camp_entrance(camp_id: String) -> void:
 		if not GameState.story_flag(SpecialDB.accept_flag(camp_id)):
 			_open_dialog([["", String(cv["hint"])], ["", "Nie wiesz jeszcze, kogo tam szukać. Porozmawiaj najpierw z: %s." % SpecialDB.giver_name(camp_id)]], UiKit.ACCENT2)
 			return
+		if not SpecialDB.tracks_done(camp_id):
+			_open_dialog([["", String(cv["hint"])], ["", "Ścieżka rozwidla się w wydmach i nie wiesz, którędy iść. Zbadaj ślady porywaczy na pustkowiu (jeszcze %d)." % SpecialDB.tracks_left(camp_id)]], UiKit.ACCENT2)
+			return
 		_enter_cave(cv))
 
 func _open_chest(ch: Interactable, c: Dictionary) -> void:
@@ -1972,6 +1975,9 @@ func _mine_step(mine: Dictionary, idx: int, it: Interactable) -> void:
 	if it.done or _dialog_open:
 		return
 	var st: Dictionary = (mine["steps"] as Array)[idx]
+	if String(st.get("puzzle", "")) == "":
+		_mine_step_done(mine, idx, it)   # zwykłe użycie urządzenia, bez zagadki
+		return
 	var ui := UiPuzzle.new()
 	ui.setup(String(st["puzzle"]), hash(it.uid))
 	ui.pay = _pay_puzzle_hint
@@ -2021,9 +2027,22 @@ func _mine_step_done(mine: Dictionary, idx: int, it: Interactable) -> void:
 func _free_prisoner(pr: Dictionary, it: Interactable) -> void:
 	if it.done or _dialog_open:
 		return
+	var in_camp: bool = zone.has("camp") and not zone.has("mine")
+	var is_extra := bool(pr.get("extra", false))
+	if in_camp and not is_extra:
+		if not _camp_off:
+			GameState.toast.emit("Klatka jest zamknięta na kłódkę — klucz ma naczelnik obozu. Pokonaj go.", UiKit.BAD)
+			return
+		var left := 0
+		for q in zone.get("prisoners", []):
+			if bool((q as Dictionary).get("extra", false)) and not GameState.story_flag("pris:" + String(q["id"])):
+				left += 1
+		if left > 0:
+			GameState.toast.emit("Klatka ma jeszcze zasuwę — zdejmą ją tylko uwolnieni niewolnicy (jeszcze %d)." % left, UiKit.BAD)
+			return
 	it.done = true
 	GameState.set_story_flag(it.uid)
-	if zone.has("camp") and not zone.has("mine"):
+	if in_camp and not is_extra:
 		_camp_freed()
 	var knows := not bool(pr.get("tosia", false)) or GameState.story_flag(SpecialDB.TOSIA_FLAG)
 	var rw: Dictionary = pr["reward"] if knows else pr.get("reward_plain", pr["reward"])
@@ -2044,12 +2063,6 @@ func _build_camp() -> void:
 	var camp: Dictionary = zone.get("camp", {})
 	if camp.is_empty():
 		return
-	for g in camp["guards"]:
-		var sg := StealthGuard.new()
-		sg.setup(g["path"], float(g.get("range", 250.0)))
-		entities.add_child(sg)
-		sg.spotted.connect(_camp_spotted)
-		_camp_guards.append(sg)
 	_open_dialog(camp.get("intro", []), UiKit.ACCENT2)
 	_spawn_camp_exit()
 
@@ -2070,25 +2083,12 @@ func _refresh_camp_guards() -> void:
 			sg.active = not _camp_off
 			sg.visible = not _camp_off
 
-func _camp_spotted() -> void:
-	if _camp_off or player == null or not is_instance_valid(player):
-		return
-	# alarm: strażnicy zrzucają stożki wzroku i ruszają do ataku (cała straż obozu się budzi)
-	Audio.play("hit_heavy", 0.7, -4.0)
-	Fx.shake(6.0, 0.3)
-	_camp_off = true
-	_refresh_camp_guards()
-	for e in get_tree().get_nodes_in_group("enemies"):
-		if is_instance_valid(e) and e.get("dormant") == true:
-			e.dormant = false
-	GameState.toast.emit("Alarm! Strażnicy cię zauważyli i ruszają do ataku!", UiKit.BAD)
-
 func _camp_disarm() -> void:
 	if _camp_off:
 		return
 	_camp_off = true
 	_refresh_camp_guards()
-	GameState.toast.emit("Naczelnik padł — reszta strażników rozbiega się w popłochu.", UiKit.GOOD)
+	GameState.toast.emit("Naczelnik padł — przy nim znajdujesz klucz do klatki.", UiKit.GOOD)
 
 ## Jeniec uwolniony: strażnicy znikają, obóz uznany za rozbity, a na starcie pojawia się wyjście.
 func _camp_freed() -> void:
@@ -2096,6 +2096,7 @@ func _camp_freed() -> void:
 	_refresh_camp_guards()
 	SecretDB.mark_cave(cave_id)
 	_spawn_camp_exit()
+	GameState.toast.emit("Jeniec wolny! Wróć do zleceniodawcy po nagrodę.", UiKit.ACCENT)
 	if _camp_exit != null and is_instance_valid(_camp_exit):
 		_camp_exit.label_text = "Wróć na pustkowie"
 
@@ -2106,7 +2107,15 @@ func _spawn_cave_ambush() -> void:
 		for entry in w["enemies"]:
 			if not String(entry[0]).begins_with("BOSS:"):
 				packs.append([entry, w])
+	var base_n := packs.size()
+	# straż obozu/kopalni to zwykłe potwory rozstawione na dawnych trasach patroli
+	var camp_guards: Array = (zone.get("camp", {}) as Dictionary).get("guards", [])
+	for g in camp_guards:
+		packs.append([["kruk", 1, false, "straz"], {}])
 	var centers := SecretDB.ambush_centers(packs.size(), VILLAGE, MARGIN, zone.get("spawn", Vector2(1100, 1280)), rng)
+	for gi in camp_guards.size():
+		var gp: Array = camp_guards[gi]["path"]
+		centers[base_n + gi] = (gp[0] as Vector2).lerp(gp[gp.size() - 1], 0.5)
 	for n in packs.size():
 		var entry: Array = packs[n][0]
 		var wave: Dictionary = packs[n][1]
@@ -2456,6 +2465,17 @@ func _talk_extra(id: String) -> void:
 		return
 	var d := ChapterExtras.dialog(quest_id, id)
 	var accent: Color = NpcDB.get_data(id).get("accent", UiKit.ACCENT)
+	var rc := SpecialDB.report_camp(quest_id, id)
+	if rc != "" and SecretDB.cave_done(rc) and not GameState.story_flag("report:" + rc):
+		GameState.set_story_flag("report:" + rc)
+		var rp: Dictionary = SpecialDB.REPORTS[rc]
+		var rr: Dictionary = rp["reward"]
+		_open_dialog(rp["lines"], accent, func():
+			var got := SecretDB.grant({"items": rr.get("items", {}), "gold": int(rr.get("gold", 0)), "xp": int(rr.get("xp", 0))})
+			GameState.toast.emit("Zadanie ukończone — " + ", ".join(got), UiKit.GOOD)
+			Audio.play("levelup", 1.3, -6.0)
+			GameState.save_game())
+		return
 	var step := GameState.story_step()
 	var post: bool = step > waves.size()
 	var lines: Array = d.get("post" if post else "pre", [["", "…"]])

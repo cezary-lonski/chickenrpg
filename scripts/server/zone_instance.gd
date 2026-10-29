@@ -121,7 +121,6 @@ func setup(p_srv: MmoServer, p_key: String, p_slot: int) -> void:
 		_start_t = 2.6
 		if zone.has("camp"):
 			var cp: Dictionary = zone["camp"]
-			heist = {"id": "camp:" + cave_id, "guards": cp["guards"], "start": cp["start"], "camp": true}
 			# wyjście z obozu jest od początku: uciec można bez zabijania strażników
 			extra_objs.append({"uid": "campportal", "kind": "portal", "label": "Opuść obóz", "pos": (cp["start"] as Vector2) + Vector2(0.0, -90.0), "type": "portal"})
 		for pr in zone.get("shafts", []):
@@ -478,11 +477,6 @@ func _tick_heist(delta: float) -> void:
 			best = maxf(best, StealthGuard.sees(s["pos"], s["dir"], float(g.get("range", 250.0)), (node as Node2D).position))
 		var a := float(_heist_alert.get(peer, 0.0))
 		a = a + delta * (0.9 + 1.6 * best) if best > 0.0 else maxf(0.0, a - delta * 0.7)
-		if a >= 1.0 and bool(heist.get("camp", false)):
-			_heist_alert.erase(peer)
-			srv.send_ev(peer, "heist_alert", {"a": 0.0, "hit": false})
-			camp_alarm()
-			continue
 		if a >= 1.0:
 			_heist_alert.erase(peer)
 			(node as Node2D).position = heist.get("start", spawn)
@@ -828,9 +822,17 @@ func _spawn_ambush() -> void:
 		for entry in w["enemies"]:
 			if not String(entry[0]).begins_with("BOSS:"):
 				packs.append([entry, w])
+	var base_n := packs.size()
+	# straż obozu/kopalni to zwykłe potwory rozstawione na dawnych trasach patroli
+	var camp_guards: Array = (zone.get("camp", {}) as Dictionary).get("guards", [])
+	for g in camp_guards:
+		packs.append([["kruk", 1, false, "straz"], {}])
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	var centers := SecretDB.ambush_centers(packs.size(), size, MARGIN, spawn, rng)
+	for gi in camp_guards.size():
+		var gp: Array = camp_guards[gi]["path"]
+		centers[base_n + gi] = (gp[0] as Vector2).lerp(gp[gp.size() - 1], 0.5)
 	for n in packs.size():
 		var entry: Array = packs[n][0]
 		var wave: Dictionary = packs[n][1]
@@ -843,6 +845,7 @@ func _spawn_ambush() -> void:
 			if e != null:
 				e.dormant = true
 				e.aggro = 460.0
+				e.noticed.connect(func(): srv.broadcast_zone_ev(self, "notice", {"id": e.net_id}))
 				if bool(wave.get("elite", false)) and zone.has("camp"):
 					e.died.connect(func(_x): camp_disarm())
 	wave_i = waves.size()
@@ -894,24 +897,14 @@ func camp_disarm() -> void:
 		return
 	camp_off = true
 	srv.broadcast_zone_ev(self, "camp_off", {})
-	srv.broadcast_zone_chat(self, "system", "", "Naczelnik padł — reszta strażników rozbiega się w popłochu.")
-
-## Obóz niewolników: strażnik zauważył intruza — stożki znikają, a cała straż obozu rusza do ataku.
-func camp_alarm() -> void:
-	if camp_off:
-		return
-	camp_off = true
-	srv.broadcast_zone_ev(self, "camp_off", {})
-	for c in entities.get_children():
-		if c is Enemy and (c as Enemy).dormant:
-			(c as Enemy).dormant = false
-	srv.broadcast_zone_chat(self, "system", "", "Alarm! Strażnicy zauważyli intruza i ruszają do ataku!")
+	srv.broadcast_zone_chat(self, "system", "", "Naczelnik padł — przy nim znajdujesz klucz do klatki.")
 
 ## Jeniec uwolniony: strażnicy odchodzą, a na starcie pojawia się wyjście.
 func camp_freed() -> void:
 	if not camp_off:
 		camp_off = true
 		srv.broadcast_zone_ev(self, "camp_off", {})
+	srv.broadcast_zone_chat(self, "system", "", "Jeniec wolny! Wróć do zleceniodawcy po nagrodę.")
 	for o in extra_objs:
 		if String(o.get("uid", "")) == "campportal":
 			return

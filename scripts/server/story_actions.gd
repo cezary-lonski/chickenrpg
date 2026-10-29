@@ -92,7 +92,7 @@ static func activate(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionar
 		"shaft": _shaft(srv, peer, o)
 		"corpse": LootOps.open_corpse(srv, peer, inst, String(o["uid"]))
 		"prisoner": _prisoner(srv, peer, inst, o)
-		"mine": srv.open_puzzle(peer, String(_mine_step(inst, o).get("puzzle", "lockpick")), String(o["uid"]), {"mine": o})
+		"mine": _mine_use(srv, peer, inst, o)
 		"portal": srv.enter_zone(peer, srv.zone_key_for(srv.peers[peer]["rec"]))
 		"side": _side(srv, peer, inst, o)
 		"heist": _heist_take(srv, peer, inst)
@@ -134,6 +134,14 @@ static func _shaft(srv: MmoServer, peer: int, o: Dictionary) -> void:
 	if "velocity" in node:
 		node.velocity = Vector2.ZERO
 	srv.say(peer, "Zjeżdżasz szybem i wychodzisz na drugim końcu kopalni.")
+
+## Urządzenie w kopalni: zwykłe użycie (bez zagadki), chyba że krok ma jeszcze pole „puzzle”.
+static func _mine_use(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary) -> void:
+	var pz := String(_mine_step(inst, o).get("puzzle", ""))
+	if pz == "":
+		mine_step_done(srv, peer, inst, o)
+		return
+	srv.open_puzzle(peer, pz, String(o["uid"]), {"mine": o})
 
 static func mine_step_done(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionary) -> void:
 	var rec: Dictionary = srv.peers[peer]["rec"]
@@ -318,6 +326,9 @@ static func _entrance(srv: MmoServer, peer: int, o: Dictionary) -> void:
 	if bool(o.get("camp", false)) and not bool(flags_of(srv.peers[peer]["rec"]).get(SpecialDB.accept_flag(cid), false)):
 		srv._open_dialog(peer, [["", String(SecretDB.cave_by_id(cid).get("hint", ""))], ["", "Nie wiesz jeszcze, kogo tam szukać. Porozmawiaj najpierw z: %s." % SpecialDB.giver_name(cid)]], UiKit.ACCENT2, "")
 		return
+	if bool(o.get("camp", false)) and not SpecialDB.tracks_done(cid, flags_of(srv.peers[peer]["rec"])):
+		srv._open_dialog(peer, [["", String(SecretDB.cave_by_id(cid).get("hint", ""))], ["", "Ścieżka rozwidla się w wydmach i nie wiesz, którędy iść. Zbadaj ślady porywaczy na pustkowiu (jeszcze %d)." % SpecialDB.tracks_left(cid, flags_of(srv.peers[peer]["rec"]))]], UiKit.ACCENT2, "")
+		return
 	srv.enter_cave(peer, cid)
 
 static func _sign(srv: MmoServer, peer: int, inst: ZoneInstance) -> void:
@@ -356,8 +367,21 @@ static func _prisoner(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictiona
 			pr = p
 	if pr.is_empty():
 		return
+	var in_camp: bool = inst.zone.has("camp") and not inst.zone.has("mine")
+	var is_extra := bool(pr.get("extra", false))
+	if in_camp and not is_extra:
+		if not inst.camp_off:
+			srv.say(peer, "Klatka jest zamknięta na kłódkę — klucz ma naczelnik obozu. Pokonaj go.")
+			return
+		var left := 0
+		for q in inst.zone.get("prisoners", []):
+			if bool((q as Dictionary).get("extra", false)) and not bool(fl.get("pris:" + String(q["id"]), false)):
+				left += 1
+		if left > 0:
+			srv.say(peer, "Klatka ma jeszcze zasuwę — zdejmą ją tylko uwolnieni niewolnicy (jeszcze %d)." % left)
+			return
 	fl[uid] = true
-	if inst.zone.has("camp") and not inst.zone.has("mine"):
+	if in_camp and not is_extra:
 		fl["camp_done:" + inst.cave_id] = true
 		inst.camp_freed()
 	var knows := not bool(pr.get("tosia", false)) or bool(fl.get(SpecialDB.TOSIA_FLAG, false))
@@ -557,6 +581,20 @@ static func talk_extra(srv: MmoServer, peer: int, inst: ZoneInstance, npc: Strin
 		return
 	var d := ChapterExtras.dialog(inst.quest_id, npc)
 	var accent: Color = NpcDB.get_data(npc).get("accent", UiKit.ACCENT)
+	var rc := SpecialDB.report_camp(inst.quest_id, npc)
+	var fl := flags_of(rec)
+	if rc != "" and bool(fl.get("camp_done:" + rc, false)) and not bool(fl.get("report:" + rc, false)):
+		fl["report:" + rc] = true
+		var rp: Dictionary = SpecialDB.REPORTS[rc]
+		var rr: Dictionary = rp["reward"]
+		srv._open_dialog(peer, rp["lines"], accent, "")
+		var res := ServerCtx.run(rec, func(): return SecretDB.grant({"items": rr.get("items", {}), "gold": int(rr.get("gold", 0)), "xp": int(rr.get("xp", 0))}))
+		srv.say(peer, "Zadanie ukończone — " + ", ".join(res["result"]))
+		srv.after_ctx(peer, int(res["levels"]))
+		srv.chars.mark_dirty()
+		srv.push_prog(peer)
+		srv._push_me(peer)
+		return
 	var post: bool = inst.step > inst.waves.size()
 	var lines: Array = d.get("post" if post else "pre", [["", "…"]])
 	var choice: Dictionary = d.get("choice", {})

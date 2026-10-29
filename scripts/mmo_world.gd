@@ -412,6 +412,10 @@ func _on_event(kind: String, data: Dictionary) -> void:
 		"camp_off":
 			_camp_off = true
 			_refresh_guards()
+		"notice":
+			var ne: Enemy = _mobs.get(String(data.get("id", "")))
+			if ne != null and is_instance_valid(ne):
+				Fx.popup(ne.global_position + Vector2(0, -78), "!", Color(1.0, 0.3, 0.2))
 		"objs_add":
 			for o in data.get("objs", []):
 				_make_object(o)

@@ -2,9 +2,8 @@ class_name SpecialDB
 extends RefCounted
 ## Zadania ratunkowe (poboczne). Zleceniodawca w wiosce prosi o odbicie bliskiej osoby z obozu niewolników na pustkowiu.
 ## Przyjęcie zadania (rozmowa z NPC) odblokowuje wejście do obozu — osobnej strefy w stylu sekretnej jaskini (zob. camp_cave).
-## W obozie uwolnisz jeńca na dwa sposoby: szybko i po cichu (przemykasz za plecami strażników ze stożkami wzroku;
-## zauważenie cofa cię na start) albo gwałtownie i hałaśliwie (bijesz straż, a po pokonaniu naczelnika reszta strażników
-## odchodzi). Uwolniony jeniec sam dziękuje i daje nagrodę. Dwa największe zadania dają Zwój Wskrzeszenia.
+## W obozie stoją zwykłe potwory (straż i naczelnik), które budzą się z dymkiem „!”, gdy cię zauważą. Klatka jest zamknięta
+## do pokonania naczelnika (ma klucz). Uwolniony jeniec sam dziękuje i daje nagrodę. Dwa największe zadania dają Zwój Wskrzeszenia.
 
 const NPCS := {
 	"mlynarz": {"name": "Młynarz Marian", "title": "Zrozpaczony ojciec", "species": "kurczak", "scale": 1.4, "pos": Vector2(1180, 1090), "accent": Color(0.85, 0.8, 0.6), "role": "lore"},
@@ -23,7 +22,7 @@ const QUESTS := {
 	"droga_do_stolicy": {
 		"npc": "mlynarz",
 		"dialog": {
-			"pre": [["Młynarz Marian", "Nie wyglądasz na kogoś, kto odwraca wzrok… Błagam, wysłuchaj mnie. Porywacze Kruka zabrali mi córkę, Tosię."], ["Młynarz Marian", "Handlarze niewolników trzymają ją w obozie na pustkowiu. Ścieżka zaczyna się na skraju wsi. Wykradnij ją po cichu albo wyrżnij straż — byle wróciła cała."]],
+			"pre": [["Młynarz Marian", "Nie wyglądasz na kogoś, kto odwraca wzrok… Błagam, wysłuchaj mnie. Porywacze Kruka zabrali mi córkę, Tosię."], ["Młynarz Marian", "Handlarze niewolników trzymają ją w obozie na pustkowiu. Ścieżka zaczyna się na skraju wsi. Przebij się przez straż i pokonaj naczelnika — klucz do jej klatki ma on. Byle wróciła cała."]],
 			"post": [["Młynarz Marian", "Jeśli kiedyś znajdziesz ścieżkę do obozu niewolników, pamiętaj: Tosia ma warkocz i nie lubi ciemności."]],
 			"choice": {"prompt": "Marian wyciąga z kieszeni woreczek. Co robisz?", "options": [
 				{"text": "Biorę zaliczkę.", "flag": "mlynarz_zaliczka", "reply": "„Weź, weź. Reszta po powrocie Tosi.”", "final": {"gold": 100}},
@@ -35,7 +34,7 @@ const QUESTS := {
 	"marsz_na_forteca": {
 		"npc": "babcia",
 		"dialog": {
-			"pre": [["Babcia Kokoszka", "Wnuczka, Pisklaczka, poszła z kotłem do wojska i nie wróciła. Trzymają ją w obozie niewolników na pustkowiu."], ["Babcia Kokoszka", "Ścieżka zaczyna się na skraju wsi. Wykradnij ją, kiedy strażnicy patrzą w drugą stronę — albo zbij naczelnika obozu, a reszta się rozbiegnie."]],
+			"pre": [["Babcia Kokoszka", "Wnuczka, Pisklaczka, poszła z kotłem do wojska i nie wróciła. Trzymają ją w obozie niewolników na pustkowiu."], ["Babcia Kokoszka", "Ścieżka zaczyna się na skraju wsi. Straż cię zauważy, kiedy podejdziesz za blisko — a klucz do klatki ma naczelnik obozu. Pokonaj go."]],
 			"post": [["Babcia Kokoszka", "Pisklaczka piecze już placki. Dla ciebie zawsze będzie pierwszy."]],
 			"choice": {"prompt": "Babcia podaje ci koszyk z jedzeniem na drogę. Co robisz?", "options": [
 				{"text": "Dziękuję, przyda się.", "flag": "babcia_kosz", "reply": "„Jedz, jedz, na pusty brzuch się nie walczy.”", "final": {"items": {"mikstura_miodu": 2}}},
@@ -47,7 +46,7 @@ const QUESTS := {
 	"pustynny_trakt": {
 		"npc": "karawaniarz",
 		"dialog": {
-			"pre": [["Karawaniarz Hasan", "Łowcy z pustyni napadli na karawanę. Wozy mi spalili, a córkę, Leilę, wzięli do obozu niewolników za wydmami."], ["Karawaniarz Hasan", "Ścieżka do obozu zaczyna się na skraju wsi. Strażników jest wielu, ale patrzą tylko przed siebie. Wykradnij Leilę albo zbij herszta — wtedy sami uciekną."]],
+			"pre": [["Karawaniarz Hasan", "Łowcy z pustyni napadli na karawanę. Wozy mi spalili, a córkę, Leilę, wzięli do obozu niewolników za wydmami."], ["Karawaniarz Hasan", "Ścieżka do obozu zaczyna się na skraju wsi. Strażników jest wielu, a klucz do klatki ma herszt. Pokonaj go i wyprowadź Leilę."]],
 			"post": [["Karawaniarz Hasan", "Leila śpiewa przy ognisku. Karawana pojedzie znowu."]],
 			"choice": {"prompt": "Hasan oferuje ci amulet z pustyni. Co robisz?", "options": [
 				{"text": "Przyjmuję amulet.", "flag": "hasan_amulet", "reply": "„Chroni przed piaskiem i złym okiem.”", "final": {"gold": 120}},
@@ -59,7 +58,7 @@ const QUESTS := {
 	"gniazdo_nad_burza": {
 		"npc": "latarnik",
 		"dialog": {
-			"pre": [["Latarnik Burzan", "Moja Iskierka… Strażnicy burzy zamknęli ją w klatce w obozie niewolników, bo wie, jak wyłączyć ich maszyny pogodowe."], ["Latarnik Burzan", "Ścieżka zaczyna się na skraju wsi. Strażnicy mają stożki wzroku jak reflektory. Wykradnij ją, kiedy się odwrócą, albo zbij ich dowódcę."]],
+			"pre": [["Latarnik Burzan", "Moja Iskierka… Strażnicy burzy zamknęli ją w klatce w obozie niewolników, bo wie, jak wyłączyć ich maszyny pogodowe."], ["Latarnik Burzan", "Ścieżka zaczyna się na skraju wsi. Strażnicy mają bystry wzrok, a klucz do klatki nosi ich dowódca. Pokonaj go."]],
 			"post": [["Latarnik Burzan", "Latarnia znów świeci, a Iskierka śpi w domu. Dziękuję."]],
 			"choice": {"prompt": "Burzan zdejmuje z szyi okulary przeciwburzowe. Co robisz?", "options": [
 				{"text": "Biorę okulary.", "flag": "burzan_okulary", "reply": "„Widać w nich błyskawice o ułamek sekundy wcześniej.”", "final": {"gold": 150}},
@@ -85,7 +84,7 @@ const CAMPS := {
 			{"path": [Vector2(900, 650), Vector2(1500, 650)], "range": 240.0},
 			{"path": [Vector2(1650, 450), Vector2(2050, 450)], "range": 220.0},
 		],
-		"intro": [["", "Obóz handlarzy rozbito w opuszczonej kopalni na pustyni — wokół hałdy, szyby i wózki z rudą. W głębi stoi klatka z warkoczastą dziewczynką — to Tosia. Strażnicy patrolują między namiotami: przemknij za ich plecami albo zbij naczelnika."]],
+		"intro": [["", "Obóz handlarzy rozbito w opuszczonej kopalni na pustyni — wokół hałdy, szyby i wózki z rudą. W głębi stoi klatka z warkoczastą dziewczynką — to Tosia. Strażnicy stoją między namiotami i ruszą na ciebie, gdy cię zobaczą. Klucz do klatki ma naczelnik."]],
 		"captive": {"id": "tosia", "name": "Tosia", "pos": Vector2(1900, 430), "label": "Uwolnij Tosię",
 			"thanks": [["Tosia", "Tata mówił, że ktoś po mnie przyjdzie! Jestem Tosia, córka młynarza."], ["Tosia", "Weź to, ukradłam strażnikom, kiedy spali. Biegnę do domu — powiedz tacie, że się nie poddałam!"]],
 			"reward": {"gold": 350, "xp": 300, "items": {"mikstura_miodu": 2, "zwoj_wskrzeszenia": 1}}},
@@ -102,9 +101,9 @@ const CAMPS := {
 			{"path": [Vector2(900, 650), Vector2(1500, 650), Vector2(1500, 520), Vector2(900, 520)], "range": 230.0},
 			{"path": [Vector2(1650, 450), Vector2(2050, 450)], "range": 220.0},
 		],
-		"intro": [["", "Za palisadą opuszczonej kopalni na pustyni widać klatkę Pisklaczki, a między hałdami ziejące szyby. Strażnicy obozu patrolują między namiotami — kryj się za ich plecami albo najpierw zbij naczelnika."]],
+		"intro": [["", "Za palisadą opuszczonej kopalni na pustyni widać klatkę Pisklaczki, a między hałdami ziejące szyby. Strażnicy obozu stoją między namiotami i ruszą na ciebie, gdy cię zobaczą. Klucz do klatki ma naczelnik."]],
 		"captive": {"id": "pisklaczka", "name": "Pisklaczka", "pos": Vector2(1850, 420), "label": "Uwolnij Pisklaczkę",
-			"thanks": [["Pisklaczka", "Babcia mówiła, że ktoś się zjawi! Ten kogut przeszedł tuż obok strażników. Nawet się nie spocił."], ["Pisklaczka", "Weź to, dziecko… to znaczy, kogucie. Powiedz babci, że placki będą na ciebie czekać."]],
+			"thanks": [["Pisklaczka", "Babcia mówiła, że ktoś się zjawi! Ten kogut rozprawił się z całą strażą!"], ["Pisklaczka", "Weź to, dziecko… to znaczy, kogucie. Powiedz babci, że placki będą na ciebie czekać."]],
 			"reward": {"gold": 300, "xp": 260, "items": {"sztabka_kurczalu": 2}}},
 	},
 	"oboz_leila": {
@@ -120,9 +119,9 @@ const CAMPS := {
 			{"path": [Vector2(1750, 1100), Vector2(1750, 600)], "range": 230.0},
 			{"path": [Vector2(1500, 430), Vector2(2050, 430)], "range": 220.0},
 		],
-		"intro": [["", "Obóz niewolników rozbito w opuszczonej kopalni na pustyni, wśród hałd i szybów. Klatka Leili stoi w głębi, a strażnicy krążą między namiotami. Przemknij za ich plecami albo zbij herszta."]],
+		"intro": [["", "Obóz niewolników rozbito w opuszczonej kopalni na pustyni, wśród hałd i szybów. Klatka Leili stoi w głębi, a strażnicy stoją między namiotami. Klucz do klatki ma herszt — pokonaj go."]],
 		"captive": {"id": "leila", "name": "Leila", "pos": Vector2(1900, 360), "label": "Uwolnij Leilę",
-			"thanks": [["Leila", "Tata nie przestawał we mnie wierzyć! Ten bohater przeszedł przez obóz jak cień — nikt go nie zauważył."], ["Leila", "Weź to, co ocalało z naszego towaru. Droga jest teraz bezpieczniejsza."]],
+			"thanks": [["Leila", "Tata nie przestawał we mnie wierzyć! Ten bohater przebił się przez cały obóz!"], ["Leila", "Weź to, co ocalało z naszego towaru. Droga jest teraz bezpieczniejsza."]],
 			"reward": {"gold": 320, "xp": 280, "items": {"sztabka_kurczalu": 2, "krysztal_cienia": 1}}},
 	},
 	"oboz_iskierka": {
@@ -138,12 +137,78 @@ const CAMPS := {
 			{"path": [Vector2(700, 560), Vector2(1500, 560)], "range": 230.0},
 			{"path": [Vector2(900, 440), Vector2(1300, 440)], "range": 210.0},
 		],
-		"intro": [["", "W opuszczonej kopalni u stóp strażniczej latarni stoi klatka z Iskierką, a wokół ziejące szyby. Strażnicy burzy patrolują w kilku rzędach — przekradaj się rzędami, kiedy się odwracają."]],
+		"intro": [["", "W opuszczonej kopalni u stóp strażniczej latarni stoi klatka z Iskierką, a wokół ziejące szyby. Strażnicy burzy stoją w kilku rzędach i ruszą na ciebie, gdy cię zobaczą. Klucz do klatki ma dowódca."]],
 		"captive": {"id": "iskierka", "name": "Iskierka", "pos": Vector2(1100, 330), "label": "Uwolnij Iskierkę",
 			"thanks": [["Iskierka", "Wiedziałam, że tata kogoś przyśle! Ten bohater wyprowadził mnie spod nosa strażnikom!"], ["Iskierka", "Weź to, to dar od całej wyspy. A maszyny pogodowe… już ich nie włączą."]],
 			"reward": {"gold": 400, "xp": 340, "items": {"mikstura_miodu": 3, "zwoj_wskrzeszenia": 1}}},
 	},
 }
+
+## Etap 1 (strefa zleceniodawcy): ślady porywaczy. Dwa miejsca do zbadania, zanim ścieżka do obozu stanie się czytelna.
+const TRACKS := {
+	"oboz_tosia": [Vector2(1500, 1000), Vector2(520, 620)],
+	"oboz_pisklaczka": [Vector2(1700, 880), Vector2(600, 520)],
+	"oboz_leila": [Vector2(1600, 1180), Vector2(520, 820)],
+	"oboz_iskierka": [Vector2(1700, 700), Vector2(520, 900)],
+}
+
+## Etap 2 (w obozie): dwoje innych niewolników w klatkach. Jeniec z zadania ma dwa zamki — klucz naczelnika i zasuwę,
+## którą zdejmą dopiero uwolnieni niewolnicy.
+const EXTRA_POS := [Vector2(780, 930), Vector2(1350, 620)]
+
+static func tracks_objective(camp_id: String) -> Dictionary:
+	var c: Dictionary = CAMPS.get(camp_id, {})
+	if c.is_empty():
+		return {}
+	return {"id": "slady_" + camp_id, "phase": "pre", "type": "collect", "kind": "tracks", "label": "Zbadaj ślady", "count": 2,
+		"positions": (TRACKS[camp_id] as Array).duplicate(), "required": false,
+		"text": "Zbadaj ślady porywaczy na pustkowiu, by znaleźć drogę do obozu (poboczne)", "reward": {"gold": 40, "xp": 40}}
+
+## Czy ślady zbadane (fl: słownik flag serwera albo null dla gry jednoosobowej).
+static func tracks_done(camp_id: String, fl = null) -> bool:
+	var c: Dictionary = CAMPS.get(camp_id, {})
+	if c.is_empty():
+		return true
+	return ChapterExtras.is_done(String(c["zone"]), tracks_objective(camp_id), fl)
+
+static func tracks_left(camp_id: String, fl = null) -> int:
+	var c: Dictionary = CAMPS.get(camp_id, {})
+	if c.is_empty():
+		return 0
+	var o := tracks_objective(camp_id)
+	return int(o["count"]) - ChapterExtras.count_done(String(c["zone"]), o, fl)
+
+static func extra_prisoners(camp_id: String) -> Array:
+	var out: Array = []
+	var names := ["Niewolnik Burek", "Niewolnica Rudka"]
+	for i in 2:
+		out.append({"id": "%s_n%d" % [camp_id, i + 1], "pos": EXTRA_POS[i], "label": "Uwolnij niewolnika", "name": names[i], "extra": true,
+			"thanks": [[names[i], "Dziękuję! Zasuwa przy klatce, w której siedzi ten, po kogo przyszedłeś, zejdzie tylko z naszą pomocą — już biegniemy ją zdjąć."]],
+			"reward": {"gold": 40 + 15 * i, "xp": 40}})
+	return out
+
+## Ostatni etap zadania: po uwolnieniu jeńca wracasz do zleceniodawcy po podziękowanie i nagrodę (raz).
+const REPORTS := {
+	"oboz_tosia": {
+		"lines": [["Młynarz Marian", "Tosia stoi w drzwiach! Cała, zdrowa, z warkoczem! Opowiedziała, jak pokonałeś naczelnika i wyprowadziłeś ją z obozu."], ["Młynarz Marian", "Nie mam jak ci podziękować, więc weź choć to. Przy młynie zawsze będzie dla ciebie mąka i ciepły kąt."]],
+		"reward": {"gold": 150, "xp": 150, "items": {"mikstura_miodu": 2}}},
+	"oboz_pisklaczka": {
+		"lines": [["Babcia Kokoszka", "Pisklaczka już piecze placki i opowiada całej wsi, jak pokonałeś naczelnika obozu jeńców!"], ["Babcia Kokoszka", "Weź ten koszyk, kogucie. Placki jeszcze ciepłe, a w środku coś na czarną godzinę."]],
+		"reward": {"gold": 130, "xp": 140, "items": {"mikstura_miodu": 3}}},
+	"oboz_leila": {
+		"lines": [["Karawaniarz Hasan", "Leila śpiewa przy ognisku, jakby nigdy nic! Powiedziała, że herszt padł, a ty wyprowadziłeś ją przez cały obóz."], ["Karawaniarz Hasan", "Karawana jedzie dalej dzięki tobie. Część zysku z pierwszego kursu należy się tobie — przyjmij ją."]],
+		"reward": {"gold": 170, "xp": 150, "items": {"g_mikstura_mala": 2}}},
+	"oboz_iskierka": {
+		"lines": [["Latarnik Burzan", "Iskierka śpi w domu, a latarnia znów świeci. Powiedziała, że dowódca straży burzy padł od twojej ręki."], ["Latarnik Burzan", "Weź to w podzięce. Burza wie, kto jej pomógł — ominie twoje drogi."]],
+		"reward": {"gold": 200, "xp": 170, "items": {"g_eliksir_maly": 2}}},
+}
+
+## Obóz, z którego `npc` czeka na wieści (gdy zleceniodawcą w tej strefie jest ten NPC), albo "".
+static func report_camp(zone_id: String, npc: String) -> String:
+	if not QUESTS.has(zone_id) or String(QUESTS[zone_id]["npc"]) != npc:
+		return ""
+	var list := camps_in(zone_id)
+	return String(list[0]) if not list.is_empty() else ""
 
 ## Flaga rozmowy ze zleceniodawcą (przyjęcie zadania): odblokowuje wejście do obozu.
 static func accept_flag(camp_id: String) -> String:
@@ -202,6 +267,8 @@ static func patch(base: Dictionary) -> Dictionary:
 		var o: Dictionary = q["objective"]
 		var objs: Array = ex.get("objectives", [])
 		objs.append({"id": String(o["id"]), "phase": "pre", "type": "talk", "npcs": [q["npc"]], "text": String(o["text"]), "required": false, "reward": {"gold": 40, "xp": 40}})
+		for camp_id in camps_in(String(zid)):
+			objs.append(tracks_objective(String(camp_id)))
 		ex["objectives"] = objs
 	return src
 
@@ -212,9 +279,9 @@ static func camp_zone_extra(camp_id: String) -> Dictionary:
 		return {}
 	return {
 		"spawn": c["start"],
-		"prisoners": [(c["captive"] as Dictionary).duplicate(true)],
+		"prisoners": [(c["captive"] as Dictionary).duplicate(true)] + extra_prisoners(camp_id),
 		"camp": {"id": camp_id, "guards": c["guards"], "start": c["start"],
-			"intro": (c["intro"] as Array) + [["", "Szyby (E) łączą odległe części kopalni: zejdź jednym, wyjdź drugim — a ominiesz strażników."]]},
+			"intro": (c["intro"] as Array) + [["", "Szyby (E) łączą odległe części kopalni: zejdź jednym, wyjdź drugim — skrócisz sobie drogę."]]},
 		"terrain": "desert", "shafts": (c["shafts"] as Array).duplicate(true),
 		"intro_banner": ["OBÓZ NIEWOLNIKÓW", String(c["name"]).split(" — ")[1]],
 		"outro_banner": ["OBÓZ ROZBITY", ""],
