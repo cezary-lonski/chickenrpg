@@ -104,6 +104,7 @@ func _ready() -> void:
 	_build_scenery()
 	_build_npcs()
 	_build_extras()
+	_build_corpse()
 	_build_side()
 	_build_decor()
 	_build_rooms()
@@ -285,7 +286,172 @@ func _record_death() -> void:
 	if _waves_started and not cave_mode and not custom_mode and not march_mode and not _net_client:
 		GameState.story()["retry_wave"] = maxi(0, wave_i - 1)
 		GameState.story()["retry_quest"] = quest_id
-	GameState.apply_death_penalty()
+	var at := player.global_position if (player != null and is_instance_valid(player)) else spawn
+	GameState.drop_corpse(_corpse_zone(), at)
+
+# ------------------------------------------------------ zwłoki i kradzież ---
+
+var _angry_npcs: Dictionary = {}
+var _corpse_node: Interactable
+
+func _corpse_zone() -> String:
+	return cave_id if cave_mode else quest_id
+
+## Zwłoki gracza z poprzedniej śmierci w tej strefie: można je przeszukać i odzyskać rzeczy.
+func _build_corpse() -> void:
+	var c := GameState.corpse()
+	if c.is_empty() or String(c.get("zone", "")) != _corpse_zone() or custom_mode or arena_mode or challenge_mode:
+		return
+	var p: Array = c["pos"]
+	_corpse_node = Interactable.new()
+	_corpse_node.setup("corpse", "Przeszukaj swoje zwłoki")
+	_spot(_corpse_node, Vector2(float(p[0]), float(p[1])))
+	_corpse_node.activated.connect(func(_w): _open_corpse())
+
+func _corpse_box() -> Dictionary:
+	var c := GameState.corpse()
+	var items: Array = []
+	for e in c.get("items", []):
+		items.append({"id": String(e["id"]), "n": int(e["n"])})
+	return Pickpocket.make_box("Twoje zwłoki", "corpse", int(c.get("gold", 0)), items)
+
+func _open_corpse() -> void:
+	if _dialog_open or GameState.corpse().is_empty():
+		return
+	var ui := UiLoot.new()
+	ui.setup(_corpse_box())
+	_dialog_open = true
+	ui.take.connect(func(i: int): _corpse_take(ui, i))
+	ui.on_close.connect(func(): _dialog_open = false)
+	Flow.open_dialog(ui)
+
+func _corpse_take(ui: UiLoot, i: int) -> void:
+	var c := GameState.corpse()
+	if c.is_empty():
+		ui.on_close.emit()
+		return
+	if i == UiLoot.TAKE_GOLD or i == UiLoot.TAKE_ALL:
+		GameState.add_gold(int(c["gold"]))
+		c["gold"] = 0
+	var items: Array = c["items"]
+	if i == UiLoot.TAKE_ALL:
+		while not items.is_empty():
+			if not GameState.give_entry(items[0]):
+				GameState.toast.emit("Plecak pełny.", UiKit.BAD)
+				break
+			items.remove_at(0)
+	elif i >= 0 and i < items.size():
+		if GameState.give_entry(items[i]):
+			items.remove_at(i)
+		else:
+			GameState.toast.emit("Plecak pełny.", UiKit.BAD)
+	GameState.save_game()
+	if int(c["gold"]) <= 0 and items.is_empty():
+		GameState.clear_corpse()
+		if _corpse_node != null and is_instance_valid(_corpse_node):
+			_corpse_node.queue_free()
+		ui.on_close.emit()
+		return
+	ui.refresh(_corpse_box())
+
+## Umiejętność „Kradzież”: najbliższy potwór albo NPC (bez zleceniodawcy, handlarzy i kowala); otwiera się jego ekwipunek.
+func _steal_target() -> Dictionary:
+	if player == null or not is_instance_valid(player):
+		return {}
+	var best := {}
+	var best_d := 200.0
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(e) or not (e is Node2D) or e.has_meta("robbed"):
+			continue
+		if e.has_method("is_dead") and e.is_dead():
+			continue
+		var d := player.global_position.distance_to((e as Node2D).global_position)
+		if d < best_d:
+			best_d = d
+			best = {"kind": "enemy", "node": e}
+	for entry in npcs:
+		var nid := String(entry["id"])
+		if nid == giver or String(entry["role"]) in Pickpocket.SAFE_ROLES or not is_instance_valid(entry["node"]):
+			continue
+		var d2 := player.global_position.distance_to((entry["node"] as Node2D).global_position)
+		if d2 < best_d:
+			best_d = d2
+			best = {"kind": "npc", "id": nid}
+	return best
+
+func _on_steal() -> void:
+	if _dialog_open or finished:
+		return
+	var t := _steal_target()
+	if t.is_empty():
+		Fx.popup(player.global_position + Vector2(0, -80), "BRAK CELU", Color(0.7, 0.7, 0.9))
+		return
+	var box := {}
+	if String(t["kind"]) == "enemy":
+		var e: Enemy = t["node"]
+		var b := Pickpocket.enemy_box(e.gold_value)
+		box = Pickpocket.make_box("Kieszenie: " + String(EnemyDB.get_data(e.species).get("name", "potwór")), "steal", int(b["gold"]), b["items"])
+		e.set_meta("robbed", true)
+	else:
+		var nid := String(t["id"])
+		var b2 := Pickpocket.npc_box(nid)
+		var items: Array = []
+		for i in (b2["items"] as Array).size():
+			if not GameState.story_flag("pp:%s:%d" % [nid, i]):
+				items.append((b2["items"] as Array)[i].merged({"pp": i}))
+		var gold := 0 if GameState.story_flag("pp:%s:g" % nid) else int(b2["gold"])
+		box = Pickpocket.make_box("Kieszenie: " + String(NpcDB.get_data(nid).get("name", "?")), "steal", gold, items)
+	if (box["items"] as Array).is_empty() and int(box["gold"]) <= 0:
+		GameState.toast.emit("Kieszenie są puste.", UiKit.DIM)
+		return
+	var ui := UiLoot.new()
+	ui.setup(box)
+	_dialog_open = true
+	var state := {"taken": 0}
+	ui.take.connect(func(i: int): _steal_take(ui, t, box, state, i))
+	ui.on_close.connect(func(): _dialog_open = false)
+	Flow.open_dialog(ui)
+
+func _steal_take(ui: UiLoot, t: Dictionary, box: Dictionary, state: Dictionary, i: int) -> void:
+	if i < UiLoot.TAKE_GOLD or (i >= 0 and i >= (box["items"] as Array).size()):
+		return
+	var mod := EncounterDB.modifier("zrecznosc", EncounterDB.ctx_game())
+	if randf() < Pickpocket.notice_chance(int(state["taken"]), i == UiLoot.TAKE_GOLD, mod):
+		_steal_noticed(t)
+		ui.on_close.emit()
+		return
+	if i == UiLoot.TAKE_GOLD:
+		GameState.add_gold(int(box["gold"]))
+		box["gold"] = 0
+		if String(t["kind"]) == "npc":
+			GameState.set_story_flag("pp:%s:g" % String(t["id"]))
+	else:
+		var e: Dictionary = (box["items"] as Array)[i]
+		GameState.add_item(String(e["id"]), int(e["n"]))
+		if String(t["kind"]) == "npc" and e.has("pp"):
+			GameState.set_story_flag("pp:%s:%d" % [String(t["id"]), int(e["pp"])])
+		(box["items"] as Array).remove_at(i)
+	state["taken"] = int(state["taken"]) + 1
+	GameState.save_game()
+	Audio.play("coin", 1.2, -4.0)
+	if int(box["gold"]) <= 0 and (box["items"] as Array).is_empty():
+		ui.on_close.emit()
+		return
+	ui.refresh(box)
+
+func _steal_noticed(t: Dictionary) -> void:
+	Audio.play("hit_heavy", 0.8, -4.0)
+	if String(t["kind"]) == "npc":
+		_angry_npcs[String(t["id"])] = true
+		GameState.toast.emit("%s zauważył, że go okradasz! Jest wściekły." % String(NpcDB.get_data(String(t["id"])).get("name", "NPC")), UiKit.BAD)
+		if Act2DB.rep() > 0:
+			Act2DB.add_rep(-1)
+	else:
+		var e = t.get("node")
+		if e != null and is_instance_valid(e):
+			e.dormant = false
+			e.aggro = 2600.0
+		GameState.toast.emit("Potwór zauważył kradzież i rzuca się na ciebie!", UiKit.BAD)
 
 func _begin_defense() -> void:
 	if _waves_started or finished:
@@ -745,6 +911,9 @@ func try_interact() -> bool:
 	return true
 
 func _talk_to(id: String) -> void:
+	if bool(_angry_npcs.get(id, false)):
+		_open_dialog([[String(NpcDB.get_data(id).get("name", "?")), "Złodziej! Nie mam z tobą o czym rozmawiać!"]], NpcDB.get_data(id).get("accent", UiKit.ACCENT))
+		return
 	if _try_deliver_package(id):
 		return
 	var step := GameState.story_step()
@@ -933,6 +1102,7 @@ func _spawn_players() -> void:
 		_net_players = {"p1": player, "p2": remote}
 		return
 	player = _make_player(p1, spawn, false, false)
+	player.steal_cast.connect(_on_steal)
 	_net_players = {"p1": player}
 	GameState.run_set("time", float(GameState.run.get("time", 0.0)))
 

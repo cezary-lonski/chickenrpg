@@ -302,7 +302,7 @@ var _stdin_thread: Thread = null
 
 ## Tryb --headless: komendy wpisujesz w terminalu (z "/" albo zwykły tekst = ogłoszenie do wszystkich), wynik idzie do logu.
 func _start_stdin_console() -> void:
-	print("Konsola serwera: wpisz komendę (np. /help, /list, /say tekst, /op nick, /stop) i Enter.")
+	print("Konsola serwera: wpisz komendę (help, list, status, say tekst, op nick, stop — z ukośnikiem lub bez) i Enter.")
 	_stdin_thread = Thread.new()
 	_stdin_thread.start(func():
 		while true:
@@ -320,6 +320,15 @@ func _on_stdin_line(line: String) -> void:
 	if not srv.running:
 		print("Serwer nie działa.")
 		return
+	# słowa bez ukośnika działają jak komendy (help, list, stop…), exit/quit zatrzymują serwer, status = lista graczy
+	var word := line.split(" ")[0].to_lower()
+	if not line.begins_with("/"):
+		if word in ["exit", "quit"]:
+			line = "/stop"
+		elif word == "status":
+			line = "/list"
+		elif ServerCmds.INFO.has(word):
+			line = "/" + line
 	if line.begins_with("/"):
 		srv.cmds.run(srv, 0, line)
 	else:

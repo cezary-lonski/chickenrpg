@@ -443,12 +443,62 @@ func unlock_class(cid: String) -> void:
 	cp["unlocked"] = true
 	save_game()
 
+## Złoto ze wszystkich zapisów (slotów) razem: służy do odblokowywania postaci (kogut, kwoka, indyk…).
+func total_gold() -> int:
+	var sum := gold()
+	for sl in range(1, SLOT_COUNT + 1):
+		if sl != active_slot and slot_exists(sl):
+			sum += _slot_gold(sl)
+	return sum
+
+func _slot_gold(sl: int) -> int:
+	var f := FileAccess.open(slot_path(sl), FileAccess.READ)
+	if f == null:
+		return 0
+	var data = JSON.parse_string(f.get_as_text())
+	f.close()
+	return int(data.get("gold", 0)) if typeof(data) == TYPE_DICTIONARY else 0
+
+## Pobiera `amount` złota: najpierw z bieżącego zapisu, resztę z pozostałych slotów (zapisuje je w plikach).
+func spend_shared_gold(amount: int) -> bool:
+	if amount <= 0:
+		return true
+	if total_gold() < amount:
+		return false
+	var from_here := mini(gold(), amount)
+	profile["gold"] = gold() - from_here
+	var left := amount - from_here
+	gold_changed.emit(gold())
+	for sl in range(1, SLOT_COUNT + 1):
+		if left <= 0:
+			break
+		if sl == active_slot or not slot_exists(sl):
+			continue
+		var f := FileAccess.open(slot_path(sl), FileAccess.READ)
+		if f == null:
+			continue
+		var data = JSON.parse_string(f.get_as_text())
+		f.close()
+		if typeof(data) != TYPE_DICTIONARY:
+			continue
+		var take := mini(int(data.get("gold", 0)), left)
+		if take <= 0:
+			continue
+		data["gold"] = int(data.get("gold", 0)) - take
+		left -= take
+		var w := FileAccess.open(slot_path(sl), FileAccess.WRITE)
+		if w:
+			w.store_string(JSON.stringify(data))
+			w.close()
+	save_game()
+	return true
+
 func can_buy_class(cid: String) -> bool:
 	var d := CharacterDB.get_data(cid)
 	var unlock := String(d.get("unlock",""))
 	var price := int(d.get("price",0))
 	if unlock == "": return true
-	if unlock == "gold": return gold() >= price
+	if unlock == "gold": return total_gold() >= price
 	if unlock == "cod": return cod() >= price
 	return true
 
@@ -458,9 +508,7 @@ func buy_class(cid: String) -> bool:
 	var unlock := String(d.get("unlock",""))
 	var price := int(d.get("price",0))
 	if unlock == "gold":
-		if gold() < price: return false
-		profile["gold"] = gold() - price
-		gold_changed.emit(gold())
+		if not spend_shared_gold(price): return false
 	elif unlock == "cod":
 		if cod() < price: return false
 		profile["cod"] = cod() - price
@@ -755,6 +803,48 @@ func apply_death_penalty() -> Array:
 	if not last_death_loss.is_empty():
 		save_game()
 	return last_death_loss
+
+## Śmierć: wszystkie rzeczy do utraty z plecaka (zob. ItemDB.death_losable) i 20% złota trafiają do zwłok w miejscu
+## śmierci (profile["corpse"]). Zwłoki czekają w tej samej strefie — można je przeszukać i odzyskać rzeczy.
+func drop_corpse(zone_key: String, pos: Vector2) -> Array:
+	last_death_loss = []
+	var inv_a := inv()
+	var items: Array = []
+	for i in INV_SIZE:
+		var e = inv_a[i]
+		if e is Dictionary and ItemDB.death_losable(String(e["id"])):
+			items.append((e as Dictionary).duplicate(true))
+			last_death_loss.append("%s ×%d" % [String(ItemDB.get_data(String(e["id"])).get("name", e["id"])), int(e["n"])])
+			inv_a[i] = null
+	var gold_lost := int(float(gold()) * 0.2)
+	if gold_lost > 0:
+		profile["gold"] = gold() - gold_lost
+		gold_changed.emit(gold())
+		last_death_loss.append("%d zł" % gold_lost)
+	if not items.is_empty() or gold_lost > 0:
+		profile["corpse"] = {"zone": zone_key, "pos": [pos.x, pos.y], "items": items, "gold": gold_lost}
+	save_game()
+	return last_death_loss
+
+func corpse() -> Dictionary:
+	var c = profile.get("corpse")
+	return c if c is Dictionary else {}
+
+func clear_corpse() -> void:
+	profile.erase("corpse")
+	save_game()
+
+## Daje wpis z plecaka (z jakością i runami); gdy nie ma miejsca, zwraca false.
+func give_entry(e: Dictionary) -> bool:
+	var inv_a := inv()
+	if not (e.has("m") and not (e["m"] as Dictionary).is_empty()) and is_equal_approx(float(e.get("q", 1.0)), 1.0):
+		return add_item(String(e["id"]), int(e["n"])) <= 0
+	for i in INV_SIZE:
+		if inv_a[i] == null:
+			inv_a[i] = e.duplicate(true)
+			save_game()
+			return true
+	return false
 
 func remove_item(id: String, amount: int = 1) -> bool:
 	if item_count(id) < amount: return false
@@ -1108,12 +1198,18 @@ func saved_characters() -> Array:
 		var chars = data.get("characters", {})
 		if typeof(chars) != TYPE_DICTIONARY:
 			continue
+		var classed := false
 		for id in chars:
 			var cp = chars[id]
 			if typeof(cp) != TYPE_DICTIONARY or String(cp.get("class", "")) == "":
 				continue
+			classed = true
 			out.append({"slot": s, "id": String(id), "level": int(cp.get("level", 1)), "class": String(cp["class"]),
 				"profile": cp, "appearance": data.get("appearance", {})})
+		# postać stworzona w kreatorze (nick i wygląd), ale jeszcze bez klasy — nie może przepaść
+		var ap = data.get("appearance", {})
+		if not classed and bool(data.get("seen_creator", false)) and typeof(ap) == TYPE_DICTIONARY and String((ap as Dictionary).get("name", "")).length() >= 3:
+			out.append({"slot": s, "id": "", "level": 1, "class": "", "profile": {}, "appearance": ap, "nick": String(ap["name"])})
 	return out
 
 ## Przenosi wybraną postać (z `saved_characters`) do bieżącego, świeżego świata.

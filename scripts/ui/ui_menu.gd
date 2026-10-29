@@ -36,7 +36,7 @@ func _ready() -> void:
 	_wood_btn("Własne fale", Rect2(860, 254, 380, 50)).pressed.connect(_on_waves)
 	_wood_btn("Wyzwania — pojedynki", Rect2(860, 314, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.start_challenge())
 	_wood_btn("Serwer online (ChickenSerwer)", Rect2(860, 374, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.goto("mmo_connect"))
-	_wood_btn("Kreator postaci", Rect2(860, 434, 380, 50)).pressed.connect(func(): Audio.play("confirm"); Flow.goto("creator"))
+	_wood_btn("Kreator postaci", Rect2(860, 434, 380, 50)).pressed.connect(_on_creator)
 	_wood_btn("Ustawienia", Rect2(860, 494, 184, 46), false, 19).pressed.connect(func(): Audio.play("select"); Flow.goto("settings"))
 	_wood_btn("Wyjście", Rect2(1056, 494, 184, 46), false, 19).pressed.connect(_on_quit)
 
@@ -111,3 +111,13 @@ func _on_waves() -> void:
 
 func _on_quit() -> void:
 	get_tree().quit()
+
+func _on_creator() -> void:
+	Audio.play("confirm")
+	# kreator zapisuje wygląd w bieżącym zapisie — wczytaj ostatni slot, żeby nie nadpisać go pustym profilem
+	var last := GameState.last_slot()
+	if GameState.slot_exists(last):
+		GameState.set_slot(last)
+	else:
+		GameState.select_slot(last, true)
+	Flow.goto("creator")

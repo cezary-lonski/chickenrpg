@@ -163,8 +163,8 @@ func _select(i: int) -> void:
 		_unlock_btn.visible = true
 		var cur := GameState.unlock_currency(id)
 		var cost := GameState.unlock_cost(id)
-		_unlock_btn.text = "Odblokuj za %d %s" % [cost, "piór" if cur == "cod" else "złota"]
-		var can := (GameState.cod() >= cost) if cur == "cod" else (GameState.gold() >= cost)
+		_unlock_btn.text = ("Odblokuj za %d piór" % cost) if cur == "cod" else ("Odblokuj za %d złota (masz razem %d)" % [cost, GameState.total_gold()])
+		var can := (GameState.cod() >= cost) if cur == "cod" else (GameState.total_gold() >= cost)
 		_unlock_btn.add_theme_color_override("font_hover_color", UiKit.GOOD if can else UiKit.BAD)
 
 ## Najdalszy odblokowany etap trybu platformowego (indeks od 0); 0 = jeszcze nic nie przeszedłeś.

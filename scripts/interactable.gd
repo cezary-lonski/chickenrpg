@@ -99,6 +99,7 @@ func _draw() -> void:
 		"tracks": _draw_tracks()
 		"wanderer": _draw_wanderer()
 		"shaft": _draw_shaft()
+		"corpse": _draw_corpse()
 	_pflush()
 	if _near > 0.01:
 		var f := ThemeDB.fallback_font
@@ -224,6 +225,18 @@ func _draw_herb() -> void:
 	_pc(Vector2(9, -26), 5.0, Color(0.95, 0.5, 0.7))
 	if not done:
 		_pc(Vector2(0, -20), 22.0 + 3.0 * sin(_t * 4.0), Color(0.6, 1.0, 0.6, 0.12))
+
+## Zwłoki poległego: leżący kurczak z piórami i krzyżykami zamiast oczu (można je przeszukać).
+func _draw_corpse() -> void:
+	_pc(Vector2(0, 6), 24.0, Color(0, 0, 0, 0.3))
+	_pc(Vector2(-4, -6), 16.0, Color(0.85, 0.82, 0.75))
+	_pc(Vector2(14, -10), 9.0, Color(0.9, 0.86, 0.78))
+	_pl(Vector2(11, -13), Vector2(17, -7), Color(0.15, 0.1, 0.1), 2.0)
+	_pl(Vector2(17, -13), Vector2(11, -7), Color(0.15, 0.1, 0.1), 2.0)
+	_pc(Vector2(-20, -4), 6.0, Color(0.95, 0.9, 0.8))
+	_pl(Vector2(-14, 10), Vector2(-24, 18), Color(0.95, 0.75, 0.2), 3.0)
+	if not done:
+		_pc(Vector2(0, -6), 26.0 + 3.0 * sin(_t * 3.0), Color(1.0, 0.9, 0.5, 0.1))
 
 ## Szyb kopalni: drewniana ramka z kołowrotem nad ciemnym otworem.
 func _draw_shaft() -> void:

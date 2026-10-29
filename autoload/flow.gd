@@ -301,7 +301,10 @@ func _on_waves_start(config: Dictionary, hero: String) -> void:
 func _on_rpg_start(mode: String, p1: String, p2: String, cls: String) -> void:
 	if _slot_is_new and not carry_char.is_empty():
 		GameState.adopt_character(carry_char)
+	elif _slot_is_new and not carry_appearance.is_empty():
+		GameState.set_appearance(carry_appearance)
 	carry_char = {}
+	carry_appearance = {}
 	char_stage_done = false
 	GameState.start_rpg_run(mode, p1, p2, _slot_is_new)
 	GameState.set_class(cls)
@@ -318,6 +321,7 @@ var _slot_is_new := true
 var carry_pool: Array = []
 var carry_char: Dictionary = {}
 var char_stage_done := false
+var carry_appearance: Dictionary = {}   # wygląd postaci z kreatora (bez klasy), przenoszony do nowego świata
 
 func _on_slot_start(slot: int, create_new: bool) -> void:
 	carry_char = {}
@@ -599,7 +603,9 @@ func _retry() -> void:
 # ------------------------------------------------------------------- pauza ---
 
 func pause() -> void:
-	get_tree().paused = true
+	# w grze sieciowej świat nie może stanąć (drugi gracz dalej gra) — blokujemy tylko sterowanie lokalnego gracza
+	if not Net.has_peer():
+		get_tree().paused = true
 	GameState.game_paused = true
 
 func resume() -> void:

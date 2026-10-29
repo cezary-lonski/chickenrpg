@@ -33,6 +33,18 @@ func _build_character_stage() -> void:
 	root.add_child(grid)
 	for entry in Flow.carry_pool:
 		var e: Dictionary = entry
+		if String(e["class"]) == "":
+			# postać stworzona w kreatorze, ale jeszcze bez klasy: bierzemy jej wygląd i przechodzimy do wyboru klasy
+			var nb := UiKit.button("%s\nNowa postać (bez klasy)\nZapis %d" % [String(e.get("nick", "?")), int(e["slot"])], 17, UiKit.GOOD)
+			nb.custom_minimum_size = Vector2(230, 100)
+			nb.pressed.connect(func():
+				Audio.play("confirm")
+				Flow.carry_char = {}
+				Flow.carry_appearance = e["appearance"]
+				Flow.char_stage_done = true
+				Flow.goto("rpg_select"))
+			grid.add_child(nb)
+			continue
 		var cls := ClassDatabase.get_data(String(e["class"]))
 		var b := UiKit.button("%s\nPoziom %d · %s\nZapis %d" % [String(CharacterDB.get_data(String(e["id"])).get("title", e["id"])), int(e["level"]), String(cls.get("title", e["class"])), int(e["slot"])], 18, cls.get("col", UiKit.ACCENT))
 		b.custom_minimum_size = Vector2(230, 100)

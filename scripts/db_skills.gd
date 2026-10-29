@@ -93,7 +93,7 @@ const BASE := {
 	# --- Złodziej ---
 	"kradziez": {
 		"name": "Kradzież", "type": "steal",
-		"desc": "Otwiera ekwipunek innych i rozbraja najbliższego potwora.",
+		"desc": "Okradasz najbliższy cel — potwora, NPC albo gracza: otwiera się jego ekwipunek i zabierasz, co chcesz. Każda rzecz to ryzyko zauważenia.",
 		"cost": 0.0, "cd": 10.0,
 		"col": Color(0.55, 0.5, 0.65),
 	},

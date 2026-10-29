@@ -556,6 +556,9 @@ func _talk_npc(id: int, inst: ZoneInstance, npc: String) -> void:
 	var pl: Dictionary = peers[id]
 	if inst.kind != "story":
 		return
+	if bool((pl.get("angry", {}) as Dictionary).get(npc, false)):
+		_open_dialog(id, [[String(NpcDB.get_data(npc).get("name", "?")), "Złodziej! Nie mam z tobą o czym rozmawiać!"]], NpcDB.get_data(npc).get("accent", UiKit.ACCENT), "")
+		return
 	if StoryActions.try_package(self, id, inst, npc):
 		return
 	var rec: Dictionary = pl["rec"]
@@ -1084,6 +1087,8 @@ func on_act(id: int, kind: String, data: Dictionary) -> void:
 			_puzzle_done(id, int(data.get("token", -1)), bool(data.get("ok", false)))
 		"puzzle_hint":
 			_puzzle_hint(id, int(data.get("token", -1)))
+		"loot_take":
+			LootOps.take(self, id, int(data.get("token", -1)), int(data.get("i", -2)))
 		"enc_pick":
 			StoryActions.enc_pick(self, id, int(data.get("token", -1)), int(data.get("i", -1)))
 		"buy", "sell":
@@ -1387,10 +1392,19 @@ func _death_loss(id: int) -> void:
 	var pl = peers.get(id)
 	if pl == null:
 		return
-	var lost: Array = ServerChars.death_penalty(pl["rec"])
+	var inst: ZoneInstance = pl["inst"]
+	var node := player_of(id)
+	var lost: Array
+	if inst != null and node != null and inst.kind in ["story", "cave", "swiat"]:
+		lost = inst.add_corpse(id, pl["rec"], (node as Node2D).position)
+		if not lost.is_empty():
+			_say_to(id, "Twoje rzeczy leżą przy zwłokach — wróć po nie: " + ", ".join(lost), "error")
+	else:
+		lost = ServerChars.death_penalty(pl["rec"])
+		if not lost.is_empty():
+			_say_to(id, "Utracone przedmioty: " + ", ".join(lost), "error")
 	if lost.is_empty():
 		return
-	_say_to(id, "Utracone przedmioty: " + ", ".join(lost), "error")
 	chars.mark_dirty()
 	_push_me(id)
 

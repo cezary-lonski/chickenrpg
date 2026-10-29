@@ -178,11 +178,19 @@ func _build_look() -> void:
 		var cid := String(id)
 		var data := CharacterDB.get_data(cid)
 		var unlocked := GameState.is_unlocked(cid) or cid == "lord" or cid == "lady"
-		var b := UiKit.button(String(data.get("title", cid)) + ("  ✔" if cur == cid else ""), 17)
+		var price_txt := ""
+		if not unlocked:
+			price_txt = "  [%d %s]" % [GameState.unlock_cost(cid), "piór" if GameState.unlock_currency(cid) == "cod" else "zł"]
+		var b := UiKit.button(String(data.get("title", cid)) + ("  ✔" if cur == cid else "") + price_txt, 17)
 		b.custom_minimum_size = Vector2(190, 44)
-		b.disabled = not unlocked
-		b.tooltip_text = String(data.get("subtitle", "")) if unlocked else "Zablokowane"
+		b.tooltip_text = String(data.get("subtitle", "")) if unlocked else "Kliknij, aby odblokować (złoto ze wszystkich zapisów razem)"
 		b.pressed.connect(func():
+			if not (GameState.is_unlocked(cid) or cid == "lord" or cid == "lady"):
+				if not GameState.try_unlock(cid):
+					Audio.play("deny")
+					GameState.toast.emit("Za mało: potrzeba %d, masz razem %d." % [GameState.unlock_cost(cid), GameState.total_gold() if GameState.unlock_currency(cid) != "cod" else GameState.cod()], UiKit.BAD)
+					return
+				GameState.toast.emit("Odblokowano: %s!" % String(data.get("title", cid)), UiKit.GOOD)
 			_snapshot()
 			_app["look"] = cid
 			Audio.play("confirm")

@@ -335,6 +335,7 @@ func add_player(peer: int, rec: Dictionary) -> Player:
 	p.bounds_top = MARGIN
 	p.bounds_bottom = size.y - MARGIN
 	p.floor_y = size.y - MARGIN
+	p.steal_cast.connect(func(): LootOps.start_steal(srv, peer, self))
 	p.apply_server_loadout(ServerChars.compute_stats(rec), rec["equip"], rec["skills"], ServerChars.ranks_of(rec))
 	p.hp = p.max_hp
 	p.energy = p.max_energy
@@ -345,6 +346,48 @@ func add_player(peer: int, rec: Dictionary) -> Player:
 	_idle_t = 0.0
 	spawn_objective_elites()
 	return p
+
+# ------------------------------------------------------------------ zwłoki ---
+# Poległy gracz zostawia zwłoki z rzeczami z plecaka (zob. ItemDB.death_losable) i 20% złota; każdy w strefie może je
+# przeszukać. Zwłoki znikają po CORPSE_TTL sekundach (rzeczy przepadają).
+
+const CORPSE_TTL := 900.0
+var corpses: Dictionary = {}
+var _corpse_seq := 0
+
+## Przenosi rzeczy do utraty z plecaka gracza do zwłok w miejscu śmierci; zwraca listę opisów.
+func add_corpse(peer: int, rec: Dictionary, at: Vector2) -> Array:
+	var inv: Array = rec["inv"]
+	var items: Array = []
+	var lost: Array = []
+	for i in range(inv.size() - 1, -1, -1):
+		if ItemDB.death_losable(String(inv[i]["id"])):
+			items.push_front((inv[i] as Dictionary).duplicate(true))
+			lost.push_front("%s ×%d" % [String(ItemDB.get_data(String(inv[i]["id"])).get("name", inv[i]["id"])), int(inv[i]["n"])])
+			inv.remove_at(i)
+	var gold_lost := int(float(rec["gold"]) * 0.2)
+	if gold_lost > 0:
+		rec["gold"] = int(rec["gold"]) - gold_lost
+		lost.append("%d zł" % gold_lost)
+	if items.is_empty() and gold_lost <= 0:
+		return lost
+	_corpse_seq += 1
+	var uid := "corpse:%d:%d" % [slot, _corpse_seq]
+	var nm := String((srv.peers[peer] as Dictionary).get("name", "gracz")) if srv.peers.has(peer) else "gracz"
+	corpses[uid] = {"name": nm, "pos": at, "items": items, "gold": gold_lost, "t": CORPSE_TTL}
+	add_extra_obj({"uid": uid, "kind": "corpse", "label": "Przeszukaj zwłoki: " + nm, "pos": at, "type": "corpse"})
+	return lost
+
+func remove_corpse(uid: String) -> void:
+	corpses.erase(uid)
+	remove_extra_obj(uid)
+	srv.broadcast_zone_ev(self, "objs_del", {"uid": uid})
+
+func _tick_corpses(delta: float) -> void:
+	for uid in corpses.keys():
+		corpses[uid]["t"] = float(corpses[uid]["t"]) - delta
+		if float(corpses[uid]["t"]) <= 0.0:
+			remove_corpse(String(uid))
 
 func remove_player(peer: int) -> void:
 	peer_ids.erase(peer)
@@ -456,6 +499,7 @@ func _tick_heist(delta: float) -> void:
 
 func tick(delta: float) -> void:
 	_tick_heist(delta)
+	_tick_corpses(delta)
 	if kind == "swiat":
 		_tick_world(delta)
 		return

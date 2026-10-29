@@ -57,6 +57,7 @@ func _ready() -> void:
 	hud = UiMmoHud.new()
 	hud.exit_requested.connect(_leave)
 	hud.dialog_closed.connect(func(token: int): Mmo.send_act("dialog_done", {"token": token}))
+	hud.loot_taken.connect(func(token: int, i: int): Mmo.send_act("loot_take", {"token": token, "i": i}))
 	hud.enc_picked.connect(func(token: int, i: int): Mmo.send_act("enc_pick", {"token": token, "i": i}))
 	hud.puzzle_hint.connect(func(token: int): Mmo.send_act("puzzle_hint", {"token": token}))
 	hud.puzzle_done.connect(func(token: int, ok: bool): Mmo.send_act("puzzle_done", {"token": token, "ok": ok}))
@@ -364,6 +365,16 @@ func _on_event(kind: String, data: Dictionary) -> void:
 			Audio.play("gate", 1.0, -8.0)
 		"dialog":
 			hud.open_dialog(int(data.get("token", 0)), data.get("lines", []), data.get("accent", UiKit.ACCENT), String(data.get("scene", "")))
+		"loot":
+			hud.open_loot(int(data.get("token", 0)), data.get("box", {}))
+		"loot_close":
+			hud.close_loot()
+		"objs_del":
+			var duid := String(data.get("uid", ""))
+			if _objs.has(duid):
+				if is_instance_valid(_objs[duid]["node"]):
+					(_objs[duid]["node"] as Node).queue_free()
+				_objs.erase(duid)
 		"wander":
 			_make_object(data["obj"])
 		"wander_off":

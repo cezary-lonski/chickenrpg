@@ -10,6 +10,7 @@ signal skills_changed
 signal fury_changed(v: float)
 signal combo_changed(n: int)
 signal died
+signal steal_cast   # umiejętność „Kradzież”: host (wioska/serwer) wybiera cel i otwiera okno łupu
 signal state_changed(name: String)
 
 enum S { IDLE, RUN, JUMP, FALL, ATTACK, AIR_ATTACK, DASH, BLOCK, HURT, THROW, SPECIAL, VICTORY, DEAD, DOWNED, INTRO }
@@ -241,7 +242,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not event.is_pressed() or event.is_echo():
 		return
-	if not can_act:
+	if not can_act or GameState.game_paused:
 		return
 	var map := {
 		"light_attack": "light", "heavy_attack": "heavy", "dash": "dash",
@@ -267,7 +268,7 @@ func _clear_buf() -> void:
 func _held(action: String) -> bool:
 	if net_controlled:
 		return bool(net_held.get(action, false))
-	return Input.is_action_pressed(action) and not GameState.chat_typing
+	return Input.is_action_pressed(action) and not GameState.chat_typing and not GameState.game_paused
 
 func net_apply_input(move: Vector2, held: Dictionary, actions: Array) -> void:
 	net_move = move
@@ -475,7 +476,7 @@ func _input_x() -> float:
 		return _berserk_dir().x
 	if net_controlled:
 		return net_move.x
-	return 0.0 if GameState.chat_typing else Input.get_axis("move_left", "move_right")
+	return 0.0 if (GameState.chat_typing or GameState.game_paused) else Input.get_axis("move_left", "move_right")
 
 func _input_y() -> float:
 	if net_ghost:
@@ -486,7 +487,7 @@ func _input_y() -> float:
 		return _berserk_dir().y
 	if net_controlled:
 		return net_move.y
-	return 0.0 if GameState.chat_typing else Input.get_axis("move_up", "move_down")
+	return 0.0 if (GameState.chat_typing or GameState.game_paused) else Input.get_axis("move_up", "move_down")
 
 func _try_common_actions() -> bool:
 	if stun_t > 0.0:
@@ -1845,33 +1846,9 @@ func _skill_stun_all(d: Dictionary) -> void:
 			if "stun_t" in p:
 				p.set("stun_t", dur)
 
-func _skill_steal(d: Dictionary) -> void:
-	var t := _nearest_target(220.0)
-	if t == null:
-		Fx.popup(global_position + Vector2(0, -80), "BRAK CELU", Color(0.7, 0.7, 0.9))
-		Audio.play("deny", 1.2, -10.0)
-		return
+func _skill_steal(_d: Dictionary) -> void:
 	Audio.play("confirm", 1.2, -8.0)
-	# rozbrój
-	if "weapon_taken" in t:
-		t.set("weapon_taken", true)
-		Fx.popup(t.global_position + Vector2(0, -70), "ROZBROJONY!", Color(0.7, 0.7, 0.9))
-	# kradzież złota zależna od wroga i szczęścia
-	var luck := _stat("luck")
-	var base := 6
-	if "gold_value" in t:
-		base = int(t.get("gold_value"))
-	var stolen := maxi(1, int(round(float(base) * (0.6 + 0.4 * luck))))
-	GameState.add_gold(stolen)
-	if GameState.has_run():
-		GameState.run["gold_earned"] = int(GameState.run.get("gold_earned", 0)) + stolen
-	# szansa na miksturę z kieszeni wroga
-	if randf() < clampf(0.25 * luck, 0.0, 0.8):
-		GameState.add_item("mikstura_miodu", 1)
-		Fx.popup(t.global_position + Vector2(0, -100), "+ MIÓD", Color(1.0, 0.85, 0.4))
-	Fx.popup(t.global_position + Vector2(0, -40), "+%d zł" % stolen, Color(1.0, 0.85, 0.3))
-	if t.has_method("stagger"):
-		t.stagger(0.4, Vector2.ZERO)
+	steal_cast.emit()
 
 func _spawn_projectile(dmg: float, col: Color, crit: bool = false, stun: float = 0.0) -> void:
 	_spawn_projectile_angle(dmg, col, 0.0, stun, crit)

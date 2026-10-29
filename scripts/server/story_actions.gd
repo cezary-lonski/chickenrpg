@@ -47,7 +47,7 @@ static func usable(rec: Dictionary, inst: ZoneInstance, peer: int, o: Dictionary
 			var cv := SecretDB.cave_for(q)
 			var arr: Array = (secrets_of(rec).get("levers", {}) as Dictionary).get(q, []) if secrets_of(rec).get("levers") is Dictionary else []
 			return not (bool(flags.get(String(o["uid"]), false)) or int(o["idx"]) in arr) and not cv.is_empty()
-		"wander", "shaft":
+		"wander", "shaft", "corpse":
 			return true
 		"mine":
 			return not bool(flags.get(String(o["uid"]), false))
@@ -90,6 +90,7 @@ static func activate(srv: MmoServer, peer: int, inst: ZoneInstance, o: Dictionar
 		"cavechest": _cave_chest(srv, peer, inst)
 		"wander": enc_start(srv, peer, String(o["enc"]))
 		"shaft": _shaft(srv, peer, o)
+		"corpse": LootOps.open_corpse(srv, peer, inst, String(o["uid"]))
 		"prisoner": _prisoner(srv, peer, inst, o)
 		"mine": srv.open_puzzle(peer, String(_mine_step(inst, o).get("puzzle", "lockpick")), String(o["uid"]), {"mine": o})
 		"portal": srv.enter_zone(peer, srv.zone_key_for(srv.peers[peer]["rec"]))

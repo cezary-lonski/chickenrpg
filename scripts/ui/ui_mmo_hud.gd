@@ -8,6 +8,7 @@ signal choice_picked(token: int, index: int)
 signal puzzle_done(token: int, ok: bool)
 signal puzzle_hint(token: int)
 signal enc_picked(token: int, index: int)
+signal loot_taken(token: int, index: int)
 
 const KIND_COLORS := {
 	"chat": "#f6efd9", "system": "#ffd966", "error": "#f2685a", "whisper": "#f59be0", "me": "#9fd9ff", "server": "#ffa94d",
@@ -401,6 +402,32 @@ func open_encounter(token: int, view: Dictionary, roll_text: String, roll_ok: bo
 		_dialog = null)
 	_dialog = ui
 	_root.add_child(ui)
+
+## Okno łupu (zwłoki / kradzież): otwarcie i odświeżenie po każdym zabraniu; Esc zamyka (TAKE_CLOSE).
+var _loot_token := 0
+
+func open_loot(token: int, box: Dictionary) -> void:
+	_loot_token = token
+	if is_dialog_open() and _dialog is UiLoot:
+		(_dialog as UiLoot).refresh(box)
+		return
+	if is_dialog_open():
+		_dialog.queue_free()
+	var ui := UiLoot.new()
+	ui.setup(box)
+	ui.take.connect(func(i: int): loot_taken.emit(_loot_token, i))
+	ui.on_close.connect(func():
+		loot_taken.emit(_loot_token, -2)
+		if is_instance_valid(ui):
+			ui.queue_free()
+		_dialog = null)
+	_dialog = ui
+	_root.add_child(ui)
+
+func close_loot() -> void:
+	if is_dialog_open() and _dialog is UiLoot:
+		_dialog.queue_free()
+		_dialog = null
 
 ## Serwer potwierdził opłatę — zagadka pokazuje podpowiedź.
 func puzzle_hint_ok() -> void:
